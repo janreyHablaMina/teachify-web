@@ -37,7 +37,7 @@ export default function LandingHeader() {
             <Link href="#blog" className="sketch-link">
               Blog
             </Link>
-            <Link href="/pricing" className="sketch-link sale-hl">
+            <Link href="#pricing" className="sketch-link sale-hl">
               Sale!
             </Link>
           </nav>

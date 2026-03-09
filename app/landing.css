@@ -3899,3 +3899,256 @@
         font-size: 36px;
     }
 }
+
+/* Unique Pricing Board */
+.lp-pricing-lab {
+    padding: 120px 0 100px;
+    position: relative;
+    z-index: 10;
+}
+
+.pricing-lab-head {
+    text-align: center;
+    margin-bottom: 54px;
+}
+
+.pricing-lab-title {
+    font-size: clamp(34px, 5vw, 58px);
+    line-height: 1.06;
+    letter-spacing: -0.03em;
+    font-weight: 950;
+}
+
+.pricing-lab-board {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.08fr 1fr;
+    gap: 22px;
+    align-items: stretch;
+}
+
+.pricing-note {
+    background: white;
+    border: var(--sketch-border);
+    box-shadow: 8px 8px 0 var(--ink-primary);
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pricing-note:hover {
+    transform: translateY(-6px);
+    box-shadow: 12px 12px 0 var(--ink-primary);
+}
+
+.note-quiz {
+    transform: rotate(-1.8deg);
+    background: linear-gradient(170deg, #fff 0%, #fffbeb 100%);
+}
+
+.note-classroom {
+    transform: rotate(0.6deg);
+    border-width: 3px;
+    box-shadow: 12px 12px 0 var(--hl-teal);
+    background: linear-gradient(170deg, #ffffff 0%, #ecfdf5 100%);
+    z-index: 2;
+}
+
+.note-classroom:hover {
+    box-shadow: 16px 16px 0 var(--hl-teal);
+}
+
+.note-school {
+    transform: rotate(1.6deg);
+    background: linear-gradient(170deg, #fff 0%, #eff6ff 100%);
+}
+
+.note-popular {
+    position: absolute;
+    top: -14px;
+    left: 20px;
+    padding: 6px 12px;
+    background: var(--ink-primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    transform: rotate(-3deg);
+}
+
+.note-tag {
+    font-size: 11px;
+    font-weight: 900;
+    color: #64748b;
+    letter-spacing: 0.18em;
+    margin-bottom: 12px;
+}
+
+.pricing-note h3 {
+    font-size: 30px;
+    line-height: 1.1;
+    font-weight: 900;
+    margin-bottom: 10px;
+}
+
+.note-price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.note-price strong {
+    font-size: 54px;
+    line-height: 1;
+    font-weight: 950;
+}
+
+.note-price span {
+    font-size: 16px;
+    opacity: 0.65;
+    font-weight: 800;
+}
+
+.note-list {
+    list-style: none;
+    margin: 0 0 24px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.note-list li {
+    font-weight: 700;
+    font-size: 14px;
+    position: relative;
+    padding-left: 20px;
+}
+
+.note-list li::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--hl-pink);
+    position: absolute;
+    left: 0;
+    top: 7px;
+}
+
+.note-btn {
+    margin-top: auto;
+    text-decoration: none;
+    font-weight: 900;
+    text-align: center;
+    padding: 13px 14px;
+    border: var(--sketch-border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.note-btn-outline {
+    background: white;
+    color: var(--ink-primary);
+}
+
+.note-btn-outline:hover {
+    background: var(--hl-purple);
+}
+
+.note-btn-solid {
+    background: var(--ink-primary);
+    color: white;
+    box-shadow: 4px 4px 0 var(--hl-pink);
+}
+
+.note-btn-solid:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--hl-pink);
+}
+
+.pricing-lab-strip {
+    max-width: 1000px;
+    margin: 36px auto 0;
+    background: #f8fafc;
+    border: var(--sketch-border);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.strip-title {
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.09em;
+}
+
+.strip-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.strip-items span {
+    border: 1px dashed #94a3b8;
+    background: white;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.pricing-lab-hint {
+    margin: 18px auto 0;
+    max-width: 1000px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.pricing-lab-hint span {
+    color: var(--ink-primary);
+    font-weight: 900;
+    margin-right: 4px;
+}
+
+@media (max-width: 1024px) {
+    .pricing-lab-board {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .pricing-note,
+    .note-quiz,
+    .note-classroom,
+    .note-school {
+        transform: none;
+    }
+
+    .pricing-lab-strip {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .lp-pricing-lab {
+        padding: 90px 0 80px;
+    }
+
+    .pricing-note {
+        padding: 26px 20px;
+    }
+
+    .pricing-note h3 {
+        font-size: 26px;
+    }
+
+    .note-price strong {
+        font-size: 46px;
+    }
+}

@@ -6,6 +6,7 @@ import SaleCountdownBanner from "@/components/landing/SaleCountdownBanner";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroBanner from "@/components/landing/HeroBanner";
 import FeaturesSection from "@/components/landing/FeaturesSection";
+import PricingSection from "@/components/landing/PricingSection";
 
 export default function Home() {
   return (
@@ -17,6 +18,7 @@ export default function Home() {
 
       <HeroBanner />
       <FeaturesSection />
+      <PricingSection />
 
       <section className="lp-testimonials-sketch">
         <div className="sketch-canvas">
@@ -61,7 +63,7 @@ export default function Home() {
               <div className="footer-col">
                 <h4>Product</h4>
                 <Link href="#features">Features</Link>
-                <Link href="/pricing">Pricing</Link>
+                <Link href="#pricing">Pricing</Link>
                 <Link href="/blog">Blog</Link>
               </div>
               <div className="footer-col">
