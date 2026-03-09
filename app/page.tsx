@@ -144,6 +144,25 @@ export default function Home() {
           <svg className="doodle d-star" viewBox="0 0 24 24" fill="none" stroke="#FDA4AF" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
           <svg className="doodle d-arrow" viewBox="0 0 24 24" fill="none" stroke="#99F6E4" strokeWidth="2"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>
           <svg className="doodle d-circle" viewBox="0 0 24 24" fill="none" stroke="#FEF08A" strokeWidth="2"><circle cx="12" cy="12" r="10" /></svg>
+          <svg className="doodle d-pencil" viewBox="0 0 64 64" fill="none">
+            <rect x="9" y="32" width="35" height="10" rx="3" fill="#FCD34D" stroke="#0F172A" strokeWidth="2" transform="rotate(-25 9 32)" />
+            <rect x="38" y="28" width="8" height="10" fill="#F9A8D4" stroke="#0F172A" strokeWidth="2" transform="rotate(-25 38 28)" />
+            <path d="M45 25 L56 23 L51 33 Z" fill="#FDE68A" stroke="#0F172A" strokeWidth="2" />
+            <circle cx="52" cy="28" r="1.8" fill="#0F172A" />
+          </svg>
+          <svg className="doodle d-book" viewBox="0 0 64 64" fill="none">
+            <rect x="8" y="14" width="22" height="36" rx="4" fill="#A7F3D0" stroke="#0F172A" strokeWidth="2.2" />
+            <rect x="30" y="14" width="26" height="36" rx="4" fill="#BFDBFE" stroke="#0F172A" strokeWidth="2.2" />
+            <path d="M30 14V50" stroke="#0F172A" strokeWidth="2.2" />
+            <path d="M16 24H24M36 24H48" stroke="#0F172A" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <svg className="doodle d-ruler" viewBox="0 0 72 32" fill="none">
+            <rect x="2" y="6" width="68" height="20" rx="5" fill="#FECACA" stroke="#0F172A" strokeWidth="2" />
+            <path d="M10 11V22M18 11V18M26 11V22M34 11V18M42 11V22M50 11V18M58 11V22" stroke="#0F172A" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <svg className="doodle d-spark" viewBox="0 0 32 32" fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M16 4V11M16 21V28M4 16H11M21 16H28M8 8L12 12M20 20L24 24M24 8L20 12M12 20L8 24" />
+          </svg>
         </div>
 
         <div className="lp-hero-v3-container">
@@ -200,7 +219,127 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── COLORFUL SKETCH FEATURES SECTION ── */}
+      <section id="features" className="lp-features-sketch">
+        <div className="sketch-canvas">
+          <div className="features-intro">
+            <span className="sketch-badge hl-purple">WHAT YOU CAN DO</span>
+            <h2 className="sketch-section-title">
+              Tools that actually <br />
+              <div className="highlighter-sweep hl-teal">
+                <span className="sketch-accent-text">Save Time.</span>
+              </div>
+            </h2>
+            <p className="sketch-section-desc">
+              We didn't just build another AI. We built a digital co-pilot for your classroom.
+              Move from admin to inspiration in seconds.
+            </p>
+          </div>
 
-    </main>
+          <div className="sketch-features-grid">
+            {/* Feature 1 */}
+            <div className="sketch-feature-card f-1">
+              <div className="s-card-img">
+                <Image src="/category-classroom.png" alt="Quiz Creator" fill style={{ objectFit: 'cover' }} />
+                <div className="s-card-tag hl-pink">NEW VERSION</div>
+              </div>
+              <div className="s-card-content">
+                <h3>Quiz Architect</h3>
+                <p>Drop a PDF or YouTube link and get a fully formatted, multi-level quiz in under 30 seconds.</p>
+                <Link href="/teacher/generate" className="s-card-link">Try Architect <span className="arrow">→</span></Link>
+              </div>
+              <div className="s-card-scribble hl-yellow" />
+            </div>
+
+            {/* Feature 2 */}
+            <div className="sketch-feature-card f-2">
+              <div className="s-card-img">
+                <Image src="/category-student.png" alt="Lesson Plan" fill style={{ objectFit: 'cover' }} />
+                <div className="s-card-tag hl-teal">AI POWERED</div>
+              </div>
+              <div className="s-card-content">
+                <h3>Lesson Navigator</h3>
+                <p>Stop staring at blank pages. Get creative lesson structures tailored to your specific curriculum.</p>
+                <Link href="/teacher/classes" className="s-card-link">View Projects <span className="arrow">→</span></Link>
+              </div>
+              <div className="s-card-scribble hl-pink" />
+            </div>
+
+            {/* Feature 3 */}
+            <div className="sketch-feature-card f-3">
+              <div className="s-card-img">
+                <Image src="/blog-analytics-hologram.png" alt="Analytics" fill style={{ objectFit: 'cover' }} />
+              </div>
+              <div className="s-card-content">
+                <h3>Instant Insights</h3>
+                <p>See exactly where your students are struggling with auto-generated analytics from every assignment.</p>
+                <Link href="/teacher/quizzes" className="s-card-link">See Data <span className="arrow">→</span></Link>
+              </div>
+              <div className="s-card-scribble hl-yellow" />
+            </div>
+          </div>
+
+          {/* Decorative Doodle Annotation */}
+          <div className="sketch-annotation-wrap">
+            <svg className="sketch-annotation-arrow" width="80" height="40" viewBox="0 0 100 50">
+              <path d="M10,10 Q50,60 90,10 M90,10 L80,15 M90,10 L85,0" stroke="var(--ink-teal)" strokeWidth="3" fill="none" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ── SKETCH TESTIMONIALS ── */}
+      <section className="lp-testimonials-sketch">
+        <div className="sketch-canvas">
+          <div className="testi-intro">
+            <h3 className="sketch-section-title">What the <span className="sketch-accent-text">Staff Room</span> is saying...</h3>
+          </div>
+
+          <div className="sketch-testi-grid">
+            <div className="sketch-testi-bubble b-1">
+              <p className="testi-quote">"I finished my entire week's lesson planning in 10 minutes. Honestly, it feels like cheating, but my students love the quizzes!"</p>
+              <div className="testi-author">— Sarah J., 10th Grade History</div>
+            </div>
+            <div className="sketch-testi-bubble b-2 hl-teal">
+              <p className="testi-quote">"The grading scanner is a lifesaver. No more Sunday nights at the dining table with a red pen."</p>
+              <div className="testi-author">— Marcus T., Math Lead</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SKETCH FOOTER ── */}
+      <footer className="lp-footer-sketch">
+        <div className="sketch-canvas">
+          <div className="footer-top">
+            <div className="footer-brand">
+              <div className="logo-text">Teachify<span className="sketch-pink">AI</span></div>
+              <p>Reimagining education through <br />creative AI automation.</p>
+            </div>
+            <div className="footer-links-grid">
+              <div className="footer-col">
+                <h4>Product</h4>
+                <Link href="#features">Features</Link>
+                <Link href="#pricing">Pricing</Link>
+                <Link href="/blog">Blog</Link>
+              </div>
+              <div className="footer-col">
+                <h4>Company</h4>
+                <Link href="/about">About Us</Link>
+                <Link href="/contact">Contact</Link>
+                <Link href="/privacy">Privacy</Link>
+              </div>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <p className="sketch-credit">Made with ✏️ and ❤️ by Teachers for Teachers.</p>
+            <div className="footer-socials">
+              <span className="social-scribble">Follow us for updates</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </main >
   );
 }
