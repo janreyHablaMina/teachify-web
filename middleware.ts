@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 const AUTH_COOKIE = "teachify_auth";
 const ROLE_COOKIE = "teachify_role";
 
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
