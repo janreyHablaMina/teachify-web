@@ -15,9 +15,12 @@
 .lp-root {
     position: relative;
     background: var(--lp-bg);
-    min-height: 100vh;
-    overflow-x: hidden;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
     color: var(--lp-text);
+    display: flex;
+    flex-direction: column;
 }
 
 /* Mesh Gradient & Grain Texture */
@@ -391,17 +394,16 @@
 
 /* ── IMMERSIVE HERO ── */
 .lp-hero {
-    position: relative;
-    z-index: 10;
-    padding: 60px 0 120px;
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 60px;
     max-width: 1400px;
     margin: 0 auto;
-    padding-left: 60px;
-    padding-right: 60px;
+    padding: 0 40px;
+    gap: 120px;
+    position: relative;
+    z-index: 10;
 }
 
 .lp-hero-content {
@@ -912,88 +914,318 @@
     }
 }
 
-/* ── BENTO FEATURES ── */
+/* ── DEEP FOREST FEATURE WORKSPACE (DARK MODE SECTION) ── */
 .lp-features {
     position: relative;
     z-index: 10;
-    padding: 120px 0;
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(20px);
+    padding: 200px 0;
+    background: #022c22;
+    /* Deepest Emerald */
+    color: white;
+    overflow: hidden;
+}
+
+/* Background Light Leaks */
+.lp-features::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.15) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+}
+
+.lp-features::after {
+    content: '';
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 50%;
+    height: 50%;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
 }
 
 .lp-section-header {
     text-align: center;
-    margin-bottom: 80px;
+    margin-bottom: 100px;
+    position: relative;
 }
 
 .lp-section-header h2 {
-    font-size: 52px;
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    margin-bottom: 16px;
+    font-size: 72px;
+    font-weight: 950;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    margin-bottom: 24px;
+    color: white;
 }
 
-.lp-bento-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 300px);
-    gap: 24px;
-    max-width: 1300px;
+.lp-section-header h2 span {
+    background: linear-gradient(to right, #34d399, #10b981);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.lp-feature-workspace {
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 24px;
-}
-
-.lp-bento-card {
-    background: white;
-    border: 1px solid #f1f5f9;
-    padding: 40px;
-    border-radius: 32px;
-    transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+    padding: 0 40px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    gap: 120px;
 }
 
-.lp-bento-card:hover {
-    transform: scale(1.02);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
-    border-color: var(--lp-brand);
+/* Feature Module */
+.lp-feature-module {
+    display: flex;
+    align-items: center;
+    gap: 80px;
+    position: relative;
 }
 
-.lp-bento-card.col-2 {
-    grid-column: span 2;
+.lp-feature-module.reverse {
+    flex-direction: row-reverse;
 }
 
-.lp-bento-card.row-2 {
-    grid-row: span 2;
+.lp-feature-info {
+    flex: 1;
+    max-width: 500px;
 }
 
-.lp-bento-icon {
-    width: 64px;
-    height: 64px;
-    background: var(--lp-bg);
-    border-radius: 18px;
+.lp-feature-info .icon-box {
+    width: 56px;
+    height: 56px;
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--lp-brand);
-    margin-bottom: 24px;
+    color: #34d399;
+    margin-bottom: 32px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
 }
 
-.lp-bento-card h3 {
-    font-size: 24px;
-    font-weight: 800;
+.lp-feature-info h3 {
+    font-size: 38px;
+    font-weight: 900;
+    margin-bottom: 20px;
+    letter-spacing: -0.03em;
+    color: white;
+    text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+}
+
+.lp-feature-info p {
+    font-size: 19px;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+/* Neural Path Decorative */
+.neural-path {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, rgba(52, 211, 153, 0.2), transparent);
+    transform: translateX(-50%);
+    z-index: 1;
+}
+
+.neural-pulse {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #34d399;
+    border-radius: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 15px #34d399;
+    animation: pulseFall 8s linear infinite;
+}
+
+@keyframes pulseFall {
+    0% {
+        top: 0;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 100%;
+        opacity: 0;
+    }
+}
+
+/* High-Fidelity Visuals */
+.lp-feature-visual-wrap {
+    flex: 1.2;
+    position: relative;
+    height: 440px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.glass-canvas {
+    width: 95%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 48px;
+    box-shadow:
+        0 40px 100px rgba(0, 0, 0, 0.4),
+        inset 0 0 40px rgba(52, 211, 153, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.canvas-inner {
+    padding: 40px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Internal Visual Elements */
+.doc-mockup {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+    margin-top: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.doc-line {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
     margin-bottom: 12px;
 }
 
-.lp-bento-card p {
-    font-size: 16px;
+.doc-line.m {
+    width: 70%;
+}
+
+.doc-line.l {
+    width: 100%;
+}
+
+.doc-line.s {
+    width: 40%;
+}
+
+.floating-pill {
+    position: absolute;
+    padding: 8px 16px;
+    background: #166534;
+    color: white;
+    font-weight: 900;
+    font-size: 11px;
+    border-radius: 99px;
+    box-shadow: 0 10px 20px rgba(22, 101, 52, 0.3);
+    z-index: 10;
+}
+
+/* Grading Orb Visual */
+.grading-orb {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #34d399, #166534);
+    position: relative;
+    box-shadow: 0 0 60px rgba(52, 211, 153, 0.4);
+    animation: orbPulse 4s ease-in-out infinite;
+}
+
+@keyframes orbPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+        filter: brightness(1.2);
+    }
+}
+
+.scan-beam {
+    position: absolute;
+    top: -20%;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    background: linear-gradient(transparent, rgba(52, 211, 153, 0.3), transparent);
+    animation: scanVertical 3s infinite linear;
+}
+
+@keyframes scanVertical {
+    from {
+        top: -40%;
+    }
+
+    to {
+        top: 100%;
+    }
+}
+
+/* Secondary Features Row */
+.lp-secondary-features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 80px;
+}
+
+/* Secondary Cards - Dark Mode */
+.secondary-card {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 40px;
+    border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.4s ease;
+}
+
+.secondary-card:hover {
+    transform: translateY(-8px);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(52, 211, 153, 0.3);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+}
+
+.secondary-card h4 {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: white;
+}
+
+.secondary-card p {
+    font-size: 15px;
     color: #64748b;
     line-height: 1.5;
 }
 
-/* ── CTA IMMERSIVE CAROUSEL ── */
+/* ── CTA OVERHAUL ── */
 .lp-cta-immersive {
     padding: 140px 24px;
     text-align: center;

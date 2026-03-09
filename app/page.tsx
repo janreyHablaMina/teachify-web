@@ -194,65 +194,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* ── BENTO FEATURES ── */}
-      <section id="features" className="lp-features">
-        <div className="lp-section-header">
-          <h2>Experience Seamless <span>Teaching</span></h2>
-          <p>A toolkit built specifically for the demands of the modern school.</p>
-        </div>
-
-        <div className="lp-bento-grid">
-          <div className="lp-bento-card col-2 row-2" style={{ background: '#f0fdf4' }}>
-            <div className="lp-bento-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
-            </div>
-            <h3>AI Curriculum Planner</h3>
-            <p>Generate entire semesters of high-quality lesson plans, syllabi, and learning paths with a single prompt. Optimized for state standards.</p>
-          </div>
-
-          <div className="lp-bento-card col-2" style={{ background: '#ecfdf5' }}>
-            <div className="lp-bento-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" /></svg>
-            </div>
-            <h3>Automated Grading Ops</h3>
-            <p>Upload handwritten or typed work and receive objective, standards-aligned feedback and scores instantly.</p>
-          </div>
-
-          <div className="lp-bento-card" style={{ background: '#fef3c7' }}>
-            <h3>Smart Quiz Creator</h3>
-            <p>Generate interactive quizzes from any material instantly.</p>
-          </div>
-
-          <div className="lp-bento-card" style={{ background: '#ffffff' }}>
-            <h3>Insights Hub</h3>
-            <p>Track student progress with real-time AI analytics.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA IMMERSIVE SECTION ── */}
-      <section className="lp-cta-immersive">
-        <div className="lp-cta-glass">
-          <h2>Ready to transform your classroom?</h2>
-          <p>Join the waitlist of 14,000+ educators leading the AI revolution.</p>
-          <Link href="/register" className="lp-btn-signup" style={{ background: 'white', color: '#166534', padding: '20px 48px', fontSize: '18px', display: 'inline-block', textDecoration: 'none' }}>
-            Start Teaching Smarter Today
-          </Link>
-
-          {/* Stats row inside Glass CTA */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '48px', marginTop: '60px', opacity: '0.8' }}>
-            <div><strong style={{ fontSize: '24px', display: 'block' }}>1.2M+</strong> Quizzes</div>
-            <div><strong style={{ fontSize: '24px', display: 'block' }}>14K+</strong> Teachers</div>
-            <div><strong style={{ fontSize: '24px', display: 'block' }}>98%</strong> Time Saved</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer minimal */}
-      <footer style={{ textAlign: 'center', padding: '60px 0', opacity: '0.5', fontSize: '14px' }}>
-        © 2026 Teachify AI. All Rights Reserved. Education for the Future.
-      </footer>
     </main>
   );
 }
