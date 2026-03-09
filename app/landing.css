@@ -4366,3 +4366,189 @@
         transform: none;
     }
 }
+
+/* About Sketch Section */
+.about-sketch {
+    padding: 120px 0;
+    position: relative;
+    z-index: 10;
+}
+
+.about-sketch-head {
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto 46px;
+}
+
+.about-sketch-title {
+    font-size: clamp(34px, 5vw, 58px);
+    line-height: 1.06;
+    letter-spacing: -0.03em;
+    font-weight: 950;
+}
+
+.about-sketch-sub {
+    margin-top: 16px;
+    font-size: 18px;
+    line-height: 1.65;
+    color: #64748b;
+}
+
+.about-sketch-board {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 26px;
+    margin-bottom: 26px;
+}
+
+.about-story-card,
+.about-stats-card {
+    background: white;
+    border: var(--sketch-border);
+    box-shadow: 8px 8px 0 var(--ink-primary);
+    padding: 28px;
+}
+
+.about-story-card {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.about-story-card p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: #334155;
+    font-weight: 600;
+    max-width: 95%;
+}
+
+.about-mini-tag {
+    width: fit-content;
+    background: var(--hl-teal);
+    border: var(--sketch-border);
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    transform: rotate(-1.5deg);
+}
+
+.about-stats-card {
+    background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+    display: grid;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.about-stat-item {
+    border: 1.5px dashed #cbd5e1;
+    padding: 14px 16px;
+    background: white;
+}
+
+.about-stat-item strong {
+    display: block;
+    font-size: 32px;
+    line-height: 1;
+    font-weight: 950;
+}
+
+.about-stat-item span {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #64748b;
+}
+
+.about-sketch-values {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.about-value-card {
+    border: var(--sketch-border);
+    box-shadow: 6px 6px 0 rgba(15, 23, 42, 0.2);
+    padding: 20px;
+    background: white;
+}
+
+.about-value-card.hl-teal {
+    background: #ccfbf1;
+}
+
+.about-value-card.hl-pink {
+    background: #ffe4e6;
+}
+
+.about-value-card.hl-yellow {
+    background: #fef9c3;
+}
+
+.about-value-card h3 {
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 10px;
+}
+
+.about-value-card p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #334155;
+    font-weight: 700;
+}
+
+.about-sketch-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.about-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border: var(--sketch-border);
+    background: white;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.about-tag .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--hl-pink);
+}
+
+@media (max-width: 1024px) {
+    .about-sketch-board {
+        grid-template-columns: 1fr;
+    }
+
+    .about-sketch-values {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .about-sketch {
+        padding: 90px 0;
+    }
+
+    .about-sketch-sub {
+        font-size: 16px;
+    }
+
+    .about-story-card,
+    .about-stats-card {
+        padding: 22px;
+    }
+}

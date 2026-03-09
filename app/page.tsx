@@ -8,6 +8,7 @@ import HeroBanner from "@/components/landing/HeroBanner";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import PricingSection from "@/components/landing/PricingSection";
 import BlogSection from "@/components/landing/BlogSection";
+import AboutSection from "@/components/landing/AboutSection";
 
 export default function Home() {
   return (
@@ -21,6 +22,7 @@ export default function Home() {
       <FeaturesSection />
       <PricingSection />
       <BlogSection />
+      <AboutSection />
 
       <section className="lp-testimonials-sketch">
         <div className="sketch-canvas">
@@ -70,7 +72,7 @@ export default function Home() {
               </div>
               <div className="footer-col">
                 <h4>Company</h4>
-                <Link href="/about">About Us</Link>
+                <Link href="#about">About Us</Link>
                 <Link href="/contact">Contact</Link>
                 <Link href="/privacy">Privacy</Link>
               </div>
