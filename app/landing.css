@@ -212,6 +212,12 @@
     transform: rotate(-1deg);
 }
 
+.sale-badge::before {
+    content: "🔥";
+    margin-right: 4px;
+    font-size: 10px;
+}
+
 .sale-msg {
     font-size: 13px;
     font-weight: 700;
@@ -660,6 +666,36 @@
     font-weight: 700;
     box-shadow: 4px 4px 0 var(--hl-pink);
     margin-bottom: 32px;
+}
+
+.sketch-badge::before {
+    content: "✦";
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid var(--ink-primary);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+    background: #fff;
+}
+
+.sketch-badge.hl-teal::before {
+    content: "⚡";
+    background: #ccfbf1;
+}
+
+.sketch-badge.hl-purple::before {
+    content: "✧";
+    background: #ede9fe;
+}
+
+.sketch-badge.hl-yellow::before {
+    content: "✓";
+    background: #fef9c3;
 }
 
 .ink-dot {
@@ -5333,4 +5369,66 @@
         flex-direction: column;
         align-items: flex-start;
     }
+}
+
+/* Section background separators */
+.lp-hero-sketch {
+    background:
+        radial-gradient(circle at 8% 18%, rgba(153, 246, 228, 0.22), transparent 38%),
+        linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: inset 0 -2px 0 rgba(15, 23, 42, 0.16);
+}
+
+.lp-stats-v3.lp-stats-v3-impact {
+    background:
+        radial-gradient(circle at 92% 12%, rgba(253, 164, 175, 0.18), transparent 36%),
+        linear-gradient(180deg, #fff7f9 0%, #fff 100%);
+    box-shadow:
+        inset 0 2px 0 rgba(15, 23, 42, 0.12),
+        inset 0 -2px 0 rgba(15, 23, 42, 0.12);
+}
+
+.lp-features-sketch {
+    background:
+        radial-gradient(circle at 12% 8%, rgba(221, 214, 254, 0.2), transparent 35%),
+        linear-gradient(180deg, #f8f7ff 0%, #ffffff 100%);
+    box-shadow:
+        inset 0 2px 0 rgba(15, 23, 42, 0.1),
+        inset 0 -2px 0 rgba(15, 23, 42, 0.1);
+}
+
+.lp-pricing-lab {
+    background:
+        radial-gradient(circle at 88% 12%, rgba(254, 240, 138, 0.24), transparent 38%),
+        linear-gradient(180deg, #fffdf3 0%, #ffffff 100%);
+    box-shadow:
+        inset 0 2px 0 rgba(15, 23, 42, 0.1),
+        inset 0 -2px 0 rgba(15, 23, 42, 0.1);
+}
+
+.lp-blog-zine {
+    background:
+        radial-gradient(circle at 10% 16%, rgba(153, 246, 228, 0.18), transparent 34%),
+        linear-gradient(180deg, #f5fffd 0%, #ffffff 100%);
+    box-shadow:
+        inset 0 2px 0 rgba(15, 23, 42, 0.1),
+        inset 0 -2px 0 rgba(15, 23, 42, 0.1);
+}
+
+.about-sketch {
+    background:
+        radial-gradient(circle at 90% 14%, rgba(221, 214, 254, 0.22), transparent 36%),
+        linear-gradient(180deg, #f8f8ff 0%, #ffffff 100%);
+    box-shadow:
+        inset 0 2px 0 rgba(15, 23, 42, 0.1),
+        inset 0 -2px 0 rgba(15, 23, 42, 0.1);
+}
+
+.lp-testimonials-sketch {
+    background:
+        radial-gradient(circle at 8% 20%, rgba(254, 240, 138, 0.2), transparent 36%),
+        linear-gradient(180deg, #fffcf1 0%, #ffffff 100%);
+    box-shadow:
+        inset 0 2px 0 rgba(15, 23, 42, 0.12),
+        inset 0 -2px 0 rgba(15, 23, 42, 0.12);
 }
