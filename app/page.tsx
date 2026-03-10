@@ -9,8 +9,11 @@ import FeaturesSection from "@/components/landing/FeaturesSection";
 import PricingSection from "@/components/landing/PricingSection";
 import BlogSection from "@/components/landing/BlogSection";
 import AboutSection from "@/components/landing/AboutSection";
+import TestimonialsSection from "@/components/landing/TestimonialsSection";
 
 export default function Home() {
+  const year = new Date().getFullYear();
+
   return (
     <main className="lp-root">
       <div className="sketch-fixed-top">
@@ -23,38 +26,13 @@ export default function Home() {
       <PricingSection />
       <BlogSection />
       <AboutSection />
-
-      <section className="lp-testimonials-sketch">
-        <div className="sketch-canvas">
-          <div className="testi-intro">
-            <h3 className="sketch-section-title">
-              What the <span className="sketch-accent-text">Staff Room</span> is saying...
-            </h3>
-          </div>
-
-          <div className="sketch-testi-grid">
-            <div className="sketch-testi-bubble b-1">
-              <p className="testi-quote">
-                &quot;I finished my entire week&apos;s lesson planning in 10 minutes. Honestly, it feels like
-                cheating, but my students love the quizzes!&quot;
-              </p>
-              <div className="testi-author">- Sarah J., 10th Grade History</div>
-            </div>
-            <div className="sketch-testi-bubble b-2 hl-teal">
-              <p className="testi-quote">
-                &quot;The grading scanner is a lifesaver. No more Sunday nights at the dining table with a red
-                pen.&quot;
-              </p>
-              <div className="testi-author">- Marcus T., Math Lead</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <TestimonialsSection />
 
       <footer className="lp-footer-sketch">
         <div className="sketch-canvas">
           <div className="footer-top">
             <div className="footer-brand">
+              <span className="footer-brand-kicker">Built for modern classrooms</span>
               <div className="logo-text">
                 Teachify<span className="sketch-pink">AI</span>
               </div>
@@ -62,6 +40,9 @@ export default function Home() {
                 Reimagining education through <br />
                 creative AI automation.
               </p>
+              <Link href="/register" className="footer-cta">
+                Start free trial
+              </Link>
             </div>
             <div className="footer-links-grid">
               <div className="footer-col">
@@ -76,12 +57,18 @@ export default function Home() {
                 <Link href="/contact">Contact</Link>
                 <Link href="/privacy">Privacy</Link>
               </div>
+              <div className="footer-col">
+                <h4>Resources</h4>
+                <Link href="#blog">Blog</Link>
+                <Link href="/login">Teacher Login</Link>
+                <Link href="#testimonials">Testimonials</Link>
+              </div>
             </div>
           </div>
           <div className="footer-bottom">
-            <p className="sketch-credit">Made with care by Teachers for Teachers.</p>
+            <p className="sketch-credit">Made with care by teachers, for teachers.</p>
             <div className="footer-socials">
-              <span className="social-scribble">Follow us for updates</span>
+              <span className="social-scribble">Teachify AI · {year}</span>
             </div>
           </div>
         </div>
