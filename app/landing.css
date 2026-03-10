@@ -4032,7 +4032,7 @@
     max-width: 1200px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr 1.08fr 1fr;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 22px;
     align-items: stretch;
 }
@@ -4053,12 +4053,17 @@
     box-shadow: 12px 12px 0 var(--ink-primary);
 }
 
-.note-quiz {
+.note-free {
     transform: rotate(-1.8deg);
     background: linear-gradient(170deg, #fff 0%, #fffbeb 100%);
 }
 
-.note-classroom {
+.note-basic {
+    transform: rotate(-0.8deg);
+    background: linear-gradient(170deg, #ffffff 0%, #eff6ff 100%);
+}
+
+.note-pro {
     transform: rotate(0.6deg);
     border-width: 3px;
     box-shadow: 12px 12px 0 var(--hl-teal);
@@ -4066,13 +4071,13 @@
     z-index: 2;
 }
 
-.note-classroom:hover {
+.note-pro:hover {
     box-shadow: 16px 16px 0 var(--hl-teal);
 }
 
 .note-school {
     transform: rotate(1.6deg);
-    background: linear-gradient(170deg, #fff 0%, #eff6ff 100%);
+    background: linear-gradient(170deg, #fff 0%, #faf5ff 100%);
 }
 
 .note-popular {
@@ -4107,35 +4112,57 @@
     display: flex;
     align-items: baseline;
     gap: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .note-price strong {
-    font-size: 54px;
+    font-size: 44px;
     line-height: 1;
     font-weight: 950;
 }
 
 .note-price span {
-    font-size: 16px;
+    font-size: 14px;
     opacity: 0.65;
     font-weight: 800;
 }
 
+.note-desc {
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #334155;
+    font-weight: 700;
+}
+
+.note-block {
+    margin-bottom: 14px;
+}
+
+.note-block h4 {
+    margin: 0 0 8px;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 900;
+    color: #0f172a;
+}
+
 .note-list {
     list-style: none;
-    margin: 0 0 24px;
+    margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 9px;
 }
 
 .note-list li {
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     position: relative;
     padding-left: 20px;
+    line-height: 1.35;
 }
 
 .note-list li::before {
@@ -4147,6 +4174,14 @@
     position: absolute;
     left: 0;
     top: 7px;
+}
+
+.note-block-limitations {
+    margin-top: 2px;
+}
+
+.note-list-limitations li::before {
+    background: #94a3b8;
 }
 
 .note-btn {
@@ -4227,13 +4262,14 @@
 
 @media (max-width: 1024px) {
     .pricing-lab-board {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 18px;
     }
 
     .pricing-note,
-    .note-quiz,
-    .note-classroom,
+    .note-free,
+    .note-basic,
+    .note-pro,
     .note-school {
         transform: none;
     }
@@ -4247,6 +4283,10 @@
 @media (max-width: 768px) {
     .lp-pricing-lab {
         padding: 90px 0 80px;
+    }
+
+    .pricing-lab-board {
+        grid-template-columns: 1fr;
     }
 
     .pricing-note {
