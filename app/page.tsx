@@ -30,47 +30,55 @@ export default function Home() {
       <AboutSection />
       <TestimonialsSection />
 
-      <footer className="lp-footer-sketch">
+      <footer className="lp-footer-sketch lp-footer-notebook">
         <div className="sketch-canvas">
-          <div className="footer-top">
-            <div className="footer-brand">
-              <span className="footer-brand-kicker">Built for modern classrooms</span>
+          <div className="footer-note-shell">
+            <div className="footer-note-head">
+              <span className="footer-note-pill">Classroom Edition</span>
               <div className="logo-text">
                 Teachify<span className="sketch-pink">AI</span>
               </div>
               <p>
-                Reimagining education through <br />
-                creative AI automation.
+                The all-in-one teaching copilot for planning, assessment, and classroom momentum.
               </p>
-              <Link href="/register" className="footer-cta">
-                Start free trial
-              </Link>
+              <div className="footer-note-actions">
+                <Link href="/register" className="footer-note-cta">
+                  Start free trial
+                </Link>
+                <Link href="/login" className="footer-note-secondary">
+                  Teacher Login
+                </Link>
+              </div>
             </div>
-            <div className="footer-links-grid">
-              <div className="footer-col">
+
+            <div className="footer-note-grid">
+              <nav className="footer-note-col note-a" aria-label="Product links">
                 <h4>Product</h4>
                 <Link href="#features">Features</Link>
                 <Link href="#pricing">Pricing</Link>
                 <Link href="/blog">Blog</Link>
-              </div>
-              <div className="footer-col">
+              </nav>
+              <nav className="footer-note-col note-b" aria-label="Company links">
                 <h4>Company</h4>
                 <Link href="#about">About Us</Link>
                 <Link href="/contact">Contact</Link>
                 <Link href="/privacy">Privacy</Link>
-              </div>
-              <div className="footer-col">
+              </nav>
+              <nav className="footer-note-col note-c" aria-label="Resources links">
                 <h4>Resources</h4>
-                <Link href="#blog">Blog</Link>
-                <Link href="/login">Teacher Login</Link>
+                <Link href="#blog">Teaching Blog</Link>
                 <Link href="#testimonials">Testimonials</Link>
-              </div>
+                <Link href="/contact">Support</Link>
+              </nav>
             </div>
-          </div>
-          <div className="footer-bottom">
-            <p className="sketch-credit">Made with care by teachers, for teachers.</p>
-            <div className="footer-socials">
-              <span className="social-scribble">Teachify AI · {year}</span>
+
+            <div className="footer-note-bottom">
+              <p className="sketch-credit">Made with care by teachers, for teachers.</p>
+              <div className="footer-bottom-links">
+                <Link href="/privacy">Privacy</Link>
+                <Link href="/contact">Contact</Link>
+              </div>
+              <span className="social-scribble">Teachify AI - {year}</span>
             </div>
           </div>
         </div>
