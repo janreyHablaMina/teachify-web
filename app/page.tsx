@@ -5,6 +5,7 @@ import "./landing.css";
 import SaleCountdownBanner from "@/components/landing/SaleCountdownBanner";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroBanner from "@/components/landing/HeroBanner";
+import StatsSection from "@/components/landing/StatsSection";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import PricingSection from "@/components/landing/PricingSection";
 import BlogSection from "@/components/landing/BlogSection";
@@ -22,6 +23,7 @@ export default function Home() {
       </div>
 
       <HeroBanner />
+      <StatsSection />
       <FeaturesSection />
       <PricingSection />
       <BlogSection />
