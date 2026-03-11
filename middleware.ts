@@ -4,12 +4,12 @@ import type { NextRequest } from "next/server";
 const AUTH_COOKIE = "teachify_auth";
 const ROLE_COOKIE = "teachify_role";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password"];
+const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/forgot-password"]);
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  const isPublic = PUBLIC_PATHS.has(pathname);
   const isProtected = pathname.startsWith("/admin") || pathname.startsWith("/teacher");
 
   const isAuthed = request.cookies.get(AUTH_COOKIE)?.value === "1";
