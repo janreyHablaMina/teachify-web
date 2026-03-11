@@ -1,57 +1,78 @@
-﻿const cards = [
-  { label: "Quizzes Created", value: "42", delta: "+5" },
-  { label: "Active Classes", value: "5", delta: "Stable" },
-  { label: "Assigned This Week", value: "9", delta: "+2" },
-  { label: "Avg Score", value: "81%", delta: "+3%" },
-];
+﻿"use client";
+
+import styles from "./teacher.module.css";
+
+const metrics = [
+  { label: "Quizzes Created", value: "42", delta: "+5 this week" },
+  { label: "Active Classes", value: "5", delta: "On track" },
+  { label: "Assigned This Week", value: "9", delta: "+2 vs last week" },
+  { label: "Avg Score", value: "81%", delta: "+3% improvement" },
+] as const;
+
+const activities = [
+  "Class 5A submitted Quiz: Photosynthesis",
+  "2 Essay responses need manual review",
+  "New draft: Mathematics - Geometry saved",
+  "Reminder notification sent to Class 6B",
+] as const;
 
 export default function TeacherDashboardPage() {
   return (
-    <section className="grid gap-4">
-      <div>
-        <h3 className="display text-2xl font-semibold">Classroom overview</h3>
-        <p className="muted mt-1 text-sm">Realtime status of quizzes, submissions, and review load.</p>
-      </div>
+    <section className={styles.root}>
+      <header className={styles.missionHeader}>
+        <div className={styles.missionTitle}>
+          <p className={styles.missionBreadcrumb}>Dashboard / Overview</p>
+          <h2>Classroom Analysis</h2>
+        </div>
+      </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => (
-          <article key={card.label} className="surface rounded-xl p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.06em] text-[var(--muted)]">{card.label}</p>
-            <p className="mt-2 text-2xl font-semibold text-[#0f172a]">{card.value}</p>
-            <p className="mt-1 text-xs font-semibold text-emerald-600">{card.delta}</p>
+      <section className={styles.metricGrid}>
+        {metrics.map((item) => (
+          <article key={item.label} className={styles.metricCard}>
+            <p>{item.label}</p>
+            <strong>{item.value}</strong>
+            <span>{item.delta}</span>
           </article>
         ))}
-      </div>
+      </section>
 
-      <div className="grid gap-3 xl:grid-cols-2">
-        <article className="surface rounded-xl p-4">
-          <h4 className="text-base font-semibold text-[#0f172a]">Live Class Feed</h4>
-          <ul className="muted mt-3 space-y-2 text-sm">
-            <li>5A submitted quiz 03</li>
-            <li>2 essays need review</li>
-            <li>New quiz draft saved</li>
-            <li>Reminder sent to class 6B</li>
-          </ul>
+      <section className={styles.layoutGrid}>
+        <article className={styles.panel}>
+          <div className={styles.panelHead}>
+            <h4>Live Activity Feed</h4>
+            <span>Recent Events</span>
+          </div>
+          <div className={styles.feedList}>
+            {activities.map((activity, idx) => (
+              <div key={idx} className={styles.feedSlice}>
+                <div className={styles.feedIcon} />
+                <span className={styles.feedText}>{activity}</span>
+              </div>
+            ))}
+          </div>
         </article>
 
-        <article className="surface rounded-xl p-4">
-          <h4 className="text-base font-semibold text-[#0f172a]">Performance</h4>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3 text-sm">
-            <div className="rounded-lg border border-[var(--line)] bg-white p-3">
-              <p className="muted text-xs">Engagement</p>
-              <p className="mt-1 text-lg font-semibold text-[#0f172a]">87%</p>
+        <article className={styles.panel}>
+          <div className={styles.panelHead}>
+            <h4>Platform Usage</h4>
+            <span>Performance Metrics</span>
+          </div>
+          <div className={styles.perfGrid}>
+            <div className={styles.perfCard}>
+              <p>Engagement</p>
+              <strong>87%</strong>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-3">
-              <p className="muted text-xs">On-time</p>
-              <p className="mt-1 text-lg font-semibold text-[#0f172a]">91%</p>
+            <div className={styles.perfCard}>
+              <p>On-time</p>
+              <strong>91%</strong>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-3">
-              <p className="muted text-xs">Pending Reviews</p>
-              <p className="mt-1 text-lg font-semibold text-[#0f172a]">3</p>
+            <div className={styles.perfCard}>
+              <p>Reviews</p>
+              <strong>3</strong>
             </div>
           </div>
         </article>
-      </div>
+      </section>
     </section>
   );
 }
