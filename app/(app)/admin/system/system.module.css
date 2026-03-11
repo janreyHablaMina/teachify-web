@@ -1,235 +1,249 @@
 .root {
   --ink: #0f172a;
   --muted: #64748b;
-  --stroke: #dbe4ef;
-  display: grid;
-  gap: 12px;
-}
+  --line: rgba(15, 23, 42, 0.05);
+  --hl-yellow: #fef08a;
+  --hl-teal: #99f6e4;
+  --hl-pink: #fda4af;
+  --hl-purple: #e9d5ff;
 
-.hero {
-  border: 1px solid var(--stroke);
-  border-radius: 18px;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: relative;
+  isolation: isolate;
+  min-height: 100%;
+  padding: 8px 0;
   background:
-    radial-gradient(circle at 5% 0%, rgba(244, 114, 182, 0.14), transparent 32%),
-    radial-gradient(circle at 97% 0%, rgba(251, 191, 36, 0.18), transparent 38%),
-    linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+    radial-gradient(circle at 100% 0%, rgba(153, 246, 228, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 0% 100%, rgba(253, 164, 175, 0.1) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
 }
 
-.kicker {
-  margin: 0;
-  display: inline-flex;
-  border-radius: 999px;
-  border: 1px solid #fed7aa;
-  background: #fff7ed;
-  color: #9a3412;
-  font-size: 11px;
+/* Header Section */
+.missionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.missionTitle h2 {
+  margin: 4px 0 0;
+  font-size: 32px;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 4px 10px;
-}
-
-.hero h3 {
-  margin: 10px 0 6px;
   color: var(--ink);
-  font-size: clamp(28px, 4vw, 40px);
-  line-height: 1;
   letter-spacing: -0.03em;
 }
 
-.hero p {
+.missionBreadcrumb {
   margin: 0;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
+/* Metric Grid (KPIs) */
 .metricGrid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
 }
 
 .metricCard {
-  border: 1px solid var(--stroke);
-  border-radius: 14px;
-  background: #ffffff;
-  padding: 12px;
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  padding: 24px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.metricCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--card-accent, #e2e8f0);
+}
+
+.metricCard:nth-child(1) {
+  --card-accent: #22c55e;
+}
+
+/* Health */
+.metricCard:nth-child(2) {
+  --card-accent: var(--hl-teal);
+}
+
+.metricCard:nth-child(3) {
+  --card-accent: var(--hl-yellow);
+}
+
+.metricCard:nth-child(4) {
+  --card-accent: var(--hl-pink);
+}
+
+.metricCard:nth-child(5) {
+  --card-accent: var(--hl-purple);
+}
+
+.metricCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08);
+  border-color: var(--card-accent);
 }
 
 .metricCard p {
   margin: 0;
-  color: var(--muted);
   font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .metricCard strong {
-  display: block;
-  margin-top: 5px;
+  font-size: 28px;
+  font-weight: 950;
   color: var(--ink);
-  font-size: clamp(22px, 1.8vw, 30px);
-  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-top: 4px;
 }
 
 .metricCard span {
-  margin-top: 6px;
-  display: block;
-  color: #475569;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
+  color: var(--muted);
+  margin-top: 4px;
 }
 
+/* Main Panel */
 .panel {
-  border: 1px solid var(--stroke);
-  border-radius: 16px;
-  background: #ffffff;
-  padding: 12px;
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--hl-pink);
 }
 
 .panelHead {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
+  align-items: center;
 }
 
 .panelHead h4 {
   margin: 0;
+  font-size: 24px;
+  font-weight: 900;
   color: var(--ink);
-  font-size: 20px;
+  letter-spacing: -0.02em;
 }
 
 .panelHead span {
-  border-radius: 999px;
-  border: 1px solid #fecaca;
-  background: #fff1f2;
-  color: #be123c;
   font-size: 11px;
-  font-weight: 800;
-  padding: 3px 9px;
+  font-weight: 900;
+  color: var(--muted);
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.alertList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
+/* Alert List (Elevated Slices) */
+.alertWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.alertList li {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 9px 10px;
+.alertSlice {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 8px;
-}
-
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  margin-top: 4px;
-}
-
-.high {
-  background: #ef4444;
-}
-
-.warn {
-  background: #f59e0b;
-}
-
-.alertList p {
-  margin: 0;
-  color: #0f172a;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.alertList small {
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-@media (max-width: 1280px) {
-  .metricGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .metricGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Theme Harmony Overrides */
-.root {
-  position: relative;
-  isolation: isolate;
-}
-
-.root::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
-  background-size: 30px 30px;
-  opacity: 0.08;
-  pointer-events: none;
-  z-index: -2;
-}
-
-.hero,
-.panel,
-.metricCard {
-  border-color: #dbe4ef;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(153, 246, 228, 0.2), transparent 32%),
-    linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
-}
-
-.hero {
+  align-items: center;
+  gap: 20px;
+  padding: 20px 24px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
   position: relative;
   overflow: hidden;
 }
 
-.hero::after {
+.alertSlice:hover {
+  transform: scale(1.005) translateY(-2px);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08);
+  z-index: 2;
+}
+
+.alertSlice::before {
   content: "";
   position: absolute;
+  left: 0;
   top: 0;
-  right: 20%;
-  width: 110px;
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #2dd4bf 0%, #38bdf8 100%);
-  opacity: 0.5;
+  bottom: 0;
+  width: 4px;
+  background: var(--severity-color, var(--hl-yellow));
 }
 
-.kicker {
-  border-color: #99f6e4;
-  background: #ecfeff;
-  color: #0f766e;
+.alertIcon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 8px var(--severity-color);
+  background: var(--severity-color);
 }
 
-.panel,
-.metricCard {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+.alertContent p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
 }
 
-.panel:hover,
-.metricCard:hover {
-  transform: translateY(-2px);
-  border-color: #c8d8ea;
-  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+.alertContent small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+@media (max-width: 1200px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
 }

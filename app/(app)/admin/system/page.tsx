@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./system.module.css";
 
 const metrics = [
@@ -5,7 +7,7 @@ const metrics = [
   { label: "Queue workers", value: "12", note: "2 scaling workers idle" },
   { label: "Failed jobs", value: "34", note: "Past 24 hours" },
   { label: "API errors", value: "17", note: "4xx + 5xx this hour" },
-  { label: "AI request failures", value: "12", note: "Last 30 minutes" },
+  { label: "AI failures", value: "12", note: "Last 30 minutes" },
 ] as const;
 
 const alerts = [
@@ -17,10 +19,11 @@ const alerts = [
 export default function AdminSystemMonitoringPage() {
   return (
     <section className={styles.root}>
-      <header className={styles.hero}>
-        <p className={styles.kicker}>System monitoring</p>
-        <h3>Keep the system stable</h3>
-        <p>Watch infrastructure health, queue pressure, API errors, and AI reliability signals in real time.</p>
+      <header className={styles.missionHeader}>
+        <div className={styles.missionTitle}>
+          <p className={styles.missionBreadcrumb}>Admin / System Monitoring</p>
+          <h2>Platform Health</h2>
+        </div>
       </header>
 
       <section className={styles.metricGrid}>
@@ -35,20 +38,25 @@ export default function AdminSystemMonitoringPage() {
 
       <article className={styles.panel}>
         <div className={styles.panelHead}>
-          <h4>Active alerts</h4>
-          <span>Realtime</span>
+          <h4>Active Infrastructure Alerts</h4>
+          <span>Realtime Pulse</span>
         </div>
-        <ul className={styles.alertList}>
+
+        <div className={styles.alertWrap}>
           {alerts.map((alert) => (
-            <li key={alert.title}>
-              <span className={`${styles.dot} ${alert.tone === "high" ? styles.high : styles.warn}`} />
-              <div>
+            <div
+              key={alert.title}
+              className={styles.alertSlice}
+              style={{ "--severity-color": alert.tone === "high" ? "#ef4444" : "#f59e0b" } as any}
+            >
+              <div className={styles.alertIcon} />
+              <div className={styles.alertContent}>
                 <p>{alert.title}</p>
                 <small>{alert.detail}</small>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </article>
     </section>
   );
