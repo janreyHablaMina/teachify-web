@@ -21,7 +21,7 @@ const initialUsers: UserRow[] = [
   { id: "u2", name: "Marcus Lee", email: "marcus.lee@northside.edu", plan: "Pro", quizzesGenerated: 91, status: "Active", joinedDate: "2025-02-25" },
   { id: "u3", name: "Daniel Kim", email: "dkim@lakeshore.edu", plan: "Basic", quizzesGenerated: 17, status: "Active", joinedDate: "2025-02-11" },
   { id: "u4", name: "Nora Patel", email: "nora.p@hillside.edu", plan: "Free", quizzesGenerated: 9, status: "Suspended", joinedDate: "2025-01-14" },
-  { id: "u5", name: "Isabelle Cruz", email: "isabelle.cruz@eastbay.edu", plan: "Pro", quizzesGenerated: 74, status: "Active", joinedDate: "2024-12-03" },
+  { id: "u5", name: "Isabelle Cruz", email: "isabelle.cruz@ eastbay.edu", plan: "Pro", quizzesGenerated: 74, status: "Active", joinedDate: "2024-12-03" },
   { id: "u6", name: "Carlos Mendez", email: "carlos.m@pinehill.edu", plan: "Basic", quizzesGenerated: 32, status: "Active", joinedDate: "2024-10-19" },
   { id: "u7", name: "Elena Rossi", email: "elena.rossi@milan.edu", plan: "Pro", quizzesGenerated: 56, status: "Active", joinedDate: "2024-09-12" },
   { id: "u8", name: "Kenzo Tanaka", email: "kenzo.t@shibuya.edu", plan: "School", quizzesGenerated: 210, status: "Active", joinedDate: "2024-08-05" },
@@ -44,6 +44,7 @@ export default function UserManagementPage() {
   const [editDraft, setEditDraft] = useState({ name: "", email: "" });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -60,6 +61,7 @@ export default function UserManagementPage() {
   function startEdit(user: UserRow) {
     setEditingId(user.id);
     setEditDraft({ name: user.name, email: user.email });
+    setOpenMenuId(null);
   }
 
   function saveEdit(userId: string) {
@@ -81,15 +83,17 @@ export default function UserManagementPage() {
           : user,
       ),
     );
+    setOpenMenuId(null);
   }
 
   function deleteUser(userId: string) {
     setUsers((prev) => prev.filter((user) => user.id !== userId));
     if (editingId === userId) setEditingId(null);
+    setOpenMenuId(null);
   }
 
   return (
-    <section className={styles.root}>
+    <section className={styles.root} onClick={() => setOpenMenuId(null)}>
       <div className={styles.missionHeader}>
         <div className={styles.missionTitle}>
           <p className={styles.missionBreadcrumb}>Admin / User Management</p>
@@ -113,6 +117,7 @@ export default function UserManagementPage() {
               placeholder="Search by name or email..."
               className={styles.search}
               aria-label="Search users"
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
           <p className={styles.countLabel}>{filteredUsers.length} records</p>
@@ -126,10 +131,11 @@ export default function UserManagementPage() {
             <div>Usage</div>
             <div>Status</div>
             <div>Joined</div>
-            <div>Operations</div>
+            <div style={{ textAlign: "right" }}>Operations</div>
           </div>
           {paginatedUsers.map((user, idx) => {
             const isEditing = editingId === user.id;
+            const isMenuOpen = openMenuId === user.id;
             const avatars = ["#99f6e4", "#fef08a", "#fda4af", "#e9d5ff"];
             const planColors = { Free: "#94a3b8", Basic: "#99f6e4", Pro: "#fda4af", School: "#e9d5ff" };
 
@@ -142,6 +148,7 @@ export default function UserManagementPage() {
                       className={styles.editInput}
                       value={editDraft.name}
                       onChange={(event) => setEditDraft((prev) => ({ ...prev, name: event.target.value }))}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
                     <div className={styles.cellPrimary}>{user.name}</div>
@@ -154,6 +161,7 @@ export default function UserManagementPage() {
                       className={styles.editInput}
                       value={editDraft.email}
                       onChange={(event) => setEditDraft((prev) => ({ ...prev, email: event.target.value }))}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
                     user.email
@@ -180,27 +188,48 @@ export default function UserManagementPage() {
 
                 <div className={styles.joinedDate}>{formatDate(user.joinedDate)}</div>
 
-                <div className={styles.actions}>
+                <div className={styles.actionMenu}>
                   {isEditing ? (
-                    <>
-                      <button type="button" className={styles.btnPrimary} onClick={() => saveEdit(user.id)}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button type="button" className={styles.btnPrimary} onClick={(e) => { e.stopPropagation(); saveEdit(user.id); }}>
                         Save
                       </button>
-                      <button type="button" className={styles.btnGhost} onClick={() => setEditingId(null)}>
+                      <button type="button" className={styles.btnGhost} onClick={(e) => { e.stopPropagation(); setEditingId(null); }}>
                         Cancel
                       </button>
-                    </>
+                    </div>
                   ) : (
-                    <button type="button" className={styles.btnAction} onClick={() => startEdit(user)} title="Edit User">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className={styles.moreBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(isMenuOpen ? null : user.id);
+                        }}
+                        title="More actions"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
+                      </button>
+
+                      {isMenuOpen && (
+                        <div className={styles.actionDropdown} onClick={(e) => e.stopPropagation()}>
+                          <button type="button" className={styles.menuItem} onClick={() => startEdit(user)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                            Edit Details
+                          </button>
+                          <button type="button" className={styles.menuItem} onClick={() => toggleSuspend(user.id)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                            {user.status === "Active" ? "Suspend Teacher" : "Activate Teacher"}
+                          </button>
+                          <button type="button" className={`${styles.menuItem} ${styles.menuItemDanger}`} onClick={() => deleteUser(user.id)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+                            Remove Teacher
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
-                  <button type="button" className={styles.btnWarn} onClick={() => toggleSuspend(user.id)}>
-                    {user.status === "Active" ? "Suspend" : "Activate"}
-                  </button>
-                  <button type="button" className={styles.btnDanger} onClick={() => deleteUser(user.id)}>
-                    Delete
-                  </button>
                 </div>
               </div>
             );
