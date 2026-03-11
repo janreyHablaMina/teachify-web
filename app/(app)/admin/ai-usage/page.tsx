@@ -1,10 +1,12 @@
+"use client";
+
 import styles from "./ai-usage.module.css";
 
 const metrics = [
   { label: "Total tokens used", value: "128,400,000", note: "All-time usage" },
   { label: "Tokens used today", value: "1,240,000", note: "Last 24 hours" },
-  { label: "Tokens used this month", value: "23,000,000", note: "March usage" },
-  { label: "Estimated AI cost", value: "$17", note: "Projected month-end" },
+  { label: "Used this month", value: "23,000,000", note: "March usage" },
+  { label: "Estimated cost", value: "$17.40", note: "Current month" },
 ] as const;
 
 const topUsers = [
@@ -18,10 +20,11 @@ const topUsers = [
 export default function AdminAiUsagePage() {
   return (
     <section className={styles.root}>
-      <header className={styles.hero}>
-        <p className={styles.kicker}>AI usage monitoring</p>
-        <h3>Monitor AI usage and cost</h3>
-        <p>Keep token spend under control and quickly identify accounts with the highest generation load.</p>
+      <header className={styles.missionHeader}>
+        <div className={styles.missionTitle}>
+          <p className={styles.missionBreadcrumb}>Admin / AI Usage</p>
+          <h2>Monitor Consumption</h2>
+        </div>
       </header>
 
       <section className={styles.metricGrid}>
@@ -36,32 +39,39 @@ export default function AdminAiUsagePage() {
 
       <article className={styles.panel}>
         <div className={styles.panelHead}>
-          <h4>Top users generating quizzes</h4>
+          <h4>Top Generated Loads</h4>
           <span>Highest token consumption</span>
         </div>
+
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>School</th>
-                <th>Quizzes Generated</th>
-                <th>Tokens Used</th>
-                <th>Estimated Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topUsers.map((user) => (
-                <tr key={user.name}>
-                  <td className={styles.cellPrimary}>{user.name}</td>
-                  <td>{user.school}</td>
-                  <td>{user.quizzes}</td>
-                  <td>{user.tokens}</td>
-                  <td>{user.estCost}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className={styles.tableHeader}>
+            <div>Name</div>
+            <div>School</div>
+            <div>Quizzes</div>
+            <div>Tokens</div>
+            <div>Est. Cost</div>
+          </div>
+
+          {topUsers.map((user, idx) => {
+            const accents = ["#99f6e4", "#fef08a", "#fda4af", "#e9d5ff", "#f87171"];
+            return (
+              <div
+                key={user.name}
+                className={styles.rowSlice}
+                style={{ "--accent-color": accents[idx % accents.length] } as any}
+              >
+                <div className={styles.cellPrimary}>{user.name}</div>
+                <div className={styles.cellSecondary}>{user.school}</div>
+                <div className={styles.cellSecondary}>{user.quizzes}</div>
+                <div>
+                  <div className={styles.tokenCount}>{user.tokens}</div>
+                </div>
+                <div>
+                  <div className={styles.costTag}>{user.estCost}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </article>
     </section>
