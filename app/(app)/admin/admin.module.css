@@ -167,6 +167,36 @@
   border-radius: 20px;
   padding: 28px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.growthPanel::before,
+.activityPanel::before,
+.healthCard::before,
+.schoolsCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.growthPanel::before {
+  background: var(--hl-teal);
+}
+
+.activityPanel::before {
+  background: var(--hl-pink);
+}
+
+.healthCard::before {
+  background: var(--hl-yellow);
+}
+
+.schoolsCard::before {
+  background: var(--hl-purple);
 }
 
 .panelHeader {
@@ -333,6 +363,8 @@
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
 }
 
 .healthCard h4,
