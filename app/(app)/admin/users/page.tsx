@@ -1,132 +1,214 @@
-﻿import styles from "./users.module.css";
+"use client";
+
+import { useMemo, useState } from "react";
+import styles from "./users.module.css";
+
+type UserPlan = "Free" | "Basic" | "Pro" | "School";
+type UserStatus = "Active" | "Suspended";
 
 type UserRow = {
+  id: string;
   name: string;
   email: string;
-  plan: "Free" | "Basic" | "Pro" | "School";
-  status: "Active" | "Pending" | "Suspended";
-  quizzes: number;
-  joined: string;
+  plan: UserPlan;
+  quizzesGenerated: number;
+  status: UserStatus;
+  joinedDate: string;
 };
 
-const users: UserRow[] = [
-  { name: "Sarah Johnson", email: "sarah.j@maplegrove.edu", plan: "School", status: "Active", quizzes: 128, joined: "Mar 02" },
-  { name: "Marcus Lee", email: "marcus.lee@northside.edu", plan: "Pro", status: "Active", quizzes: 91, joined: "Feb 25" },
-  { name: "Amelia Cruz", email: "amelia.cruz@teachify.com", plan: "Pro", status: "Active", quizzes: 66, joined: "Feb 11" },
-  { name: "Daniel Kim", email: "dkim@lakeshore.edu", plan: "Basic", status: "Pending", quizzes: 17, joined: "Today" },
-  { name: "Nora Patel", email: "nora.p@hillside.edu", plan: "Free", status: "Suspended", quizzes: 9, joined: "Jan 14" },
+const initialUsers: UserRow[] = [
+  { id: "u1", name: "Sarah Johnson", email: "sarah.j@maplegrove.edu", plan: "School", quizzesGenerated: 128, status: "Active", joinedDate: "2025-03-02" },
+  { id: "u2", name: "Marcus Lee", email: "marcus.lee@northside.edu", plan: "Pro", quizzesGenerated: 91, status: "Active", joinedDate: "2025-02-25" },
+  { id: "u3", name: "Daniel Kim", email: "dkim@lakeshore.edu", plan: "Basic", quizzesGenerated: 17, status: "Active", joinedDate: "2025-02-11" },
+  { id: "u4", name: "Nora Patel", email: "nora.p@hillside.edu", plan: "Free", quizzesGenerated: 9, status: "Suspended", joinedDate: "2025-01-14" },
+  { id: "u5", name: "Isabelle Cruz", email: "isabelle.cruz@eastbay.edu", plan: "Pro", quizzesGenerated: 74, status: "Active", joinedDate: "2024-12-03" },
+  { id: "u6", name: "Carlos Mendez", email: "carlos.m@pinehill.edu", plan: "Basic", quizzesGenerated: 32, status: "Active", joinedDate: "2024-10-19" },
 ];
 
-const pendingInvites = [
-  { school: "Brighton Public School", count: 4 },
-  { school: "Evergreen International", count: 2 },
-  { school: "Starlight Academy", count: 3 },
-];
+const plans: UserPlan[] = ["Free", "Basic", "Pro", "School"];
 
-export default function Page() {
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+export default function UserManagementPage() {
+  const [users, setUsers] = useState<UserRow[]>(initialUsers);
+  const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState({ name: "", email: "" });
+
+  const filteredUsers = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return users;
+    return users.filter((user) => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term));
+  }, [search, users]);
+
+  function startEdit(user: UserRow) {
+    setEditingId(user.id);
+    setEditDraft({ name: user.name, email: user.email });
+  }
+
+  function saveEdit(userId: string) {
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === userId
+          ? { ...user, name: editDraft.name.trim() || user.name, email: editDraft.email.trim() || user.email }
+          : user,
+      ),
+    );
+    setEditingId(null);
+  }
+
+  function resetPassword(userId: string) {
+    const user = users.find((entry) => entry.id === userId);
+    if (!user) return;
+    window.alert(`Password reset link sent to ${user.email}`);
+  }
+
+  function toggleSuspend(userId: string) {
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === userId
+          ? { ...user, status: user.status === "Active" ? "Suspended" : "Active" }
+          : user,
+      ),
+    );
+  }
+
+  function deleteUser(userId: string) {
+    setUsers((prev) => prev.filter((user) => user.id !== userId));
+    if (editingId === userId) setEditingId(null);
+  }
+
   return (
     <section className={styles.root}>
       <header className={styles.hero}>
         <div>
           <p className={styles.kicker}>User management</p>
-          <h3>Manage teachers and admins</h3>
-          <p>Review account status, role access, and pending onboarding requests.</p>
-        </div>
-        <div className={styles.heroActions}>
-          <button type="button" className={styles.btn}>Export CSV</button>
-          <button type="button" className={styles.btnPrimary}>Invite user</button>
+          <h3>Control teacher accounts</h3>
+          <p>View users, update account details, adjust plans, and handle account security actions.</p>
         </div>
       </header>
 
-      <div className={styles.statsRow}>
-        <article className={styles.statCard}>
-          <p>Total users</p>
-          <strong>1,284</strong>
-        </article>
-        <article className={styles.statCard}>
-          <p>Teachers</p>
-          <strong>1,102</strong>
-        </article>
-        <article className={styles.statCard}>
-          <p>School admins</p>
-          <strong>161</strong>
-        </article>
-        <article className={styles.statCard}>
-          <p>System admins</p>
-          <strong>21</strong>
-        </article>
-      </div>
+      <article className={styles.panel}>
+        <div className={styles.toolbar}>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search users by name or email"
+            className={styles.search}
+            aria-label="Search users"
+          />
+          <p className={styles.countLabel}>{filteredUsers.length} users</p>
+        </div>
 
-      <div className={styles.layout}>
-        <article className={styles.panel}>
-          <div className={styles.toolbar}>
-            <input placeholder="Search by name or email" className={styles.search} />
-            <div className={styles.filters}>
-              <button type="button">All plans</button>
-              <button type="button">Active</button>
-              <button type="button">Pending</button>
-            </div>
-          </div>
-
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Plan</th>
-                  <th>Status</th>
-                  <th>Quizzes Generated</th>
-                  <th>Joined</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.email}>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Plan</th>
+                <th>Quizzes Generated</th>
+                <th>Status</th>
+                <th>Joined Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user) => {
+                const isEditing = editingId === user.id;
+                return (
+                  <tr key={user.id}>
                     <td>
-                      <div className={styles.userCell}>
-                        <span className={styles.avatar}>{user.name.charAt(0)}</span>
-                        <div>
-                          <p>{user.name}</p>
-                          <small>{user.email}</small>
-                        </div>
+                      {isEditing ? (
+                        <input
+                          className={styles.editInput}
+                          value={editDraft.name}
+                          onChange={(event) => setEditDraft((prev) => ({ ...prev, name: event.target.value }))}
+                          aria-label={`Edit name for ${user.name}`}
+                        />
+                      ) : (
+                        <span className={styles.cellPrimary}>{user.name}</span>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          className={styles.editInput}
+                          value={editDraft.email}
+                          onChange={(event) => setEditDraft((prev) => ({ ...prev, email: event.target.value }))}
+                          aria-label={`Edit email for ${user.name}`}
+                        />
+                      ) : (
+                        user.email
+                      )}
+                    </td>
+                    <td>
+                      <select
+                        className={styles.planSelect}
+                        value={user.plan}
+                        onChange={(event) =>
+                          setUsers((prev) =>
+                            prev.map((entry) =>
+                              entry.id === user.id ? { ...entry, plan: event.target.value as UserPlan } : entry,
+                            ),
+                          )
+                        }
+                        aria-label={`Change plan for ${user.name}`}
+                      >
+                        {plans.map((plan) => (
+                          <option key={plan} value={plan}>
+                            {plan}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>{user.quizzesGenerated}</td>
+                    <td>
+                      <span className={`${styles.status} ${user.status === "Active" ? styles.s_active : styles.s_suspended}`}>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td>{formatDate(user.joinedDate)}</td>
+                    <td>
+                      <div className={styles.actions}>
+                        {isEditing ? (
+                          <>
+                            <button type="button" className={styles.btnPrimary} onClick={() => saveEdit(user.id)}>
+                              Save
+                            </button>
+                            <button type="button" className={styles.btnGhost} onClick={() => setEditingId(null)}>
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button type="button" className={styles.btnGhost} onClick={() => startEdit(user)}>
+                            Edit
+                          </button>
+                        )}
+                        <button type="button" className={styles.btnGhost} onClick={() => resetPassword(user.id)}>
+                          Reset password
+                        </button>
+                        <button type="button" className={styles.btnWarn} onClick={() => toggleSuspend(user.id)}>
+                          {user.status === "Active" ? "Suspend" : "Activate"}
+                        </button>
+                        <button type="button" className={styles.btnDanger} onClick={() => deleteUser(user.id)}>
+                          Delete
+                        </button>
                       </div>
                     </td>
-                    <td>{user.plan}</td>
-                    <td><span className={`${styles.status} ${styles[`s_${user.status.toLowerCase()}`]}`}>{user.status}</span></td>
-                    <td>{user.quizzes}</td>
-                    <td>{user.joined}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </article>
-
-        <aside className={styles.sideStack}>
-          <article className={styles.panel}>
-            <h4>Pending invitations</h4>
-            <ul className={styles.list}>
-              {pendingInvites.map((invite) => (
-                <li key={invite.school}>
-                  <span>{invite.school}</span>
-                  <strong>{invite.count}</strong>
-                </li>
-              ))}
-            </ul>
-          </article>
-
-          <article className={styles.panel}>
-            <h4>Quick actions</h4>
-            <ul className={styles.actions}>
-              <li>Edit user details</li>
-              <li>Suspend account</li>
-              <li>Delete account</li>
-              <li>Reset password</li>
-              <li>Change plan</li>
-            </ul>
-          </article>
-        </aside>
-      </div>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </article>
     </section>
   );
 }

@@ -20,6 +20,7 @@ type NavItem = {
 const navByRole: Record<UserRole, NavItem[]> = {
   admin: [
     { group: "Main", label: "Overview", href: "/admin", icon: "overview" },
+    { group: "Main", label: "Users", href: "/admin/users", icon: "users" },
   ],
   teacher: [
     { group: "Main", label: "Overview", href: "/teacher", icon: "overview" },
@@ -35,6 +36,8 @@ function NavIcon({ icon }: { icon: NavItem["icon"] }) {
   switch (icon) {
     case "overview":
       return <svg {...common}><rect x="3" y="3" width="8" height="8" /><rect x="13" y="3" width="8" height="5" /><rect x="13" y="10" width="8" height="11" /><rect x="3" y="13" width="8" height="8" /></svg>;
+    case "users":
+      return <svg {...common}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
     case "generate":
       return <svg {...common}><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2" /></svg>;
     case "list":
@@ -65,7 +68,10 @@ export default function AppShell({ role, children }: AppShellProps) {
   const nav = navByRole[role];
   const profile = profileByRole[role];
   const panelTitle = role === "admin" ? "Admin Panel" : "Teacher Panel";
-  const activePage = nav.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))?.label ?? "Overview";
+  const activeItem = [...nav]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const activePage = activeItem?.label ?? "Overview";
   const roleLabel = role === "admin" ? "System Ops" : "Teaching Ops";
   const groupedNav = nav.reduce<Record<string, NavItem[]>>((acc, item) => {
     if (!acc[item.group]) acc[item.group] = [];
@@ -96,7 +102,7 @@ export default function AppShell({ role, children }: AppShellProps) {
                 <p className={styles.groupTitle}>{group}</p>
                 <div className={styles.groupItems}>
                   {items.map((item) => {
-                    const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    const active = activeItem?.href === item.href;
                     return (
                       <Link
                         key={item.href}
