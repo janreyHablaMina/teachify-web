@@ -1,206 +1,91 @@
 import styles from "./admin.module.css";
 
-const todayBrief = [
-  { label: "Quizzes generated today", value: "412" },
-  { label: "New teacher signups", value: "14" },
-  { label: "Open support tickets", value: "18" },
-  { label: "Failed AI requests", value: "12" },
-];
-
-const growthMetrics = [
-  { label: "Total users", value: "120", trend: "+8 this week" },
-  { label: "Total teachers", value: "95", trend: "+6 this week" },
-  { label: "Total schools", value: "6", trend: "1 pending review" },
-  { label: "Total students", value: "1,200", trend: "+74 this month" },
-  { label: "Active subscriptions", value: "59", trend: "4 expired" },
-  { label: "Monthly revenue", value: "$1,240", trend: "+12.4% MoM" },
-];
-
-const planMix = [
-  { name: "Free", value: 120, width: 67 },
-  { name: "Basic", value: 35, width: 20 },
-  { name: "Pro", value: 20, width: 10 },
-  { name: "School", value: 4, width: 3 },
-];
-
-const aiBudget = [
-  { label: "Total tokens this month", value: "25,000,000" },
-  { label: "Estimated AI cost", value: "$18" },
-  { label: "Cost per active user", value: "$0.31" },
-  { label: "Highest cost segment", value: "School plan" },
-];
-
-const subjectMix = [
-  { subject: "Math", percent: 40 },
-  { subject: "Science", percent: 30 },
-  { subject: "English", percent: 20 },
-  { subject: "Others", percent: 10 },
-];
-
-const riskList = [
-  { title: "AI API retries rising", detail: "Failure rate increased in last 30 minutes", tone: "high" },
-  { title: "Queue backlog", detail: "34 quiz jobs waiting for processing", tone: "medium" },
-  { title: "Moderation queue", detail: "7 flagged quizzes need manual review", tone: "medium" },
-  { title: "Support SLA delay", detail: "2 unresolved tickets over target time", tone: "low" },
+const overviewStats = [
+  { label: "Total Users", value: "18,420", delta: "+4.6%" },
+  { label: "Total Teachers", value: "2,148", delta: "+3.1%" },
+  { label: "Total Schools", value: "326", delta: "+1.7%" },
+  { label: "Total Students", value: "15,902", delta: "+5.2%" },
+  { label: "Total Quizzes Generated", value: "248,931", delta: "+8.9%" },
+  { label: "AI Tokens Used", value: "92.4M", delta: "+6.4%" },
+  { label: "Monthly Revenue", value: "$43,280", delta: "+12.3%" },
+  { label: "Active Subscriptions", value: "1,284", delta: "+2.8%" },
 ] as const;
 
-const supportLog = [
-  { id: "#2194", user: "Lakeshore Prep", issue: "Upgrade to School plan", status: "Open" },
-  { id: "#2191", user: "Nora Patel", issue: "Password reset request", status: "Resolved" },
-  { id: "#2188", user: "Maple Grove High", issue: "Student join code error", status: "In progress" },
-  { id: "#2182", user: "Carlos M.", issue: "Flagged quiz clarification", status: "Open" },
-];
+const revenueGrowth = [34, 38, 42, 40, 47, 51, 58, 61, 66, 72, 78, 84];
+const userGrowth = [7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 20, 22];
+const quizTrend = [12, 15, 18, 20, 17, 22, 24, 26, 29, 31, 35, 38];
+
+function barHeight(value: number, max: number) {
+  return `${Math.max(12, Math.round((value / max) * 100))}%`;
+}
 
 export default function AdminDashboardPage() {
+  const revMax = Math.max(...revenueGrowth);
+  const usersMax = Math.max(...userGrowth);
+  const quizMax = Math.max(...quizTrend);
+
   return (
     <section className={styles.root}>
       <header className={styles.hero}>
-        <div>
-          <p className={styles.kicker}>Admin Overview</p>
-          <h3>Daily command report</h3>
-          <p>Clear snapshot of growth, usage, cost, and operational risks.</p>
-        </div>
-        <div className={styles.heroActions}>
-          <button type="button" className={styles.btnGhost}>Export daily report</button>
-          <button type="button" className={styles.btnPrimary}>Review critical alerts</button>
-        </div>
+        <p className={styles.kicker}>Platform Control</p>
+        <h3>Overview Dashboard</h3>
+        <p>
+          Quick platform health overview across users, learning activity, AI usage, and revenue.
+        </p>
       </header>
 
-      <section className={styles.briefRow}>
-        {todayBrief.map((item) => (
-          <article key={item.label} className={styles.briefCard}>
+      <section className={styles.statsGrid}>
+        {overviewStats.map((item) => (
+          <article key={item.label} className={styles.statCard}>
             <p>{item.label}</p>
             <strong>{item.value}</strong>
+            <span>{item.delta} this month</span>
           </article>
         ))}
       </section>
 
-      <section className={styles.sectionBlock}>
-        <div className={styles.sectionHead}>
-          <h4>Growth Snapshot</h4>
-          <span>Users and subscriptions</span>
-        </div>
-
-        <div className={styles.growthLayout}>
-          <div className={styles.metricGrid}>
-            {growthMetrics.map((item) => (
-              <article key={item.label} className={styles.metricCard}>
-                <p>{item.label}</p>
-                <strong>{item.value}</strong>
-                <small>{item.trend}</small>
-              </article>
+      <section className={styles.chartGrid}>
+        <article className={styles.chartCard}>
+          <div className={styles.chartHead}>
+            <h4>Revenue growth</h4>
+            <small>Last 12 months</small>
+          </div>
+          <div className={styles.chartBars}>
+            {revenueGrowth.map((value, idx) => (
+              <div key={`rev-${idx}`} className={styles.barWrap}>
+                <div className={styles.barRevenue} style={{ height: barHeight(value, revMax) }} />
+              </div>
             ))}
           </div>
+        </article>
 
-          <aside className={styles.sidePanel}>
-            <h5>Plan mix</h5>
-            <ul className={styles.barList}>
-              {planMix.map((item) => (
-                <li key={item.name}>
-                  <div className={styles.barHead}>
-                    <span>{item.name}</span>
-                    <span>{item.value}</span>
-                  </div>
-                  <div className={styles.track}>
-                    <div className={styles.fillMint} style={{ width: `${item.width}%` }} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </aside>
-        </div>
-      </section>
-
-      <section className={styles.sectionBlock}>
-        <div className={styles.sectionHead}>
-          <h4>Cost Control</h4>
-          <span>AI usage and budget health</span>
-        </div>
-
-        <div className={styles.costLayout}>
-          <article className={styles.costPanel}>
-            <ul className={styles.costList}>
-              {aiBudget.map((item) => (
-                <li key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                </li>
-              ))}
-            </ul>
-            <div className={styles.budgetMeter}>
-              <p>Monthly AI budget usage</p>
-              <div className={styles.track}>
-                <div className={styles.fillBlue} style={{ width: "61%" }} />
+        <article className={styles.chartCard}>
+          <div className={styles.chartHead}>
+            <h4>User growth</h4>
+            <small>New users per month (k)</small>
+          </div>
+          <div className={styles.chartBars}>
+            {userGrowth.map((value, idx) => (
+              <div key={`users-${idx}`} className={styles.barWrap}>
+                <div className={styles.barUsers} style={{ height: barHeight(value, usersMax) }} />
               </div>
-              <small>61% used</small>
-            </div>
-          </article>
+            ))}
+          </div>
+        </article>
 
-          <article className={styles.subjectPanel}>
-            <h5>Most used subjects</h5>
-            <ul className={styles.barList}>
-              {subjectMix.map((item) => (
-                <li key={item.subject}>
-                  <div className={styles.barHead}>
-                    <span>{item.subject}</span>
-                    <span>{item.percent}%</span>
-                  </div>
-                  <div className={styles.track}>
-                    <div className={styles.fillBlue} style={{ width: `${item.percent}%` }} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section className={styles.sectionBlock}>
-        <div className={styles.sectionHead}>
-          <h4>Risk and Support</h4>
-          <span>Operational watchlist</span>
-        </div>
-
-        <div className={styles.bottomLayout}>
-          <article className={styles.riskPanel}>
-            <ul className={styles.riskList}>
-              {riskList.map((item) => (
-                <li key={item.title}>
-                  <span className={`${styles.dot} ${styles[`t_${item.tone}`]}`} />
-                  <div>
-                    <p>{item.title}</p>
-                    <small>{item.detail}</small>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </article>
-
-          <article className={styles.logPanel}>
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Ticket</th>
-                    <th>User</th>
-                    <th>Issue</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {supportLog.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.id}</td>
-                      <td>{row.user}</td>
-                      <td>{row.issue}</td>
-                      <td><span className={styles.pill}>{row.status}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </div>
+        <article className={styles.chartCard}>
+          <div className={styles.chartHead}>
+            <h4>Quiz generation trends</h4>
+            <small>Generated quizzes per month (k)</small>
+          </div>
+          <div className={styles.chartBars}>
+            {quizTrend.map((value, idx) => (
+              <div key={`quiz-${idx}`} className={styles.barWrap}>
+                <div className={styles.barQuiz} style={{ height: barHeight(value, quizMax) }} />
+              </div>
+            ))}
+          </div>
+        </article>
       </section>
     </section>
   );
