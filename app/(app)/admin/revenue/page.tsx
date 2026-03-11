@@ -1,18 +1,19 @@
+"use client";
+
 import styles from "./revenue.module.css";
 
 const metrics = [
   { label: "Monthly revenue", value: "$43,280" },
   { label: "Annual revenue", value: "$519,360" },
   { label: "New subscriptions", value: "124" },
-  { label: "Cancelled subscriptions", value: "19" },
+  { label: "Cancelled subs", value: "19" },
 ] as const;
 
 const revenueGrowth = [26, 29, 31, 33, 36, 39, 41, 44, 48, 50, 53, 57];
-const mrrTrend = [31, 32, 34, 35, 36, 37, 39, 40, 42, 43, 44, 46];
 const planDistribution = [
-  { plan: "Basic", users: 35, percent: 57 },
-  { plan: "Pro", users: 20, percent: 33 },
-  { plan: "School", users: 6, percent: 10 },
+  { plan: "Basic users", users: 35, percent: 57 },
+  { plan: "Pro users", users: 20, percent: 33 },
+  { plan: "School plans", users: 6, percent: 10 },
 ] as const;
 
 function h(value: number, max: number) {
@@ -21,14 +22,14 @@ function h(value: number, max: number) {
 
 export default function AdminRevenueDashboardPage() {
   const revenueMax = Math.max(...revenueGrowth);
-  const mrrMax = Math.max(...mrrTrend);
 
   return (
     <section className={styles.root}>
-      <header className={styles.hero}>
-        <p className={styles.kicker}>Revenue dashboard</p>
-        <h3>Track business growth</h3>
-        <p>Monitor SaaS performance across revenue, MRR, subscriptions, and plan mix.</p>
+      <header className={styles.missionHeader}>
+        <div className={styles.missionTitle}>
+          <p className={styles.missionBreadcrumb}>Admin / Financials</p>
+          <h2>Business Growth</h2>
+        </div>
       </header>
 
       <section className={styles.metricGrid}>
@@ -43,12 +44,12 @@ export default function AdminRevenueDashboardPage() {
       <section className={styles.grid}>
         <article className={styles.panel}>
           <div className={styles.panelHead}>
-            <h4>Revenue growth</h4>
+            <h4>Revenue Growth</h4>
             <span>Last 12 months</span>
           </div>
           <div className={styles.chart}>
             {revenueGrowth.map((value, idx) => (
-              <div key={`r-${idx}`} className={styles.barWrap}>
+              <div key={`r-${idx}`} className={styles.barWrap} title={`$${value}k volume`}>
                 <div className={styles.barRevenue} style={{ height: h(value, revenueMax) }} />
               </div>
             ))}
@@ -57,8 +58,8 @@ export default function AdminRevenueDashboardPage() {
 
         <article className={styles.panel}>
           <div className={styles.panelHead}>
-            <h4>Plan distribution</h4>
-            <span>Basic / Pro / School</span>
+            <h4>Plan Mix Distribution</h4>
+            <span>Segment breakdown</span>
           </div>
           <ul className={styles.list}>
             {planDistribution.map((item) => (
@@ -73,20 +74,6 @@ export default function AdminRevenueDashboardPage() {
               </li>
             ))}
           </ul>
-        </article>
-
-        <article className={styles.panel}>
-          <div className={styles.panelHead}>
-            <h4>MRR trend</h4>
-            <span>Monthly recurring revenue</span>
-          </div>
-          <div className={styles.chart}>
-            {mrrTrend.map((value, idx) => (
-              <div key={`m-${idx}`} className={styles.barWrap}>
-                <div className={styles.barMrr} style={{ height: h(value, mrrMax) }} />
-              </div>
-            ))}
-          </div>
         </article>
       </section>
     </section>
