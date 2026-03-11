@@ -147,18 +147,6 @@ export default function AppShell({ role, children }: AppShellProps) {
               <img src="/teachify-logo.png" alt="Logo" />
               <div className={styles.logoLabel}>Teachify<span className={styles.sketchPink}>AI</span></div>
             </div>
-
-            <p className={styles.brandBadge}>{role === "admin" ? "Admin Desk" : "Teacher Desk"}</p>
-
-            <div className={styles.brandContent}>
-              <h2 className={styles.brandTitle}>Command Space</h2>
-              <p className={styles.brandMeta}>Design, monitor, and empower from one notebook.</p>
-            </div>
-
-            <div className={styles.sidebarPills}>
-              <span>{headerDate}</span>
-              <span>{activeItem?.label ?? "Overview"}</span>
-            </div>
           </div>
 
           <nav className={styles.navList}>
@@ -194,26 +182,35 @@ export default function AppShell({ role, children }: AppShellProps) {
 
         <section className={styles.mainColumn}>
           <header className={styles.topbar}>
-            <div className={styles.topbarNote}>
-              <span>System Update</span>
-              AI lesson generator v2.4 is now live.
-            </div>
             <div className={styles.topbarMain}>
-              <div className={styles.topbarGreet}>
-                <p>Welcome back,</p>
-                <h3>{profile.name.toUpperCase()}</h3>
-              </div>
-
-              <div className={styles.topbarSearchWrap}>
-                <input className={styles.topbarSearch} placeholder="Search lessons, students, resources..." />
+              <div className={styles.topbarLeadWrap}>
+                <div className={styles.topbarDivider} aria-hidden="true" />
+                <div className={styles.topbarGreet}>
+                  <p>{role === "admin" ? "Platform Administrator" : "Educator Account"}</p>
+                  <h3>{profile.name.toUpperCase()}</h3>
+                  <small className={styles.topbarSubtitle}>
+                    {role === "admin"
+                      ? "Overseeing growth, schools, and metrics."
+                      : "Managing students, classes, and quizzes."}
+                  </small>
+                </div>
               </div>
 
               <div className={styles.topbarControls}>
-                <div className={styles.headerClock} aria-label="Current date and time">
-                  <span className={styles.clockDot} aria-hidden="true" />
-                  <p>{headerDate}</p>
-                  <strong>{headerTime}</strong>
-                  <small>Local time</small>
+                <div className={styles.timeCluster}>
+                  <div className={styles.dateCard}>
+                    <span className={styles.dateMonth}>
+                      {now.toLocaleString("default", { month: "short" }).toUpperCase()}
+                    </span>
+                    <span className={styles.dateDay}>{now.getDate()}</span>
+                  </div>
+                  <div className={styles.timeTape}>
+                    <div className={styles.timeTapeHeader}>
+                      <span className={styles.timeDot} />
+                      LIVE CLOCK
+                    </div>
+                    <strong className={styles.timeValue}>{headerTime}</strong>
+                  </div>
                 </div>
 
                 <div className={styles.profileMenu} ref={profileMenuRef}>

@@ -1,30 +1,18 @@
 .shellRoot {
   --ink: #0f172a;
   --muted: #475569;
-  --paper: #ffffff;
+  --paper: #f8fafc;
   --line: rgba(15, 23, 42, 0.05);
-  /* Lighter grid for subtle notebook feel */
   --hl-yellow: #fef08a;
   --hl-pink: #fda4af;
   --hl-teal: #99f6e4;
   --sketch-border: 2px solid #0f172a;
 
-  min-height: 100vh;
+  height: 100vh;
   background: var(--paper);
   position: relative;
-  overflow-x: hidden;
-}
-
-.shellRoot::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: 30px 30px;
-  pointer-events: none;
-  z-index: 0;
+  overflow: hidden;
+  /* Lock the root to prevent double scrollbars */
 }
 
 .shellGrid {
@@ -32,7 +20,7 @@
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 0;
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
   z-index: 1;
 }
@@ -55,12 +43,13 @@
   background: white;
   border-radius: 2px;
   box-shadow: 8px 8px 0 var(--hl-yellow);
-  padding: 24px 20px;
-  display: grid;
-  gap: 16px;
-  margin-bottom: 40px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 32px;
   position: relative;
-  transform: rotate(-1.5deg);
+  transform: rotate(-1deg);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -113,7 +102,66 @@
 
 .brandContent {
   display: grid;
-  gap: 6px;
+  gap: 12px;
+}
+
+.brandProfile {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profileLead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatarLarge {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--hl-teal);
+  border: 2px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 950;
+  box-shadow: 4px 4px 0 var(--ink);
+  flex-shrink: 0;
+}
+
+.profileText {
+  display: grid;
+  gap: 2px;
+}
+
+.profileName {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+}
+
+.profileRole {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.8;
 }
 
 .brandTitle {
@@ -154,6 +202,7 @@
 .navList {
   display: grid;
   gap: 24px;
+  padding-bottom: 40px;
 }
 
 .navGroup {
@@ -244,12 +293,14 @@
 
 .sidebarFooter {
   margin-top: auto;
+  flex-shrink: 0;
   border: var(--sketch-border);
   border-radius: 8px;
   background: white;
   padding: 12px;
   transform: rotate(1deg);
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 12px;
 }
 
 .sidebarFooter p {
@@ -275,36 +326,60 @@
 
 .mainColumn {
   min-width: 0;
-  display: grid;
-  grid-template-rows: auto 1fr;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  /* Enable scroll here */
+  height: 100vh;
 }
 
 .topbar {
-  border-bottom: 2px solid var(--ink);
   background: white;
-  padding: 18px 32px;
-  display: grid;
-  gap: 16px;
+  padding: 24px 40px;
+  display: flex;
+  flex-direction: column;
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 3px double var(--ink);
 }
 
 .topbarNote {
   margin: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 12px;
-  color: #64748b;
+  color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 850;
+  background: white;
+  border: 2px solid var(--ink);
+  padding: 6px 20px;
+  border-radius: 4px;
+  width: fit-content;
+  box-shadow: 4px 4px 0 var(--hl-pink);
+  position: relative;
+  transform: rotate(-0.5deg) translateX(4px);
+}
+
+.topbarNote::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 20%;
+  width: 50px;
+  height: 24px;
+  background: var(--hl-yellow);
+  opacity: 0.6;
+  transform: rotate(-3deg);
+  clip-path: polygon(0% 15%, 100% 0%, 95% 85%, 5% 100%);
+  z-index: -1;
 }
 
 .topbarNote span {
   border: 1.5px solid var(--ink);
   border-radius: 4px;
   background: #15803d;
-  /* Dark green badge like the reference image header */
   color: white;
   font-size: 9px;
   font-weight: 950;
@@ -314,30 +389,55 @@
 }
 
 .topbarMain {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
   gap: 40px;
 }
 
-.topbarGreet {
-  display: grid;
-  gap: 2px;
+.topbarLeadWrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.topbarDivider {
+  width: 3px;
+  height: 52px;
+  background: var(--ink);
+  border-radius: 999px;
+  transform: rotate(-2deg);
+}
+
+.topbarSubtitle {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--muted);
+  font-family: 'Gochi Hand', cursive;
+  background: var(--hl-yellow);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  transform: rotate(1deg);
 }
 
 .topbarGreet p {
   margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 950;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .topbarGreet h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 950;
   color: var(--ink);
-  letter-spacing: 0.02em;
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
 
 .topbarSearchWrap {
@@ -347,20 +447,22 @@
 
 .topbarSearch {
   width: 100%;
-  height: 48px;
-  border: var(--sketch-border);
-  border-radius: 12px;
+  height: 52px;
+  border: 3px solid var(--ink);
+  border-radius: 2px;
   background: white;
-  padding: 0 16px;
-  font-size: 15px;
-  font-weight: 700;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 850;
   outline: none;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 8px 8px 0 var(--hl-teal);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: rotate(-0.5deg);
 }
 
 .topbarSearch:focus {
-  box-shadow: 4px 4px 0 var(--hl-yellow);
-  transform: translate(-1px, -1px);
+  transform: scale(1.02) rotate(0deg);
+  box-shadow: 12px 12px 0 var(--ink);
 }
 
 .topbarControls {
@@ -369,48 +471,94 @@
   gap: 16px;
 }
 
-.headerClock {
-  border: var(--sketch-border);
-  border-radius: 12px;
-  background: white;
-  padding: 8px 12px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 12px;
-  row-gap: 2px;
+.timeCluster {
+  display: flex;
   align-items: center;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.05);
+  gap: 16px;
 }
 
-.clockDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--hl-teal);
-  border: 1.5px solid var(--ink);
-  grid-row: 1 / span 3;
+.dateCard {
+  background: white;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 4px 4px 0 var(--hl-pink);
+  transform: rotate(-2deg);
+  min-width: 54px;
 }
 
-.headerClock p {
-  margin: 0;
-  color: var(--muted);
+.dateMonth {
+  background: #ef4444;
+  color: white;
   font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-weight: 950;
+  text-align: center;
+  padding: 2px 4px;
+  border-bottom: 2px solid var(--ink);
 }
 
-.headerClock strong {
+.dateDay {
+  font-size: 20px;
+  font-weight: 950;
   color: var(--ink);
+  text-align: center;
+  padding: 4px;
+  line-height: 1;
+}
+
+.timeTape {
+  background: white;
+  border: 2px solid var(--ink);
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 4px 0 var(--hl-teal);
+  transform: rotate(1deg);
+  position: relative;
+}
+
+/* Tape Doodle */
+.timeTape::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 30%;
+  width: 40px;
+  height: 16px;
+  background: var(--hl-yellow);
+  opacity: 0.5;
+  transform: rotate(-4deg);
+  z-index: -1;
+}
+
+.timeTapeHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 950;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.timeDot {
+  width: 6px;
+  height: 6px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 1px solid var(--ink);
+}
+
+.timeValue {
   font-size: 18px;
   font-weight: 950;
+  color: var(--ink);
   letter-spacing: -0.02em;
-}
-
-.headerClock small {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
+  line-height: 1.1;
 }
 
 .profileTrigger {
