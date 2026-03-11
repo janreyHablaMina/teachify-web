@@ -23,6 +23,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { group: "Main", label: "Users", href: "/admin/users", icon: "users" },
     { group: "Main", label: "Schools", href: "/admin/schools", icon: "schools" },
     { group: "Main", label: "Subscriptions", href: "/admin/subscriptions", icon: "subscriptions" },
+    { group: "Main", label: "AI Usage", href: "/admin/ai-usage", icon: "ai" },
   ],
   teacher: [
     { group: "Main", label: "Overview", href: "/teacher", icon: "overview" },
@@ -44,6 +45,8 @@ function NavIcon({ icon }: { icon: NavItem["icon"] }) {
       return <svg {...common}><path d="m2 22 10-6 10 6V8L12 2 2 8z" /><path d="M12 22V12" /><path d="M7 10h.01M12 10h.01M17 10h.01" /></svg>;
     case "subscriptions":
       return <svg {...common}><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><path d="M6 15h4" /></svg>;
+    case "ai":
+      return <svg {...common}><rect x="6" y="6" width="12" height="12" rx="2" /><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3" /></svg>;
     case "generate":
       return <svg {...common}><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2" /></svg>;
     case "list":
