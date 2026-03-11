@@ -1,88 +1,142 @@
-﻿import styles from "./settings.module.css";
+"use client";
 
-const toggles = [
-  { label: "Allow self-service teacher signups", hint: "Enable public teacher registration flow", enabled: true },
-  { label: "Require email verification", hint: "Block login before verification is complete", enabled: true },
-  { label: "Enable maintenance banner", hint: "Show scheduled maintenance alert in app", enabled: false },
-  { label: "Auto-suspend failed billing after 7 days", hint: "Apply temporary account lock after grace period", enabled: true },
-];
+import { useState } from "react";
+import styles from "./settings.module.css";
 
-const apiKeys = [
-  { name: "OpenAI Production", key: "sk-live-...x91f", lastRotated: "Mar 01, 2026" },
-  { name: "Stripe Billing", key: "rk_live_...k2a", lastRotated: "Feb 15, 2026" },
-  { name: "Internal Queue", key: "qk_prod_...77z", lastRotated: "Jan 28, 2026" },
-];
+type Provider = "OpenAI" | "DeepSeek" | "Anthropic";
 
-export default function Page() {
+export default function AdminSettingsPage() {
+  const [provider, setProvider] = useState<Provider>("OpenAI");
+  const [featureFlags, setFeatureFlags] = useState({
+    aiAssist: true,
+    smartHints: true,
+    maintenanceMode: false,
+    publicSignup: true,
+  });
+
   return (
     <section className={styles.root}>
       <header className={styles.hero}>
-        <div>
-          <p className={styles.kicker}>Platform settings</p>
-          <h3>System configuration and controls</h3>
-          <p>Manage defaults, security behavior, notifications, and operational preferences.</p>
-        </div>
-        <button type="button" className={styles.saveBtn}>Save changes</button>
+        <p className={styles.kicker}>Settings</p>
+        <h3>Configure the platform</h3>
+        <p>Manage AI keys, pricing, email, storage, branding, and platform feature controls.</p>
       </header>
 
-      <div className={styles.grid}>
+      <section className={styles.grid}>
         <article className={styles.panel}>
-          <h4>General policies</h4>
-          <ul className={styles.toggleList}>
-            {toggles.map((toggle) => (
-              <li key={toggle.label}>
-                <div>
-                  <p>{toggle.label}</p>
-                  <small>{toggle.hint}</small>
-                </div>
-                <label className={styles.switch}>
-                  <input type="checkbox" defaultChecked={toggle.enabled} />
-                  <span />
-                </label>
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <article className={styles.panel}>
-          <h4>Security quick actions</h4>
-          <div className={styles.actions}>
-            <button type="button">Force logout all sessions</button>
-            <button type="button">Rotate API keys</button>
-            <button type="button">Reset admin MFA</button>
-            <button type="button">Generate audit export</button>
+          <h4>AI provider keys</h4>
+          <div className={styles.field}>
+            <label>Default provider</label>
+            <select value={provider} onChange={(event) => setProvider(event.target.value as Provider)}>
+              <option>OpenAI</option>
+              <option>DeepSeek</option>
+              <option>Anthropic</option>
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label>OpenAI API key</label>
+            <input type="password" value="sk-live-xxxxxx-xxxx" readOnly />
+          </div>
+          <div className={styles.field}>
+            <label>DeepSeek API key</label>
+            <input type="password" value="ds-live-xxxxxx-xxxx" readOnly />
           </div>
         </article>
-      </div>
 
-      <article className={styles.panel}>
-        <div className={styles.panelHead}>
-          <h4>API credentials</h4>
-          <button type="button" className={styles.smallBtn}>Create key</button>
-        </div>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Service</th>
-                <th>Key</th>
-                <th>Last rotated</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {apiKeys.map((entry) => (
-                <tr key={entry.name}>
-                  <td>{entry.name}</td>
-                  <td>{entry.key}</td>
-                  <td>{entry.lastRotated}</td>
-                  <td><button type="button" className={styles.linkBtn}>Rotate</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </article>
+        <article className={styles.panel}>
+          <h4>Pricing plan configuration</h4>
+          <div className={styles.field}>
+            <label>Basic plan (USD/month)</label>
+            <input type="number" defaultValue={7} />
+          </div>
+          <div className={styles.field}>
+            <label>Pro plan (USD/month)</label>
+            <input type="number" defaultValue={14} />
+          </div>
+          <div className={styles.field}>
+            <label>School plan (USD/year)</label>
+            <input type="number" defaultValue={590} />
+          </div>
+        </article>
+
+        <article className={styles.panel}>
+          <h4>Email settings</h4>
+          <div className={styles.field}>
+            <label>SMTP host</label>
+            <input defaultValue="smtp.mail.teachify.com" />
+          </div>
+          <div className={styles.field}>
+            <label>Sender address</label>
+            <input defaultValue="no-reply@teachify.com" />
+          </div>
+          <div className={styles.field}>
+            <label>Support address</label>
+            <input defaultValue="support@teachify.com" />
+          </div>
+        </article>
+
+        <article className={styles.panel}>
+          <h4>Storage settings</h4>
+          <div className={styles.field}>
+            <label>Provider</label>
+            <input defaultValue="AWS S3" />
+          </div>
+          <div className={styles.field}>
+            <label>Bucket</label>
+            <input defaultValue="teachify-prod-assets" />
+          </div>
+          <div className={styles.field}>
+            <label>Retention policy</label>
+            <input defaultValue="365 days" />
+          </div>
+        </article>
+
+        <article className={styles.panel}>
+          <h4>Platform branding</h4>
+          <div className={styles.field}>
+            <label>Platform name</label>
+            <input defaultValue="Teachify" />
+          </div>
+          <div className={styles.field}>
+            <label>Primary color</label>
+            <input defaultValue="#0f172a" />
+          </div>
+          <div className={styles.field}>
+            <label>Secondary color</label>
+            <input defaultValue="#14b8a6" />
+          </div>
+        </article>
+
+        <article className={styles.panel}>
+          <h4>Feature toggles</h4>
+          <ul className={styles.toggleList}>
+            <li>
+              <span>AI Assistant</span>
+              <button type="button" onClick={() => setFeatureFlags((p) => ({ ...p, aiAssist: !p.aiAssist }))}>
+                {featureFlags.aiAssist ? "On" : "Off"}
+              </button>
+            </li>
+            <li>
+              <span>Smart Hints</span>
+              <button type="button" onClick={() => setFeatureFlags((p) => ({ ...p, smartHints: !p.smartHints }))}>
+                {featureFlags.smartHints ? "On" : "Off"}
+              </button>
+            </li>
+            <li>
+              <span>Maintenance Mode</span>
+              <button type="button" onClick={() => setFeatureFlags((p) => ({ ...p, maintenanceMode: !p.maintenanceMode }))}>
+                {featureFlags.maintenanceMode ? "On" : "Off"}
+              </button>
+            </li>
+            <li>
+              <span>Public Signup</span>
+              <button type="button" onClick={() => setFeatureFlags((p) => ({ ...p, publicSignup: !p.publicSignup }))}>
+                {featureFlags.publicSignup ? "On" : "Off"}
+              </button>
+            </li>
+          </ul>
+        </article>
+      </section>
     </section>
   );
 }

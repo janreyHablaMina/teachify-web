@@ -1,46 +1,75 @@
-import styles from "../section.module.css";
+import styles from "./revenue.module.css";
 
-const plans = [
-  { name: "Free", users: 120, percent: 67 },
-  { name: "Basic", users: 35, percent: 20 },
-  { name: "Pro", users: 20, percent: 10 },
-  { name: "School", users: 4, percent: 3 },
-];
+const metrics = [
+  { label: "Monthly revenue", value: "$43,280" },
+  { label: "Annual revenue", value: "$519,360" },
+  { label: "New subscriptions", value: "124" },
+  { label: "Cancelled subscriptions", value: "19" },
+] as const;
 
-export default function AdminRevenuePage() {
+const revenueGrowth = [26, 29, 31, 33, 36, 39, 41, 44, 48, 50, 53, 57];
+const mrrTrend = [31, 32, 34, 35, 36, 37, 39, 40, 42, 43, 44, 46];
+const planDistribution = [
+  { plan: "Basic", users: 35, percent: 57 },
+  { plan: "Pro", users: 20, percent: 33 },
+  { plan: "School", users: 6, percent: 10 },
+] as const;
+
+function h(value: number, max: number) {
+  return `${Math.max(12, Math.round((value / max) * 100))}%`;
+}
+
+export default function AdminRevenueDashboardPage() {
+  const revenueMax = Math.max(...revenueGrowth);
+  const mrrMax = Math.max(...mrrTrend);
+
   return (
     <section className={styles.root}>
       <header className={styles.hero}>
-        <div>
-          <p className={styles.kicker}>Revenue dashboard</p>
-          <h3>Business performance</h3>
-          <p>Track recurring revenue, growth, subscriptions, and plan-level conversion.</p>
-        </div>
+        <p className={styles.kicker}>Revenue dashboard</p>
+        <h3>Track business growth</h3>
+        <p>Monitor SaaS performance across revenue, MRR, subscriptions, and plan mix.</p>
       </header>
 
-      <div className={styles.grid4}>
-        <article className={styles.card}><p>Monthly revenue</p><strong>$1,240</strong></article>
-        <article className={styles.card}><p>Annual revenue run-rate</p><strong>$14,880</strong></article>
-        <article className={styles.card}><p>New subscriptions</p><strong>11</strong></article>
-        <article className={styles.card}><p>Cancelled subscriptions</p><strong>4</strong></article>
-      </div>
+      <section className={styles.metricGrid}>
+        {metrics.map((item) => (
+          <article key={item.label} className={styles.metricCard}>
+            <p>{item.label}</p>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </section>
 
-      <div className={styles.grid2}>
+      <section className={styles.grid}>
+        <article className={styles.panel}>
+          <div className={styles.panelHead}>
+            <h4>Revenue growth</h4>
+            <span>Last 12 months</span>
+          </div>
+          <div className={styles.chart}>
+            {revenueGrowth.map((value, idx) => (
+              <div key={`r-${idx}`} className={styles.barWrap}>
+                <div className={styles.barRevenue} style={{ height: h(value, revenueMax) }} />
+              </div>
+            ))}
+          </div>
+        </article>
+
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <h4>Plan distribution</h4>
-            <span>Current users</span>
+            <span>Basic / Pro / School</span>
           </div>
           <ul className={styles.list}>
-            {plans.map((plan) => (
-              <li key={plan.name}>
-                <div>
-                  <strong>{plan.name} ({plan.users})</strong>
-                  <div className={styles.track}>
-                    <div className={styles.fill} style={{ width: `${plan.percent}%` }} />
-                  </div>
+            {planDistribution.map((item) => (
+              <li key={item.plan}>
+                <div className={styles.rowTop}>
+                  <strong>{item.plan}: {item.users} users</strong>
+                  <span>{item.percent}%</span>
                 </div>
-                <span>{plan.percent}%</span>
+                <div className={styles.track}>
+                  <div className={styles.fillPlan} style={{ width: `${item.percent}%` }} />
+                </div>
               </li>
             ))}
           </ul>
@@ -48,17 +77,18 @@ export default function AdminRevenuePage() {
 
         <article className={styles.panel}>
           <div className={styles.panelHead}>
-            <h4>Growth snapshot</h4>
-            <span>Last 30 days</span>
+            <h4>MRR trend</h4>
+            <span>Monthly recurring revenue</span>
           </div>
-          <ul className={styles.list}>
-            <li><span>Revenue growth</span><strong>+12.4%</strong></li>
-            <li><span>User growth</span><strong>+8.2%</strong></li>
-            <li><span>Upgrade rate</span><strong>18.2%</strong></li>
-            <li><span>Net retention</span><strong>96.4%</strong></li>
-          </ul>
+          <div className={styles.chart}>
+            {mrrTrend.map((value, idx) => (
+              <div key={`m-${idx}`} className={styles.barWrap}>
+                <div className={styles.barMrr} style={{ height: h(value, mrrMax) }} />
+              </div>
+            ))}
+          </div>
         </article>
-      </div>
+      </section>
     </section>
   );
 }

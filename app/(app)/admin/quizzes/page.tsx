@@ -1,64 +1,79 @@
-import styles from "../section.module.css";
+import styles from "./quizzes.module.css";
 
-const moderationItems = [
-  { id: "QZ-991", owner: "Carlos M.", subject: "Math", reason: "Reported by student", status: "Pending review" },
-  { id: "QZ-976", owner: "Hillside School", subject: "Science", reason: "Flagged phrase detected", status: "Needs action" },
-  { id: "QZ-961", owner: "Nora Patel", subject: "English", reason: "Duplicate abusive prompt", status: "Escalated" },
-];
+const metrics = [
+  { label: "Total quizzes generated", value: "248,931" },
+  { label: "Quizzes generated today", value: "412" },
+  { label: "Average questions per quiz", value: "12.4" },
+] as const;
 
-export default function AdminQuizzesPage() {
+const subjectMix = [
+  { name: "Math", percent: 40 },
+  { name: "Science", percent: 30 },
+  { name: "English", percent: 20 },
+  { name: "Others", percent: 10 },
+] as const;
+
+const dailyQuizTrend = [24, 26, 28, 31, 29, 34, 38, 36, 41, 45, 43, 47];
+
+function heightOf(value: number, max: number) {
+  return `${Math.max(12, Math.round((value / max) * 100))}%`;
+}
+
+export default function AdminQuizAnalyticsPage() {
+  const max = Math.max(...dailyQuizTrend);
+
   return (
     <section className={styles.root}>
       <header className={styles.hero}>
-        <div>
-          <p className={styles.kicker}>Content moderation</p>
-          <h3>Quiz safety and quality</h3>
-          <p>Review reported quizzes, flagged outputs, and enforce moderation actions.</p>
-        </div>
-        <div className={styles.heroActions}>
-          <button type="button" className={styles.btn}>Export moderation log</button>
-          <button type="button" className={styles.btnPrimary}>Open safety policy</button>
-        </div>
+        <p className={styles.kicker}>Quiz analytics</p>
+        <h3>Understand platform usage</h3>
+        <p>Track quiz activity volume, composition, and subject-level demand across the platform.</p>
       </header>
 
-      <div className={styles.grid3}>
-        <article className={styles.card}><p>Reported quizzes</p><strong>12</strong><small>Last 24 hours</small></article>
-        <article className={styles.card}><p>Flagged content</p><strong>7</strong><small>Requires review</small></article>
-        <article className={styles.card}><p>Deleted quizzes</p><strong>3</strong><small>Today</small></article>
-      </div>
+      <section className={styles.metricGrid}>
+        {metrics.map((item) => (
+          <article key={item.label} className={styles.metricCard}>
+            <p>{item.label}</p>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </section>
 
-      <article className={styles.panel}>
-        <div className={styles.panelHead}>
-          <h4>Flagged quiz queue</h4>
-          <span>Live queue</span>
-        </div>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Quiz ID</th>
-                <th>Owner</th>
-                <th>Subject</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {moderationItems.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.id}</td>
-                  <td>{item.owner}</td>
-                  <td>{item.subject}</td>
-                  <td>{item.reason}</td>
-                  <td><span className={styles.pill}>{item.status}</span></td>
-                  <td>Remove quiz | Warn user | Ban user</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </article>
+      <section className={styles.layout}>
+        <article className={styles.panel}>
+          <div className={styles.panelHead}>
+            <h4>Most popular subjects</h4>
+            <span>Distribution</span>
+          </div>
+          <ul className={styles.subjectList}>
+            {subjectMix.map((subject) => (
+              <li key={subject.name}>
+                <div className={styles.rowTop}>
+                  <strong>{subject.name}</strong>
+                  <span>{subject.percent}%</span>
+                </div>
+                <div className={styles.track}>
+                  <div className={styles.fill} style={{ width: `${subject.percent}%` }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article className={styles.panel}>
+          <div className={styles.panelHead}>
+            <h4>Quiz generation trend</h4>
+            <span>Last 12 periods</span>
+          </div>
+          <div className={styles.chart}>
+            {dailyQuizTrend.map((value, index) => (
+              <div key={`q-${index}`} className={styles.barWrap}>
+                <div className={styles.bar} style={{ height: heightOf(value, max) }} />
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
     </section>
   );
 }

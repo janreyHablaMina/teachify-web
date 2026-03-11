@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { signOut, type UserRole } from "@/lib/auth";
 import styles from "./app-shell.module.css";
 
@@ -19,11 +20,15 @@ type NavItem = {
 
 const navByRole: Record<UserRole, NavItem[]> = {
   admin: [
-    { group: "Main", label: "Overview", href: "/admin", icon: "overview" },
-    { group: "Main", label: "Users", href: "/admin/users", icon: "users" },
-    { group: "Main", label: "Schools", href: "/admin/schools", icon: "schools" },
-    { group: "Main", label: "Subscriptions", href: "/admin/subscriptions", icon: "subscriptions" },
-    { group: "Main", label: "AI Usage", href: "/admin/ai-usage", icon: "ai" },
+    { group: "Overview", label: "Overview", href: "/admin", icon: "overview" },
+    { group: "Management", label: "User Management", href: "/admin/users", icon: "users" },
+    { group: "Management", label: "School Management", href: "/admin/schools", icon: "schools" },
+    { group: "Management", label: "Subscription Management", href: "/admin/subscriptions", icon: "subscriptions" },
+    { group: "Analytics", label: "Quiz Analytics", href: "/admin/quizzes", icon: "quizzes" },
+    { group: "Analytics", label: "AI Usage Monitoring", href: "/admin/ai-usage", icon: "ai" },
+    { group: "Analytics", label: "Revenue Dashboard", href: "/admin/revenue", icon: "revenue" },
+    { group: "System", label: "System Monitoring", href: "/admin/system", icon: "system" },
+    { group: "System", label: "Settings", href: "/admin/settings", icon: "settings" },
   ],
   teacher: [
     { group: "Main", label: "Overview", href: "/teacher", icon: "overview" },
@@ -45,8 +50,16 @@ function NavIcon({ icon }: { icon: NavItem["icon"] }) {
       return <svg {...common}><path d="m2 22 10-6 10 6V8L12 2 2 8z" /><path d="M12 22V12" /><path d="M7 10h.01M12 10h.01M17 10h.01" /></svg>;
     case "subscriptions":
       return <svg {...common}><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><path d="M6 15h4" /></svg>;
+    case "quizzes":
+      return <svg {...common}><path d="M9 3h6l4 4v14H5V3z" /><path d="M9 3v4h4" /><path d="M9 13h6M9 17h6" /></svg>;
     case "ai":
       return <svg {...common}><rect x="6" y="6" width="12" height="12" rx="2" /><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3" /></svg>;
+    case "revenue":
+      return <svg {...common}><path d="M3 17 9 11l4 4 8-8" /><path d="M14 7h7v7" /></svg>;
+    case "system":
+      return <svg {...common}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z" /></svg>;
+    case "settings":
+      return <svg {...common}><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z" /></svg>;
     case "generate":
       return <svg {...common}><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2" /></svg>;
     case "list":
@@ -58,50 +71,93 @@ function NavIcon({ icon }: { icon: NavItem["icon"] }) {
   }
 }
 
-const profileByRole: Record<UserRole, { name: string; title: string; status: string }> = {
+const profileByRole: Record<UserRole, { name: string; email: string; title: string }> = {
   admin: {
     name: "Amelia Cruz",
+    email: "amelia.cruz@teachify.com",
     title: "System Administrator",
-    status: "Platform secure",
   },
   teacher: {
     name: "Teacher Account",
+    email: "teacher@teachify.com",
     title: "Classroom Owner",
-    status: "Ready to create quizzes",
   },
 };
 
 export default function AppShell({ role, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [now, setNow] = useState(() => new Date());
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const nav = navByRole[role];
   const profile = profileByRole[role];
-  const panelTitle = role === "admin" ? "Admin Panel" : "Teacher Panel";
   const activeItem = [...nav]
     .sort((a, b) => b.href.length - a.href.length)
     .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
-  const activePage = activeItem?.label ?? "Overview";
-  const roleLabel = role === "admin" ? "System Ops" : "Teaching Ops";
   const groupedNav = nav.reduce<Record<string, NavItem[]>>((acc, item) => {
     if (!acc[item.group]) acc[item.group] = [];
     acc[item.group].push(item);
     return acc;
   }, {});
-  const todayLabel = new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  const headerDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }).format(now),
+    [now]
+  );
+
+  const headerTime = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+      }).format(now),
+    [now]
+  );
+
 
   return (
     <div className={styles.shellRoot}>
       <div className={styles.shellGrid}>
         <aside className={styles.sidebar}>
           <div className={styles.brandBlock}>
-            <span className={styles.brandMark}>T</span>
-            <div>
-              <p className={styles.brandPill}>Teachify {role}</p>
-              <h1 className={styles.workspaceTitle}>Workspace</h1>
+            <div className={styles.stickyLogo}>
+              <img src="/teachify-logo.png" alt="Logo" />
+              <div className={styles.logoLabel}>Teachify<span className={styles.sketchPink}>AI</span></div>
+            </div>
+
+            <p className={styles.brandBadge}>{role === "admin" ? "Admin Desk" : "Teacher Desk"}</p>
+
+            <div className={styles.brandContent}>
+              <h2 className={styles.brandTitle}>Command Space</h2>
+              <p className={styles.brandMeta}>Design, monitor, and empower from one notebook.</p>
+            </div>
+
+            <div className={styles.sidebarPills}>
+              <span>{headerDate}</span>
+              <span>{activeItem?.label ?? "Overview"}</span>
             </div>
           </div>
 
@@ -138,49 +194,62 @@ export default function AppShell({ role, children }: AppShellProps) {
 
         <section className={styles.mainColumn}>
           <header className={styles.topbar}>
-            <div className={styles.topbarHeader}>
-              <div>
-                <p className={styles.topbarKicker}>{roleLabel}</p>
-                <h2 className={styles.topbarTitle}>{panelTitle}</h2>
-                <p className={styles.topbarSubtext}>
-                  Section: <strong>{activePage}</strong>
-                  <span>{todayLabel}</span>
-                </p>
-              </div>
-
-              <div className={styles.headerActions}>
-                <button type="button" className={styles.ghostBtn}>Export snapshot</button>
-                <button type="button" className={styles.primaryBtn}>New announcement</button>
-              </div>
+            <div className={styles.topbarNote}>
+              <span>System Update</span>
+              AI lesson generator v2.4 is now live.
             </div>
-
-            <div className={styles.topbarRow}>
-              <div className={styles.metaStrip}>
-                <span className={styles.metaChip}>Live workspace</span>
-                <span className={styles.metaChip}>Auto refresh: 30s</span>
-                <span className={styles.metaChip}>Scope: {activePage}</span>
+            <div className={styles.topbarMain}>
+              <div className={styles.topbarGreet}>
+                <p>Welcome back,</p>
+                <h3>{profile.name.toUpperCase()}</h3>
               </div>
 
-              <div className={styles.topbarActions}>
-                <div className={styles.profileCard}>
-                  <span className={styles.avatar}>{profile.name.charAt(0)}</span>
-                  <div>
-                    <p className={styles.profileName}>{profile.name}</p>
-                    <p className={styles.profileRole}>{profile.title}</p>
-                  </div>
-                  <span className={styles.profileStatus}>{profile.status}</span>
+              <div className={styles.topbarSearchWrap}>
+                <input className={styles.topbarSearch} placeholder="Search lessons, students, resources..." />
+              </div>
+
+              <div className={styles.topbarControls}>
+                <div className={styles.headerClock} aria-label="Current date and time">
+                  <span className={styles.clockDot} aria-hidden="true" />
+                  <p>{headerDate}</p>
+                  <strong>{headerTime}</strong>
+                  <small>Local time</small>
                 </div>
 
-                <button
-                  type="button"
-                  className={styles.logoutBtn}
-                  onClick={() => {
-                    signOut();
-                    router.push("/login");
-                  }}
-                >
-                  Logout
-                </button>
+                <div className={styles.profileMenu} ref={profileMenuRef}>
+                  <button
+                    type="button"
+                    className={styles.profileTrigger}
+                    aria-haspopup="menu"
+                    aria-expanded={profileOpen}
+                    onClick={() => setProfileOpen((prev) => !prev)}
+                  >
+                    <span className={styles.avatar}>{profile.name.charAt(0)}</span>
+                  </button>
+
+                  {profileOpen && (
+                    <div className={styles.profileDropdown} role="menu">
+                      <div className={styles.dropdownHead}>
+                        <p className={styles.dropdownName}>{profile.name}</p>
+                        <p className={styles.dropdownEmail}>{profile.email}</p>
+                        <p className={styles.dropdownRole}>{profile.title}</p>
+                      </div>
+                      <button type="button" className={styles.dropdownItemBtn}>Manage account</button>
+                      <button type="button" className={styles.dropdownItemBtn}>Workspace settings</button>
+                      <button
+                        type="button"
+                        className={styles.dropdownSignoutBtn}
+                        onClick={() => {
+                          setProfileOpen(false);
+                          signOut();
+                          router.push("/login");
+                        }}
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </header>

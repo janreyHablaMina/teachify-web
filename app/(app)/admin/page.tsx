@@ -1,92 +1,109 @@
+"use client";
+
 import styles from "./admin.module.css";
 
-const overviewStats = [
-  { label: "Total Users", value: "18,420", delta: "+4.6%" },
-  { label: "Total Teachers", value: "2,148", delta: "+3.1%" },
-  { label: "Total Schools", value: "326", delta: "+1.7%" },
-  { label: "Total Students", value: "15,902", delta: "+5.2%" },
-  { label: "Total Quizzes Generated", value: "248,931", delta: "+8.9%" },
-  { label: "AI Tokens Used", value: "92.4M", delta: "+6.4%" },
-  { label: "Monthly Revenue", value: "$43,280", delta: "+12.3%" },
-  { label: "Active Subscriptions", value: "1,284", delta: "+2.8%" },
-] as const;
-
-const revenueGrowth = [34, 38, 42, 40, 47, 51, 58, 61, 66, 72, 78, 84];
-const userGrowth = [7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 20, 22];
-const quizTrend = [12, 15, 18, 20, 17, 22, 24, 26, 29, 31, 35, 38];
-
-function barHeight(value: number, max: number) {
-  return `${Math.max(12, Math.round((value / max) * 100))}%`;
-}
-
 export default function AdminDashboardPage() {
-  const revMax = Math.max(...revenueGrowth);
-  const usersMax = Math.max(...userGrowth);
-  const quizMax = Math.max(...quizTrend);
-
   return (
-    <section className={styles.root}>
+    <div className={styles.root}>
       <header className={styles.hero}>
-        <p className={styles.kicker}>Platform Control</p>
-        <h3>Overview Dashboard</h3>
-        <p>
-          Quick platform health overview across users, learning activity, AI usage, and revenue.
-        </p>
+        <div className={styles.heroContent}>
+          <p className={styles.kicker}>Super Admin View</p>
+          <h3>Platform Snapshot</h3>
+          <p>Real-time momentum across users, revenue, and educational impact.</p>
+        </div>
+        <div className={styles.heroActions}>
+          <button type="button">Generate Report</button>
+          <button type="button">System Logs</button>
+        </div>
       </header>
 
-      <section className={styles.statsGrid}>
-        {overviewStats.map((item) => (
-          <article key={item.label} className={styles.statCard}>
-            <p>{item.label}</p>
-            <strong>{item.value}</strong>
-            <span>{item.delta} this month</span>
-          </article>
-        ))}
-      </section>
+      <div className={styles.quickGrid}>
+        <div className={styles.quickCard}>
+          <p>Total Schools</p>
+          <strong>124</strong>
+        </div>
+        <div className={styles.quickCard}>
+          <p>Active Students</p>
+          <strong>42.8k</strong>
+        </div>
+        <div className={styles.quickCard}>
+          <p>AI Credits Used</p>
+          <strong>890k</strong>
+        </div>
+        <div className={styles.quickCard}>
+          <p>Monthly Revenue</p>
+          <strong>$48.2k</strong>
+        </div>
+      </div>
 
-      <section className={styles.chartGrid}>
-        <article className={styles.chartCard}>
+      <div className={styles.insightGrid}>
+        <div className={styles.chartCard}>
           <div className={styles.chartHead}>
-            <h4>Revenue growth</h4>
+            <h4>User Growth</h4>
             <small>Last 12 months</small>
           </div>
           <div className={styles.chartBars}>
-            {revenueGrowth.map((value, idx) => (
-              <div key={`rev-${idx}`} className={styles.barWrap}>
-                <div className={styles.barRevenue} style={{ height: barHeight(value, revMax) }} />
+            {[45, 60, 40, 80, 95, 70, 85, 90, 100, 85, 95, 110].map((val, i) => (
+              <div key={i} className={styles.barWrap}>
+                <div
+                  className={styles.barUsers}
+                  style={{ height: `${val}%` }}
+                />
               </div>
             ))}
           </div>
-        </article>
+        </div>
 
-        <article className={styles.chartCard}>
-          <div className={styles.chartHead}>
-            <h4>User growth</h4>
-            <small>New users per month (k)</small>
-          </div>
-          <div className={styles.chartBars}>
-            {userGrowth.map((value, idx) => (
-              <div key={`users-${idx}`} className={styles.barWrap}>
-                <div className={styles.barUsers} style={{ height: barHeight(value, usersMax) }} />
+        <div className={styles.notesCard}>
+          <h4>Recent Activity</h4>
+          <ul>
+            <li>
+              <div>
+                <p>New School Joined</p>
+                <small>Lincoln High School</small>
               </div>
-            ))}
-          </div>
-        </article>
+              <span>2m ago</span>
+            </li>
+            <li>
+              <div>
+                <p>Platform Update</p>
+                <small>v2.4.0 deployed successfully</small>
+              </div>
+              <span>1h ago</span>
+            </li>
+            <li>
+              <div>
+                <p>High AI Usage</p>
+                <small>Summit Academy exceeding quota</small>
+              </div>
+              <span>3h ago</span>
+            </li>
+          </ul>
+        </div>
+      </div>
 
-        <article className={styles.chartCard}>
-          <div className={styles.chartHead}>
-            <h4>Quiz generation trends</h4>
-            <small>Generated quizzes per month (k)</small>
-          </div>
-          <div className={styles.chartBars}>
-            {quizTrend.map((value, idx) => (
-              <div key={`quiz-${idx}`} className={styles.barWrap}>
-                <div className={styles.barQuiz} style={{ height: barHeight(value, quizMax) }} />
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
-    </section>
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <p>Quiz Completion Rate</p>
+          <strong>92%</strong>
+          <span>+2.4% from last week</span>
+        </div>
+        <div className={styles.statCard}>
+          <p>Avg. Teacher Rating</p>
+          <strong>4.9</strong>
+          <span>Stable</span>
+        </div>
+        <div className={styles.statCard}>
+          <p>System Uptime</p>
+          <strong>99.99%</strong>
+          <span>Operational</span>
+        </div>
+        <div className={styles.statCard}>
+          <p>Support Tickets</p>
+          <strong>14</strong>
+          <span>-5 this week</span>
+        </div>
+      </div>
+    </div>
   );
 }

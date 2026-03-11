@@ -93,9 +93,12 @@ export default function SubscriptionManagementPage() {
     patchRow(id, (item) => {
       const nextPlan: Plan =
         item.plan === "Free" ? "Basic" :
-        item.plan === "Basic" ? "Pro" :
-        item.plan === "Pro" ? "School" : "School";
-      const nextAmount = nextPlan === "Free" ? 0 : nextPlan === "Basic" ? 7 : nextPlan === "Pro" ? 14 : 590;
+          item.plan === "Basic" ? "Pro" :
+            item.plan === "Pro" ? "School" : "School";
+      const nextAmount =
+        nextPlan === "Basic" ? 7 :
+          nextPlan === "Pro" ? 14 :
+            nextPlan === "School" ? 590 : 0;
       return { ...item, plan: nextPlan, amount: nextAmount, status: "Active", renewalDate: plusDays(30) };
     });
   }

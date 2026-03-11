@@ -2,7 +2,6 @@
   --ink: #0f172a;
   --muted: #64748b;
   --stroke: #dbe4ef;
-
   display: grid;
   gap: 12px;
 }
@@ -12,19 +11,18 @@
   border-radius: 18px;
   padding: 16px;
   background:
-    radial-gradient(circle at 5% 0%, rgba(14, 165, 233, 0.2), transparent 34%),
-    radial-gradient(circle at 95% 0%, rgba(245, 158, 11, 0.16), transparent 38%),
+    radial-gradient(circle at 8% 0%, rgba(16, 185, 129, 0.2), transparent 35%),
+    radial-gradient(circle at 96% 0%, rgba(14, 165, 233, 0.18), transparent 38%),
     linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 .kicker {
   margin: 0;
   display: inline-flex;
   border-radius: 999px;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1e3a8a;
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  color: #166534;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -47,42 +45,40 @@
   font-weight: 600;
 }
 
-.sectionGrid {
+.metricGrid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.sectionCard {
+.metricCard {
   border: 1px solid var(--stroke);
-  border-radius: 12px;
+  border-radius: 14px;
   background: #ffffff;
-  text-align: left;
-  padding: 10px;
-  cursor: pointer;
+  padding: 12px;
 }
 
-.sectionCard span {
-  display: block;
+.metricCard p {
+  margin: 0;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-weight: 800;
 }
 
-.sectionCard strong {
+.metricCard strong {
   display: block;
   margin-top: 5px;
   color: var(--ink);
-  font-size: 24px;
+  font-size: clamp(25px, 2vw, 34px);
   line-height: 1;
 }
 
-.sectionActive {
-  border-color: #38bdf8;
-  background: #f0f9ff;
-  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.25);
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .panel {
@@ -90,13 +86,15 @@
   border-radius: 16px;
   background: #ffffff;
   padding: 12px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.panel:last-child {
+  grid-column: 1 / -1;
 }
 
 .panelHead {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 10px;
 }
 
@@ -104,7 +102,6 @@
   margin: 0;
   color: var(--ink);
   font-size: 20px;
-  letter-spacing: -0.02em;
 }
 
 .panelHead span {
@@ -114,113 +111,103 @@
   color: #1e3a8a;
   font-size: 11px;
   font-weight: 800;
-  padding: 3px 10px;
+  padding: 3px 9px;
 }
 
-.tableWrap {
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  min-width: 1250px;
-  border-collapse: collapse;
-}
-
-.table thead th {
-  text-align: left;
-  padding: 10px 8px;
-  border-bottom: 1px solid #e2e8f0;
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.table tbody td {
-  padding: 11px 8px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-  font-size: 13px;
-  vertical-align: middle;
-}
-
-.cellPrimary {
-  color: #0f172a;
-  font-weight: 800;
-}
-
-.status {
-  border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.s_active {
-  border-color: #a7f3d0;
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.s_expired {
-  border-color: #fecdd3;
-  background: #fff1f2;
-  color: #be123c;
-}
-
-.actions {
-  display: flex;
+.chart {
+  height: 220px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(to top, #f1f5f9 0, #f1f5f9 1px, transparent 1px, transparent 34px),
+    #ffffff;
+  padding: 10px 8px 8px;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 6px;
-  flex-wrap: wrap;
+  align-items: end;
 }
 
-.btnGhost,
-.btnPrimary,
-.btnWarn,
-.btnDanger {
-  border-radius: 9px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
+.barWrap {
+  height: 100%;
+  display: flex;
+  align-items: end;
+}
+
+.barRevenue,
+.barMrr {
+  width: 100%;
+  border-radius: 8px 8px 3px 3px;
+}
+
+.barRevenue {
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+}
+
+.barMrr {
+  background: linear-gradient(180deg, #38bdf8 0%, #2563eb 100%);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.list li {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 8px 10px;
+}
+
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.rowTop strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.rowTop span {
   color: #334155;
-  padding: 6px 8px;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.btnPrimary {
-  border-color: #0f172a;
-  background: #0f172a;
-  color: #ffffff;
+.track {
+  height: 9px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
 }
 
-.btnPrimary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btnWarn {
-  border-color: #fde68a;
-  background: #fffbeb;
-  color: #92400e;
-}
-
-.btnDanger {
-  border-color: #fecdd3;
-  background: #fff1f2;
-  color: #be123c;
+.fillPlan {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80 0%, #0ea5e9 100%);
 }
 
 @media (max-width: 1200px) {
-  .sectionGrid {
+  .metricGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel:last-child {
+    grid-column: auto;
   }
 }
 
 @media (max-width: 760px) {
-  .sectionGrid {
+  .metricGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -246,7 +233,7 @@
 
 .hero,
 .panel,
-.sectionCard {
+.metricCard {
   border-color: #dbe4ef;
   background:
     radial-gradient(circle at 0% 0%, rgba(153, 246, 228, 0.2), transparent 32%),
@@ -277,18 +264,14 @@
   color: #0f766e;
 }
 
-.sectionCard,
-.btnGhost,
-.btnPrimary,
-.btnWarn,
-.btnDanger {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+.panel,
+.metricCard {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.sectionCard:hover,
-.btnGhost:hover,
-.btnPrimary:hover,
-.btnWarn:hover,
-.btnDanger:hover {
-  transform: translateY(-1px);
+.panel:hover,
+.metricCard:hover {
+  transform: translateY(-2px);
+  border-color: #c8d8ea;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
 }
