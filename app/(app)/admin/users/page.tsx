@@ -23,6 +23,8 @@ const initialUsers: UserRow[] = [
   { id: "u4", name: "Nora Patel", email: "nora.p@hillside.edu", plan: "Free", quizzesGenerated: 9, status: "Suspended", joinedDate: "2025-01-14" },
   { id: "u5", name: "Isabelle Cruz", email: "isabelle.cruz@eastbay.edu", plan: "Pro", quizzesGenerated: 74, status: "Active", joinedDate: "2024-12-03" },
   { id: "u6", name: "Carlos Mendez", email: "carlos.m@pinehill.edu", plan: "Basic", quizzesGenerated: 32, status: "Active", joinedDate: "2024-10-19" },
+  { id: "u7", name: "Elena Rossi", email: "elena.rossi@milan.edu", plan: "Pro", quizzesGenerated: 56, status: "Active", joinedDate: "2024-09-12" },
+  { id: "u8", name: "Kenzo Tanaka", email: "kenzo.t@shibuya.edu", plan: "School", quizzesGenerated: 210, status: "Active", joinedDate: "2024-08-05" },
 ];
 
 const plans: UserPlan[] = ["Free", "Basic", "Pro", "School"];
@@ -40,12 +42,20 @@ export default function UserManagementPage() {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState({ name: "", email: "" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return users;
     return users.filter((user) => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term));
   }, [search, users]);
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredUsers.slice(start, start + itemsPerPage);
+  }, [filteredUsers, currentPage]);
 
   function startEdit(user: UserRow) {
     setEditingId(user.id);
@@ -61,12 +71,6 @@ export default function UserManagementPage() {
       ),
     );
     setEditingId(null);
-  }
-
-  function resetPassword(userId: string) {
-    const user = users.find((entry) => entry.id === userId);
-    if (!user) return;
-    window.alert(`Password reset link sent to ${user.email}`);
   }
 
   function toggleSuspend(userId: string) {
@@ -102,115 +106,136 @@ export default function UserManagementPage() {
           <div className={styles.searchWrapper}>
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Search by name or email..."
               className={styles.search}
               aria-label="Search users"
             />
           </div>
-          <p className={styles.countLabel}>{filteredUsers.length} active records</p>
+          <p className={styles.countLabel}>{filteredUsers.length} records</p>
         </div>
 
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Profile Name</th>
-                <th>Email Address</th>
-                <th>Access Plan</th>
-                <th>Usage</th>
-                <th>Status</th>
-                <th>Joined</th>
-                <th>Operations</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => {
-                const isEditing = editingId === user.id;
-                return (
-                  <tr key={user.id}>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          className={styles.editInput}
-                          value={editDraft.name}
-                          onChange={(event) => setEditDraft((prev) => ({ ...prev, name: event.target.value }))}
-                          aria-label={`Edit name for ${user.name}`}
-                        />
-                      ) : (
-                        <div className={styles.cellPrimary}>{user.name}</div>
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          className={styles.editInput}
-                          value={editDraft.email}
-                          onChange={(event) => setEditDraft((prev) => ({ ...prev, email: event.target.value }))}
-                          aria-label={`Edit email for ${user.name}`}
-                        />
-                      ) : (
-                        user.email
-                      )}
-                    </td>
-                    <td>
-                      <select
-                        className={styles.planSelect}
-                        value={user.plan}
-                        onChange={(event) =>
-                          setUsers((prev) =>
-                            prev.map((entry) =>
-                              entry.id === user.id ? { ...entry, plan: event.target.value as UserPlan } : entry,
-                            ),
-                          )
-                        }
-                        aria-label={`Change plan for ${user.name}`}
-                      >
-                        {plans.map((plan) => (
-                          <option key={plan} value={plan}>
-                            {plan}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <strong>{user.quizzesGenerated}</strong> <small>quizzes</small>
-                    </td>
-                    <td>
-                      <span className={`${styles.status} ${user.status === "Active" ? styles.s_active : styles.s_suspended}`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td>{formatDate(user.joinedDate)}</td>
-                    <td>
-                      <div className={styles.actions}>
-                        {isEditing ? (
-                          <>
-                            <button type="button" className={styles.btnPrimary} onClick={() => saveEdit(user.id)}>
-                              Save
-                            </button>
-                            <button type="button" className={styles.btnGhost} onClick={() => setEditingId(null)}>
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <button type="button" className={styles.btnAction} onClick={() => startEdit(user)} title="Edit User">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                        )}
-                        <button type="button" className={styles.btnWarn} onClick={() => toggleSuspend(user.id)}>
-                          {user.status === "Active" ? "Suspend" : "Activate"}
-                        </button>
-                        <button type="button" className={styles.btnDanger} onClick={() => deleteUser(user.id)}>
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className={styles.tableHeader}>
+            <div>Profile Name</div>
+            <div>Email Address</div>
+            <div>Access Plan</div>
+            <div>Usage</div>
+            <div>Status</div>
+            <div>Joined</div>
+            <div>Operations</div>
+          </div>
+          {paginatedUsers.map((user, idx) => {
+            const isEditing = editingId === user.id;
+            const avatars = ["#99f6e4", "#fef08a", "#fda4af", "#e9d5ff"];
+            const planColors = { Free: "#94a3b8", Basic: "#99f6e4", Pro: "#fda4af", School: "#e9d5ff" };
+
+            return (
+              <div key={user.id} className={styles.rowSlice} style={{ "--avatar-bg": avatars[idx % 4] } as any}>
+                <div className={styles.userProfile}>
+                  <div className={styles.userAvatar}>{user.name.charAt(0)}</div>
+                  {isEditing ? (
+                    <input
+                      className={styles.editInput}
+                      value={editDraft.name}
+                      onChange={(event) => setEditDraft((prev) => ({ ...prev, name: event.target.value }))}
+                    />
+                  ) : (
+                    <div className={styles.cellPrimary}>{user.name}</div>
+                  )}
+                </div>
+
+                <div className={styles.emailText}>
+                  {isEditing ? (
+                    <input
+                      className={styles.editInput}
+                      value={editDraft.email}
+                      onChange={(event) => setEditDraft((prev) => ({ ...prev, email: event.target.value }))}
+                    />
+                  ) : (
+                    user.email
+                  )}
+                </div>
+
+                <div>
+                  <div className={styles.planTag} style={{ "--plan-color": planColors[user.plan] } as any}>
+                    {user.plan}
+                  </div>
+                </div>
+
+                <div>
+                  <span className={styles.usageText}>{user.quizzesGenerated}</span>
+                  <div className={styles.usageTrack}>
+                    <div className={styles.usageFill} style={{ width: `${Math.min((user.quizzesGenerated / 200) * 100, 100)}%` }} />
+                  </div>
+                </div>
+
+                <div className={`${styles.statusWrap} ${user.status === "Active" ? "" : styles.statusSuspended}`}>
+                  <span className={`${styles.statusIndicator} ${user.status === "Active" ? styles.statusIndicatorActive : styles.statusIndicatorSuspended}`} />
+                  <span className={styles.statusText}>{user.status}</span>
+                </div>
+
+                <div className={styles.joinedDate}>{formatDate(user.joinedDate)}</div>
+
+                <div className={styles.actions}>
+                  {isEditing ? (
+                    <>
+                      <button type="button" className={styles.btnPrimary} onClick={() => saveEdit(user.id)}>
+                        Save
+                      </button>
+                      <button type="button" className={styles.btnGhost} onClick={() => setEditingId(null)}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className={styles.btnAction} onClick={() => startEdit(user)} title="Edit User">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                    </button>
+                  )}
+                  <button type="button" className={styles.btnWarn} onClick={() => toggleSuspend(user.id)}>
+                    {user.status === "Active" ? "Suspend" : "Activate"}
+                  </button>
+                  <button type="button" className={styles.btnDanger} onClick={() => deleteUser(user.id)}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className={styles.pagination}>
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className={styles.pageBtn}
+          >
+            &larr; Prev
+          </button>
+          <div className={styles.pageNumbers}>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                type="button"
+                className={`${styles.pageNum} ${currentPage === pageNum ? styles.pageNumActive : ""}`}
+                onClick={() => setCurrentPage(pageNum)}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className={styles.pageBtn}
+          >
+            Next &rarr;
+          </button>
         </div>
       </article>
     </section>
