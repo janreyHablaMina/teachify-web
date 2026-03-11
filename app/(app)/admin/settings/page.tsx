@@ -16,10 +16,11 @@ export default function AdminSettingsPage() {
 
   return (
     <section className={styles.root}>
-      <header className={styles.hero}>
-        <p className={styles.kicker}>Settings</p>
-        <h3>Configure the platform</h3>
-        <p>Manage AI keys, pricing, email, storage, branding, and platform feature controls.</p>
+      <header className={styles.missionHeader}>
+        <div className={styles.missionTitle}>
+          <p className={styles.missionBreadcrumb}>Admin / Configuration</p>
+          <h2>Platform Settings</h2>
+        </div>
       </header>
 
       <section className={styles.grid}>
@@ -112,26 +113,42 @@ export default function AdminSettingsPage() {
           <ul className={styles.toggleList}>
             <li>
               <span>AI Assistant</span>
-              <button type="button" onClick={() => setFeatureFlags((p) => ({ ...p, aiAssist: !p.aiAssist }))}>
-                {featureFlags.aiAssist ? "On" : "Off"}
+              <button
+                type="button"
+                className={!featureFlags.aiAssist ? styles.off : ""}
+                onClick={() => setFeatureFlags((p) => ({ ...p, aiAssist: !p.aiAssist }))}
+              >
+                {featureFlags.aiAssist ? "Active" : "Disabled"}
               </button>
             </li>
             <li>
               <span>Smart Hints</span>
-              <button type="button" onClick={() => setFeatureFlags((p) => ({ ...p, smartHints: !p.smartHints }))}>
-                {featureFlags.smartHints ? "On" : "Off"}
+              <button
+                type="button"
+                className={!featureFlags.smartHints ? styles.off : ""}
+                onClick={() => setFeatureFlags((p) => ({ ...p, smartHints: !p.smartHints }))}
+              >
+                {featureFlags.smartHints ? "Active" : "Disabled"}
               </button>
             </li>
             <li>
               <span>Maintenance Mode</span>
-              <button type="button" onClick={() => setFeatureFlags((p) => ({ ...p, maintenanceMode: !p.maintenanceMode }))}>
-                {featureFlags.maintenanceMode ? "On" : "Off"}
+              <button
+                type="button"
+                className={!featureFlags.maintenanceMode ? styles.off : ""}
+                onClick={() => setFeatureFlags((p) => ({ ...p, maintenanceMode: !p.maintenanceMode }))}
+              >
+                {featureFlags.maintenanceMode ? "Active" : "Disabled"}
               </button>
             </li>
             <li>
               <span>Public Signup</span>
-              <button type="button" onClick={() => setFeatureFlags((p) => ({ ...p, publicSignup: !p.publicSignup }))}>
-                {featureFlags.publicSignup ? "On" : "Off"}
+              <button
+                type="button"
+                className={!featureFlags.publicSignup ? styles.off : ""}
+                onClick={() => setFeatureFlags((p) => ({ ...p, publicSignup: !p.publicSignup }))}
+              >
+                {featureFlags.publicSignup ? "Active" : "Disabled"}
               </button>
             </li>
           </ul>

@@ -13,9 +13,6 @@
   isolation: isolate;
   min-height: 100%;
   padding: 8px 0;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(153, 246, 228, 0.15) 0%, transparent 40%),
-    radial-gradient(circle at 100% 100%, rgba(253, 164, 175, 0.1) 0%, transparent 40%);
 }
 
 /* Header Section */
