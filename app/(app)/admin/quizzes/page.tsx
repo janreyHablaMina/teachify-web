@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./quizzes.module.css";
 
 const metrics = [
@@ -10,10 +12,11 @@ const subjectMix = [
   { name: "Math", percent: 40 },
   { name: "Science", percent: 30 },
   { name: "English", percent: 20 },
+  { name: "Social Studies", percent: 15 },
   { name: "Others", percent: 10 },
 ] as const;
 
-const dailyQuizTrend = [24, 26, 28, 31, 29, 34, 38, 36, 41, 45, 43, 47];
+const dailyQuizTrend = [60, 45, 80, 55, 90, 70, 100, 85, 95, 75, 110, 105];
 
 function heightOf(value: number, max: number) {
   return `${Math.max(12, Math.round((value / max) * 100))}%`;
@@ -24,10 +27,11 @@ export default function AdminQuizAnalyticsPage() {
 
   return (
     <section className={styles.root}>
-      <header className={styles.hero}>
-        <p className={styles.kicker}>Quiz analytics</p>
-        <h3>Understand platform usage</h3>
-        <p>Track quiz activity volume, composition, and subject-level demand across the platform.</p>
+      <header className={styles.missionHeader}>
+        <div className={styles.missionTitle}>
+          <p className={styles.missionBreadcrumb}>Admin / Quiz Analytics</p>
+          <h2>Understand platform usage</h2>
+        </div>
       </header>
 
       <section className={styles.metricGrid}>
@@ -43,11 +47,11 @@ export default function AdminQuizAnalyticsPage() {
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <h4>Most popular subjects</h4>
-            <span>Distribution</span>
+            <span>Distribution by use</span>
           </div>
           <ul className={styles.subjectList}>
             {subjectMix.map((subject) => (
-              <li key={subject.name}>
+              <li key={subject.name} className={styles.subjectRow}>
                 <div className={styles.rowTop}>
                   <strong>{subject.name}</strong>
                   <span>{subject.percent}%</span>
@@ -63,12 +67,16 @@ export default function AdminQuizAnalyticsPage() {
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <h4>Quiz generation trend</h4>
-            <span>Last 12 periods</span>
+            <span>Last 12 cycles</span>
           </div>
           <div className={styles.chart}>
             {dailyQuizTrend.map((value, index) => (
               <div key={`q-${index}`} className={styles.barWrap}>
-                <div className={styles.bar} style={{ height: heightOf(value, max) }} />
+                <div
+                  className={styles.bar}
+                  style={{ height: heightOf(value, max) }}
+                  title={`${Math.round((value / max) * 100)}% volume`}
+                />
               </div>
             ))}
           </div>
