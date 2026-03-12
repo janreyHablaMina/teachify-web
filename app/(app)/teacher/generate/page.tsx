@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import api from "@/lib/axios";
 import { getUser } from "@/lib/auth";
 import { normalizePlanTier, PLAN_CATALOG, type PlanTier } from "@/lib/plans";
 import styles from "./generate.module.css";
@@ -54,14 +55,14 @@ export default function TeacherGeneratePage() {
   const [planTier, setPlanTier] = useState<PlanTier>("trial");
 
   const [summaryPrompt, setSummaryPrompt] = useState("Generate me a summary of Jose Rizal life.");
-  const [summaryResult, setSummaryResult] = useState("");
+  const [summaryResult, setSummaryResult] = useState<Record<string, string> | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [questionCount, setQuestionCount] = useState(10);
   const [selectedTypes, setSelectedTypes] = useState<QuestionType[]>(["multiple_choice"]);
   const [generationLoading, setGenerationLoading] = useState(false);
-  const [generatedQuestions, setGeneratedQuestions] = useState<string[]>([]);
+  const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [statusMessage, setStatusMessage] = useState<string>("");
 
   useEffect(() => {
@@ -111,13 +112,40 @@ export default function TeacherGeneratePage() {
     setStatusMessage("");
     setSummaryLoading(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    try {
+      const response = await api.post("/api/summaries/generate", { topic: summaryPrompt });
+      const summaryObj = response.data.summary;
+      setSummaryResult(summaryObj.content);
+      // We'll store the ID temporarily so we can export it
+      (window as any)._lastSummaryId = summaryObj.id;
+      setStatusMessage("Summary generated with ChatGPT & Gemini comparison.");
+    } catch (error) {
+      console.error("Failed to generate summary:", error);
+      setStatusMessage("Failed to generate summary. Please check AI service.");
+    } finally {
+      setSummaryLoading(false);
+    }
+  }
 
-    const output = `Summary Request: ${summaryPrompt}\n\nJose Rizal was a Filipino nationalist, doctor, writer, and reformist. He used his novels and essays to expose social injustice under colonial rule. His works, especially Noli Me Tangere and El Filibusterismo, inspired national consciousness and reform movements. Rizal promoted peaceful reform through education and civic engagement. He was executed on December 30, 1896, and became one of the central heroes of the Philippines independence narrative.`;
-
-    setSummaryResult(output);
-    setSummaryLoading(false);
-    setStatusMessage("Summary generated. You can export it as PDF.");
+  async function handleExportPdf() {
+    const id = (window as any)._lastSummaryId;
+    if (!id) return;
+    
+    try {
+      const response = await api.get(`/api/summaries/${id}/export-pdf`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${summaryPrompt.toLowerCase().replace(/\s+/g, "-")}-summary.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Export failed:", error);
+      setStatusMessage("Failed to export PDF.");
+    }
   }
 
   async function handleGenerateQuestions(event: FormEvent<HTMLFormElement>) {
@@ -129,25 +157,28 @@ export default function TeacherGeneratePage() {
       return;
     }
 
-    const safeCount = Math.max(1, Math.min(questionCount, maxQuestionLimit));
-    if (safeCount !== questionCount) {
-      setQuestionCount(safeCount);
-    }
-
     setGenerationLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const fileTopic = selectedFile.name.replace(/\.[^/.]+$/, "");
-    const primaryType = selectedTypes[0] ?? "multiple_choice";
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("count", questionCount.toString());
+      selectedTypes.forEach((type) => formData.append("types[]", type));
 
-    const questions = Array.from({ length: Math.min(safeCount, 8) }, (_, i) => {
-      const idx = i + 1;
-      return `${idx}. (${questionTypeLabel[primaryType]}) Based on \"${fileTopic}\", write question ${idx}.`;
-    });
+      const response = await api.post("/api/quizzes/generate-from-upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-    setGeneratedQuestions(questions);
-    setGenerationLoading(false);
-    setStatusMessage(`Generated ${safeCount} questions request (${selectedTypes.map((t) => questionTypeLabel[t]).join(", ")}).`);
+      setGeneratedQuestions(response.data.quiz.questions);
+      setStatusMessage(`Successfully generated ${response.data.quiz.questions.length} questions.`);
+    } catch (error: any) {
+      console.error("Failed to generate questions:", error);
+      setStatusMessage(error.response?.data?.error || "Failed to generate questions. Please check the file and try again.");
+    } finally {
+      setGenerationLoading(false);
+    }
   }
 
   return (
@@ -209,15 +240,27 @@ export default function TeacherGeneratePage() {
 
           {summaryResult ? (
             <div className={styles.resultCard}>
-              <h4>Generated Summary</h4>
-              <p>{summaryResult}</p>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={() => exportTextToPdf("AI Summary", summaryResult)}
-              >
-                Export as PDF
-              </button>
+              <div className={styles.resultHeader}>
+                <h4>AI Comparison View</h4>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={handleExportPdf}
+                >
+                  Export Both as PDF
+                </button>
+              </div>
+
+              <div className={styles.comparisonGrid}>
+                {Object.entries(summaryResult).map(([provider, text]) => (
+                  <div key={provider} className={`${styles.providerCard} ${styles[`provider${provider.charAt(0).toUpperCase() + provider.slice(1)}`]}`}>
+                    <div className={styles.providerBadge}>
+                      {provider === "chatgpt" ? "🤖 ChatGPT" : "✨ Gemini"}
+                    </div>
+                    <p>{text}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : null}
         </article>
@@ -270,11 +313,24 @@ export default function TeacherGeneratePage() {
           {generatedQuestions.length > 0 ? (
             <div className={styles.resultCard}>
               <h4>Generated Q & A Preview</h4>
-              <ul>
-                {generatedQuestions.map((question) => (
-                  <li key={question}>{question}</li>
+              <div className={styles.questionList}>
+                {generatedQuestions.map((q, idx) => (
+                  <div key={idx} className={styles.questionItem}>
+                    <p className={styles.questionText}><strong>Q{idx + 1}:</strong> {q.question_text}</p>
+                    {Array.isArray(q.options) && (
+                      <ul className={styles.optionList}>
+                        {q.options.map((opt: string, i: number) => (
+                          <li key={i} className={opt === q.correct_answer ? styles.correctOption : ""}>
+                            {String.fromCharCode(65 + i)}. {opt}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {!q.options && <p className={styles.correctAnswer}><strong>Answer:</strong> {q.correct_answer}</p>}
+                    {q.explanation && <p className={styles.explanation}><em>Note: {q.explanation}</em></p>}
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           ) : null}
         </article>
