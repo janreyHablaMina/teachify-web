@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { isAxiosError } from "axios";
 import { signIn, type UserRole } from "@/lib/auth";
 import "./backdrop.css";
 
@@ -15,10 +16,22 @@ export default function LoginPage() {
     event.preventDefault();
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
-    const role = (formData.get("role") as UserRole) || "teacher";
-    await new Promise(r => setTimeout(r, 1500));
-    signIn(role);
-    router.push(role === "admin" ? "/admin" : "/teacher");
+    const email = (formData.get("email") as string) || "";
+    const password = (formData.get("password") as string) || "";
+
+    try {
+      const data = await signIn({ email, password });
+      const role = data.user.role as UserRole;
+      router.push(role === "admin" ? "/admin" : "/teacher");
+    } catch (error: unknown) {
+      console.error("Login failed:", error);
+      const message = isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+      alert(message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -63,22 +76,6 @@ export default function LoginPage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
                 </div>
                 <input id="password" name="password" type="password" required disabled={isLoading} placeholder="••••••••" autoComplete="current-password" />
-              </div>
-            </div>
-
-            <div className="lc-input-group">
-              <label htmlFor="role" className="lc-label">Portal Access</label>
-              <div className="lc-input-wrapper">
-                <div className="lc-input-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                </div>
-                <select id="role" name="role" defaultValue="teacher" disabled={isLoading} className="lc-select">
-                  <option value="teacher">Educator Portal</option>
-                  <option value="admin">Admin Dashboard</option>
-                </select>
-                <div className="lc-select-caret">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="m6 9 6 6 6-6" /></svg>
-                </div>
               </div>
             </div>
 

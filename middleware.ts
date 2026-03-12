@@ -4,44 +4,69 @@ import type { NextRequest } from "next/server";
 const AUTH_COOKIE = "teachify_auth";
 const ROLE_COOKIE = "teachify_role";
 
-const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/forgot-password"]);
+// Paths that don't require authentication
+const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.nextUrl.hostname;
 
-  const isPublic = PUBLIC_PATHS.has(pathname);
-  const isProtected = pathname.startsWith("/admin") || pathname.startsWith("/teacher");
+  // In local development, force a single loopback host so Sanctum cookies
+  // are issued and sent on a consistent domain.
+  if (
+    process.env.NODE_ENV === "development" &&
+    hostname === "localhost"
+  ) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.hostname = "127.0.0.1";
+    return NextResponse.redirect(redirectUrl);
+  }
 
+  // 1. Get auth state
   const isAuthed = request.cookies.get(AUTH_COOKIE)?.value === "1";
-  const role = request.cookies.get(ROLE_COOKIE)?.value;
+  const userRole = request.cookies.get(ROLE_COOKIE)?.value;
 
-  if (isPublic && isAuthed) {
-    const url = request.nextUrl.clone();
-    url.pathname = role === "admin" ? "/admin" : "/teacher";
-    return NextResponse.redirect(url);
+  // 2. Determine if the path is public or for a specific portal
+  const isPublicPath = PUBLIC_PATHS.some(path => pathname === path);
+  const isAdminPath = pathname.startsWith("/admin");
+  const isTeacherPath = pathname.startsWith("/teacher");
+
+  // Logic A: Redirect authed users away from login/landing to their dashboard
+  if (isPublicPath && isAuthed) {
+    return NextResponse.redirect(new URL(userRole === "admin" ? "/admin" : "/teacher", request.url));
   }
 
-  if (isProtected && !isAuthed) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  // Logic B: Protect dashboard routes
+  if ((isAdminPath || isTeacherPath) && !isAuthed) {
+    const loginUrl = new URL("/login", request.url);
+    // Optional: add a redirect back parameter
+    // loginUrl.searchParams.set("from", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname.startsWith("/admin") && role !== "admin") {
-    const url = request.nextUrl.clone();
-    url.pathname = isAuthed ? "/teacher" : "/login";
-    return NextResponse.redirect(url);
+  // Logic C: Enforce role-based access for admins (admins can't go to teacher dashboard and vice versa)
+  if (isAdminPath && userRole !== "admin") {
+    return NextResponse.redirect(new URL("/teacher", request.url));
   }
 
-  if (pathname.startsWith("/teacher") && role !== "teacher") {
-    const url = request.nextUrl.clone();
-    url.pathname = isAuthed ? "/admin" : "/login";
-    return NextResponse.redirect(url);
+  if (isTeacherPath && userRole !== "teacher") {
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   return NextResponse.next();
 }
 
+// Protect all routes except static assets and api
 export const config = {
-  matcher: ["/", "/login", "/register", "/forgot-password", "/admin/:path*", "/teacher/:path*"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - images/pngs in public
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)',
+  ],
 };
