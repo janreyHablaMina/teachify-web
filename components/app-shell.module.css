@@ -231,12 +231,16 @@
   gap: 12px;
   text-decoration: none;
   border: 2px solid transparent;
+  background: none;
   color: var(--ink);
   padding: 10px 12px;
   font-size: 15px;
   font-weight: 800;
   transition: all 0.2s;
   border-radius: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
 }
 
 .navIcon {
@@ -289,6 +293,28 @@
   width: 3px;
   border-radius: 999px;
   background: #14b8a6;
+}
+
+.navItemLocked {
+  opacity: 0.85;
+  border-color: rgba(15, 23, 42, 0.15);
+}
+
+.navItemLocked:hover {
+  transform: none;
+  box-shadow: 4px 4px 0 var(--hl-pink);
+}
+
+.sidebarNotice {
+  margin: -8px 0 12px;
+  border: 1.5px solid var(--ink);
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+  padding: 8px 10px;
+  border-radius: 8px;
 }
 
 .sidebarFooter {

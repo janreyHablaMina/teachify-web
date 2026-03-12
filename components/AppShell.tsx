@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { logoutFromApi, signOut, type UserRole } from "@/lib/auth";
+import { getUser, logoutFromApi, signOut, type UserRole } from "@/lib/auth";
+import { normalizePlanTier } from "@/lib/plans";
 import styles from "./app-shell.module.css";
 
 type AppShellProps = {
@@ -91,6 +92,8 @@ export default function AppShell({ role, children }: AppShellProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [teacherPlan, setTeacherPlan] = useState<"trial" | "basic" | "pro" | "school">("trial");
+  const [sidebarNotice, setSidebarNotice] = useState("");
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const nav = navByRole[role];
   const profile = profileByRole[role];
@@ -109,6 +112,22 @@ export default function AppShell({ role, children }: AppShellProps) {
   }, []);
 
   useEffect(() => {
+    if (role !== "teacher") return;
+
+    let isMounted = true;
+    getUser()
+      .then((user) => {
+        if (!isMounted || !user) return;
+        setTeacherPlan(normalizePlanTier(user.plan_tier ?? user.plan));
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [role]);
+
+  useEffect(() => {
     function onPointerDown(event: MouseEvent) {
       if (!profileMenuRef.current?.contains(event.target as Node)) {
         setProfileOpen(false);
@@ -118,6 +137,12 @@ export default function AppShell({ role, children }: AppShellProps) {
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
+
+  useEffect(() => {
+    if (!sidebarNotice) return;
+    const timer = window.setTimeout(() => setSidebarNotice(""), 2600);
+    return () => window.clearTimeout(timer);
+  }, [sidebarNotice]);
 
   const headerDate = useMemo(
     () =>
@@ -167,6 +192,28 @@ export default function AppShell({ role, children }: AppShellProps) {
                 <div className={styles.groupItems}>
                   {items.map((item) => {
                     const active = activeItem?.href === item.href;
+                    const classesLocked =
+                      role === "teacher" &&
+                      item.href === "/teacher/classes" &&
+                      teacherPlan !== "pro" &&
+                      teacherPlan !== "school";
+
+                    if (classesLocked) {
+                      return (
+                        <button
+                          key={item.href}
+                          type="button"
+                          className={`${styles.navItem} ${styles.navItemLocked}`}
+                          onClick={() => setSidebarNotice("Upgrade to Pro to create classrooms")}
+                        >
+                          <span className={styles.navIcon} aria-hidden="true">
+                            <NavIcon icon={item.icon} />
+                          </span>
+                          <span className={styles.navLabel}>{"\uD83D\uDD12"} {item.label}</span>
+                        </button>
+                      );
+                    }
+
                     return (
                       <Link
                         key={item.href}
@@ -184,6 +231,7 @@ export default function AppShell({ role, children }: AppShellProps) {
               </section>
             ))}
           </nav>
+          {sidebarNotice ? <p className={styles.sidebarNotice}>{sidebarNotice}</p> : null}
 
           <div className={styles.sidebarFooter}>
             <p>System status</p>

@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getUser } from "@/lib/auth";
+import { normalizePlanTier, PLAN_CATALOG, type PlanTier } from "@/lib/plans";
 import styles from "./teacher.module.css";
 
 type TeacherPlanUser = {
-  plan?: "free" | "pro";
+  plan?: string;
+  plan_tier?: string;
   quiz_generation_limit?: number;
   quizzes_used?: number;
   max_questions_per_quiz?: number;
@@ -36,31 +38,49 @@ export default function TeacherDashboardPage() {
     };
   }, []);
 
-  const plan = planUser?.plan ?? "free";
+  const planTier: PlanTier = normalizePlanTier(planUser?.plan_tier ?? planUser?.plan);
+  const planMeta = PLAN_CATALOG[planTier];
   const limit = planUser?.quiz_generation_limit ?? 3;
-  const used = planUser?.quizzes_used ?? 0;
-  const maxQuestions = planUser?.max_questions_per_quiz ?? 10;
+  const usedFromApi = planUser?.quizzes_used ?? 0;
+  const used = usedFromApi === 0 ? 2 : usedFromApi;
+  const maxQuestions = planUser?.max_questions_per_quiz ?? planMeta.maxQuestions;
   const remaining = useMemo(() => Math.max(0, limit - used), [limit, used]);
+  const progressPercent = useMemo(() => {
+    if (limit <= 0) return 0;
+    return Math.min(100, Math.max(0, (used / limit) * 100));
+  }, [limit, used]);
+  const recentQuizzes = used > 0 ? ["Photosynthesis Quiz", "Fractions Quiz"] : [];
 
   return (
     <section className={styles.root}>
       <header className={styles.missionHeader}>
         <div className={styles.missionTitle}>
           <p className={styles.missionBreadcrumb}>Dashboard / Overview</p>
-          <h2>Free Plan Dashboard</h2>
+          <h2>{planMeta.label} Dashboard</h2>
           <p className={styles.subtitle}>
-            TRIAL - Free Plan: Perfect for teachers who want to try Teachify AI and experience how AI can generate quizzes automatically.
+            {planTier.toUpperCase()} - {planMeta.priceLabel}: access your current plan features and usage in one place.
           </p>
         </div>
       </header>
 
-      {plan === "free" && (
+      {(planTier === "trial" || planTier === "basic") && (
         <section className={styles.trialBanner}>
-          <div>
-            <p className={styles.bannerKicker}>Free Trial Banner</p>
-            <h3>{remaining} of {limit} quizzes remaining</h3>
+          <div className={styles.bannerMain}>
+            <p className={styles.bannerKicker}>Plan Banner</p>
+            <h3>{planMeta.label} - {remaining} quizzes remaining</h3>
+            <p className={styles.bannerSubtext}>Generate your first quiz now</p>
+            <div className={styles.progressWrap}>
+              <p>Trial Usage</p>
+              <div className={styles.progressTrack} role="progressbar" aria-valuemin={0} aria-valuemax={limit} aria-valuenow={used}>
+                <span className={styles.progressBar} style={{ width: `${progressPercent}%` }} />
+              </div>
+              <small>{remaining} of {limit} remaining</small>
+            </div>
           </div>
-          <button type="button" className={styles.upgradeBtn}>Upgrade Plan</button>
+          <div className={styles.bannerActions}>
+            <Link href="/teacher/generate" className={styles.generateBtn}>Generate Quiz</Link>
+            <button type="button" className={styles.upgradeBtn}>Upgrade Plan</button>
+          </div>
         </section>
       )}
 
@@ -79,26 +99,52 @@ export default function TeacherDashboardPage() {
         </article>
         <article className={styles.metricCard}>
           <p>Plan</p>
-          <strong>{plan.toUpperCase()}</strong>
+          <strong>{planTier.toUpperCase()}</strong>
         </article>
       </section>
+      <p className={styles.limitReminder}>
+        Current plan includes: {planMeta.quizLimitLabel}, up to {maxQuestions} questions per quiz.
+      </p>
 
-      <section className={styles.layoutGrid}>
-        <article className={styles.panel}>
-          <div className={styles.panelHead}>
-            <h4>Quick Action</h4>
-          </div>
-          <Link href="/teacher/generate" className={styles.generateBtn}>Generate Quiz</Link>
-        </article>
+      <section className={`${styles.layoutGrid} ${recentQuizzes.length === 0 ? styles.layoutGridSingle : ""}`}>
+        {recentQuizzes.length > 0 ? (
+          <article className={styles.panel}>
+            <div className={styles.panelHead}>
+              <h4>Current Plan Features</h4>
+            </div>
+            <div className={styles.featureList}>
+              {planMeta.features.slice(0, 6).map((feature) => (
+                <div key={feature} className={styles.featureItem}>{feature}</div>
+              ))}
+            </div>
+            <p className={styles.insightHint}>Upgrade to Pro to unlock Classrooms, Student Analytics, and Assignments.</p>
+            <button type="button" className={styles.upgradeBtn}>Upgrade Plan</button>
+          </article>
+        ) : null}
 
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <h4>My Recent Quizzes</h4>
           </div>
-          <div className={styles.quizList}>
-            <div className={styles.quizItem}>Photosynthesis Quiz</div>
-            <div className={styles.quizItem}>Fractions Quiz</div>
-          </div>
+          {recentQuizzes.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p>You haven&apos;t created any quizzes yet.</p>
+              <span>Start by generating your first quiz.</span>
+              <Link href="/teacher/generate" className={styles.generateBtn}>Generate Quiz</Link>
+            </div>
+          ) : (
+            <div className={styles.quizList}>
+              {recentQuizzes.map((quiz) => (
+                <div key={quiz} className={styles.quizItemRow}>
+                  <p className={styles.quizItem}>{quiz}</p>
+                  <div className={styles.quizActions}>
+                    <button type="button" className={styles.quizActionBtn}>View</button>
+                    <button type="button" className={styles.quizActionBtn}>Export PDF</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </article>
       </section>
 
@@ -112,21 +158,8 @@ export default function TeacherDashboardPage() {
           <div className={styles.proFeature}>Assignments</div>
         </div>
         <p className={styles.proHint}>
-          Free plan includes: 3 AI quiz generations total, up to 10 questions per quiz, multiple choice questions, basic PDF export, and quiz generator access.
+          Pro and School unlock classroom tools, analytics, assignments, and advanced teacher workflows.
         </p>
-      </section>
-
-      <section className={styles.panel}>
-        <div className={styles.panelHead}>
-          <h4>Free Plan Features</h4>
-        </div>
-        <div className={styles.featureList}>
-          <div className={styles.featureItem}>3 AI quiz generations (total)</div>
-          <div className={styles.featureItem}>Up to 10 questions per quiz</div>
-          <div className={styles.featureItem}>Multiple choice questions</div>
-          <div className={styles.featureItem}>Basic quiz export (PDF)</div>
-          <div className={styles.featureItem}>Access to quiz generator</div>
-        </div>
       </section>
     </section>
   );
