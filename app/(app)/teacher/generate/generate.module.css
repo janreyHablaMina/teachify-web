@@ -53,6 +53,61 @@
   color: #334155;
 }
 
+.usageCard {
+  border: 1.8px solid var(--ink);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #ffffff;
+  display: grid;
+  gap: 8px;
+}
+
+.usageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.usageTitle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.usageNumbers {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.usageTrack {
+  height: 10px;
+  width: 100%;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.usageBar {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e 0%, #14b8a6 100%);
+}
+
+.limitReachedText {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #991b1b;
+}
+
 .modeTabs {
   display: flex;
   gap: 10px;
@@ -189,6 +244,20 @@
   cursor: pointer;
 }
 
+.upgradeBtnLarge {
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  background: var(--hl-yellow);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
 .primaryBtn {
   background: var(--hl-teal);
   color: var(--ink);
@@ -244,6 +313,13 @@
   font-size: 12px;
   font-weight: 800;
   color: #0f172a;
+}
+
+.loadingText {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
 }
 
 .resultHeader {

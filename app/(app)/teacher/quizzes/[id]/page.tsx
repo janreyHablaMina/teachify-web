@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/axios";
 
@@ -17,18 +17,21 @@ type QuizDetail = {
   id: number;
   title: string;
   topic: string;
+  type?: string;
   created_at: string;
   questions: Question[];
 };
 
 export default function QuizDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const quizId = params?.id;
 
   const [quiz, setQuiz] = useState<QuizDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
   const [showAnswers, setShowAnswers] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
 
   const questionCount = useMemo(() => quiz?.questions?.length ?? 0, [quiz]);
 
@@ -80,6 +83,40 @@ export default function QuizDetailPage() {
     }
   }
 
+  async function duplicateQuiz() {
+    if (!quizId) return;
+    setIsBusy(true);
+    setStatusMessage("");
+    try {
+      const response = await api.post(`/api/quizzes/${quizId}/duplicate`);
+      const newQuizId = response.data?.quiz?.id;
+      if (newQuizId) {
+        router.push(`/teacher/quizzes/${newQuizId}`);
+        return;
+      }
+      setStatusMessage("Quiz duplicated successfully.");
+    } catch (err: any) {
+      setStatusMessage(err?.response?.data?.error || "Failed to duplicate quiz.");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function deleteQuiz() {
+    if (!quizId) return;
+    const confirmed = window.confirm("Delete this quiz? This action cannot be undone.");
+    if (!confirmed) return;
+    setIsBusy(true);
+    setStatusMessage("");
+    try {
+      await api.delete(`/api/quizzes/${quizId}`);
+      router.push("/teacher/quizzes");
+    } catch (err: any) {
+      setStatusMessage(err?.response?.data?.error || "Failed to delete quiz.");
+      setIsBusy(false);
+    }
+  }
+
   return (
     <section className="quizzes-container">
       <header className="page-header">
@@ -94,6 +131,12 @@ export default function QuizDetailPage() {
           </Link>
           <button className="btn-sketch btn-ghost" type="button" onClick={() => setShowAnswers((v) => !v)}>
             {showAnswers ? "Hide Answers" : "Show Answers"}
+          </button>
+          <button className="btn-sketch btn-ghost" type="button" onClick={duplicateQuiz} disabled={isBusy}>
+            Duplicate
+          </button>
+          <button className="btn-sketch btn-danger" type="button" onClick={deleteQuiz} disabled={isBusy}>
+            Delete
           </button>
           <button className="btn-sketch btn-primary" type="button" onClick={() => exportQuizPdf(false)}>
             Export Questions PDF
@@ -118,6 +161,9 @@ export default function QuizDetailPage() {
             </p>
             <p>
               <strong>Created:</strong> {new Date(quiz.created_at).toLocaleString()}
+            </p>
+            <p>
+              <strong>Source:</strong> {quiz.type === "file" ? "PDF upload" : "Manual"}
             </p>
           </div>
 
@@ -249,6 +295,17 @@ export default function QuizDetailPage() {
         .btn-ghost {
           background: #fff;
           color: #0f172a;
+        }
+        .btn-danger {
+          background: #fecaca;
+          color: #7f1d1d;
+          border-color: #7f1d1d;
+          box-shadow: 3px 3px 0 #7f1d1d;
+        }
+        .btn-sketch:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
         }
         .status {
           color: #b91c1c;

@@ -8,6 +8,7 @@ type Quiz = {
   id: number;
   title: string;
   topic: string;
+  type?: string;
   questions_count?: number;
   created_at: string;
 };
@@ -152,6 +153,7 @@ export default function QuizzesPage() {
                     <span className="view-link">View details</span>
                   </span>
                 </div>
+                <p className="sourceText">Source: {quiz.type === "file" ? "PDF upload" : "Manual"}</p>
               </Link>
             </div>
           ))}
@@ -330,6 +332,12 @@ export default function QuizzesPage() {
           font-size: 0.76rem;
           font-weight: 700;
           color: #0369a1;
+        }
+        .sourceText {
+          margin: 0;
+          font-size: 0.76rem;
+          color: #64748b;
+          font-weight: 700;
         }
         .btn-sketch {
           padding: 0.65rem 1rem;

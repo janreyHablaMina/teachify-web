@@ -12,6 +12,8 @@ type QuestionType = "multiple_choice" | "true_false" | "short_answer" | "essay" 
 type TeacherPlanUser = {
   plan?: string;
   plan_tier?: string;
+  quiz_generation_limit?: number;
+  quizzes_used?: number;
   max_questions_per_quiz?: number;
 };
 
@@ -24,6 +26,7 @@ const questionTypeLabel: Record<QuestionType, string> = {
 };
 
 const advancedTypes: QuestionType[] = ["true_false", "short_answer", "essay", "enumeration"];
+const summaryExamples = ["Photosynthesis", "World War 2", "Algebra Equations", "Human Digestive System"];
 
 function exportTextToPdf(title: string, content: string) {
   const printWindow = window.open("", "_blank", "width=900,height=700");
@@ -66,6 +69,8 @@ export default function TeacherGeneratePage() {
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [lastGeneratedQuizId, setLastGeneratedQuizId] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const [generationLimit, setGenerationLimit] = useState<number>(3);
+  const [generationsUsed, setGenerationsUsed] = useState<number>(0);
 
   const isDemoMode = useMemo(
     () =>
@@ -80,13 +85,20 @@ export default function TeacherGeneratePage() {
   useEffect(() => {
     let isMounted = true;
 
-    getUser()
-      .then((user: TeacherPlanUser | null) => {
+    async function loadUsage() {
+      try {
+        const [user, quizzesRes] = await Promise.all([getUser(), api.get("/api/quizzes")]);
         if (!isMounted || !user) return;
-        const tier = normalizePlanTier(user.plan_tier ?? user.plan);
+        const typedUser = user as TeacherPlanUser;
+        const tier = normalizePlanTier(typedUser.plan_tier ?? typedUser.plan);
         setPlanTier(tier);
-      })
-      .catch(() => {});
+        setGenerationLimit(typedUser.quiz_generation_limit ?? 3);
+        setGenerationsUsed(Array.isArray(quizzesRes.data) ? quizzesRes.data.length : 0);
+      } catch {
+      }
+    }
+
+    loadUsage();
 
     return () => {
       isMounted = false;
@@ -100,6 +112,12 @@ export default function TeacherGeneratePage() {
   }, [planTier]);
 
   const isTrial = planTier === "trial";
+  const generationsRemaining = useMemo(() => Math.max(0, generationLimit - generationsUsed), [generationLimit, generationsUsed]);
+  const limitReached = generationsRemaining <= 0;
+  const generationProgress = useMemo(() => {
+    if (generationLimit <= 0) return 0;
+    return Math.min(100, Math.round((generationsUsed / generationLimit) * 100));
+  }, [generationLimit, generationsUsed]);
 
   function handleFilePick(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -186,6 +204,7 @@ export default function TeacherGeneratePage() {
 
       setGeneratedQuestions(response.data.quiz.questions);
       setLastGeneratedQuizId(response.data.quiz.id);
+      setGenerationsUsed((prev) => prev + 1);
       setStatusMessage(`Successfully generated ${response.data.quiz.questions.length} questions.`);
     } catch (error: any) {
       console.error("Failed to generate questions:", error);
@@ -242,6 +261,23 @@ export default function TeacherGeneratePage() {
         </p>
       </section>
 
+      <section className={styles.usageCard}>
+        <div className={styles.usageHeader}>
+          <p className={styles.usageTitle}>{planMeta.label} Usage</p>
+          <p className={styles.usageNumbers}>
+            {generationsRemaining} of {generationLimit} quiz generations remaining
+          </p>
+        </div>
+        <div className={styles.usageTrack} role="progressbar" aria-valuemin={0} aria-valuemax={generationLimit} aria-valuenow={generationsUsed}>
+          <span className={styles.usageBar} style={{ width: `${generationProgress}%` }} />
+        </div>
+        {limitReached ? (
+          <p className={styles.limitReachedText}>
+            You have reached the Free Plan limit ({generationLimit} quiz generations). Upgrade to continue using Teachify AI.
+          </p>
+        ) : null}
+      </section>
+
       <section className={styles.modeTabs}>
         <button
           type="button"
@@ -271,6 +307,7 @@ export default function TeacherGeneratePage() {
               placeholder="Generate me a summary of Jose Rizal life"
               required
             />
+            <p className={styles.helperText}>Examples: {summaryExamples.join(" • ")}</p>
             <button type="submit" className={styles.primaryBtn} disabled={summaryLoading}>
               {summaryLoading ? "Generating..." : "Generate Summary"}
             </button>
@@ -313,11 +350,15 @@ export default function TeacherGeneratePage() {
               value={quizTitle}
               onChange={(e) => setQuizTitle(e.target.value)}
               placeholder="e.g. Midterm Review - Chapter 3"
+              disabled={limitReached}
             />
 
             <label htmlFor="lessonFile">Upload lesson PDF</label>
-            <input id="lessonFile" type="file" accept=".pdf,application/pdf" onChange={handleFilePick} />
+            <input id="lessonFile" type="file" accept=".pdf,application/pdf" onChange={handleFilePick} disabled={limitReached} />
             {selectedFile ? <p className={styles.fileName}>Selected: {selectedFile.name}</p> : null}
+            <p className={styles.helperText}>
+              Upload a lesson PDF and Teachify AI will generate quiz questions automatically. Supported format: PDF (max 5MB, 20 pages).
+            </p>
 
             <label htmlFor="questionCount">How many questions? (up to {maxQuestionLimit})</label>
             <input
@@ -327,6 +368,7 @@ export default function TeacherGeneratePage() {
               max={maxQuestionLimit}
               value={questionCount}
               onChange={(e) => setQuestionCount(Number(e.target.value) || 1)}
+              disabled={limitReached}
             />
             <p className={styles.helperText}>Your plan allows up to {maxQuestionLimit} questions per quiz.</p>
 
@@ -341,7 +383,7 @@ export default function TeacherGeneratePage() {
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleType(type)}
-                      disabled={locked}
+                      disabled={locked || limitReached}
                     />
                     <span className={styles.typeLabel}>
                       {questionTypeLabel[type]}
@@ -352,9 +394,16 @@ export default function TeacherGeneratePage() {
               })}
             </div>
 
-            <button type="submit" className={styles.primaryBtn} disabled={generationLoading}>
-              {generationLoading ? "Generating..." : "Generate Q & A"}
-            </button>
+            {limitReached ? (
+              <button type="button" className={styles.upgradeBtnLarge}>
+                Upgrade Plan
+              </button>
+            ) : (
+              <button type="submit" className={styles.primaryBtn} disabled={generationLoading}>
+                {generationLoading ? "Generating quiz with AI..." : "Generate Q & A"}
+              </button>
+            )}
+            {generationLoading ? <p className={styles.loadingText}>Generating quiz with AI... This usually takes 3-5 seconds.</p> : null}
           </form>
 
           {generatedQuestions.length > 0 ? (
