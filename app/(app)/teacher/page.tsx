@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import api from "@/lib/axios";
 import { getUser } from "@/lib/auth";
 import { normalizePlanTier, PLAN_CATALOG, type PlanTier } from "@/lib/plans";
 import styles from "./teacher.module.css";
@@ -14,42 +15,60 @@ type TeacherPlanUser = {
   max_questions_per_quiz?: number;
 };
 
+type QuizSummary = {
+  id: number;
+  title: string;
+  created_at: string;
+};
+
 export default function TeacherDashboardPage() {
   const [planUser, setPlanUser] = useState<TeacherPlanUser | null>(null);
+  const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
 
   useEffect(() => {
     let isMounted = true;
 
-    getUser()
-      .then((user) => {
+    async function loadDashboardData() {
+      try {
+        const [user, quizzesRes] = await Promise.all([getUser(), api.get("/api/quizzes")]);
         if (!isMounted || !user) return;
 
         setPlanUser({
           plan: user.plan,
+          plan_tier: user.plan_tier,
           quiz_generation_limit: user.quiz_generation_limit,
           quizzes_used: user.quizzes_used,
           max_questions_per_quiz: user.max_questions_per_quiz,
         });
-      })
-      .catch(() => {});
+        setQuizzes(quizzesRes.data ?? []);
+      } catch {
+      }
+    }
+
+    loadDashboardData();
+
+    function refreshOnFocus() {
+      loadDashboardData();
+    }
+    window.addEventListener("focus", refreshOnFocus);
 
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", refreshOnFocus);
     };
   }, []);
 
   const planTier: PlanTier = normalizePlanTier(planUser?.plan_tier ?? planUser?.plan);
   const planMeta = PLAN_CATALOG[planTier];
   const limit = planUser?.quiz_generation_limit ?? 3;
-  const usedFromApi = planUser?.quizzes_used ?? 0;
-  const used = usedFromApi === 0 ? 2 : usedFromApi;
+  const used = quizzes.length;
   const maxQuestions = planUser?.max_questions_per_quiz ?? planMeta.maxQuestions;
   const remaining = useMemo(() => Math.max(0, limit - used), [limit, used]);
   const progressPercent = useMemo(() => {
     if (limit <= 0) return 0;
     return Math.min(100, Math.max(0, (used / limit) * 100));
   }, [limit, used]);
-  const recentQuizzes = used > 0 ? ["Photosynthesis Quiz", "Fractions Quiz"] : [];
+  const recentQuizzes = quizzes.slice(0, 5);
 
   return (
     <section className={styles.root}>
@@ -135,11 +154,11 @@ export default function TeacherDashboardPage() {
           ) : (
             <div className={styles.quizList}>
               {recentQuizzes.map((quiz) => (
-                <div key={quiz} className={styles.quizItemRow}>
-                  <p className={styles.quizItem}>{quiz}</p>
+                <div key={quiz.id} className={styles.quizItemRow}>
+                  <p className={styles.quizItem}>{quiz.title}</p>
                   <div className={styles.quizActions}>
-                    <button type="button" className={styles.quizActionBtn}>View</button>
-                    <button type="button" className={styles.quizActionBtn}>Export PDF</button>
+                    <Link href={`/teacher/quizzes/${quiz.id}`} className={styles.quizActionBtn}>View</Link>
+                    <span className={styles.quizActionDate}>{new Date(quiz.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))}
