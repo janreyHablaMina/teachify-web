@@ -33,7 +33,6 @@ const navByRole: Record<UserRole, NavItem[]> = {
   ],
   teacher: [
     { group: "Main", label: "Overview", href: "/teacher", icon: "overview" },
-    { group: "Teaching", label: "Topic Summary", href: "/teacher/summarize", icon: "Doc" },
     { group: "Teaching", label: "Generate Quiz", href: "/teacher/generate", icon: "Magic" },
     { group: "Teaching", label: "My Quizzes", href: "/teacher/quizzes", icon: "Book" },
     { group: "Classroom", label: "Classes", href: "/teacher/classes", icon: "classes" },

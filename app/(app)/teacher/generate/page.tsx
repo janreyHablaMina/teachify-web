@@ -59,6 +59,7 @@ export default function TeacherGeneratePage() {
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [quizTitle, setQuizTitle] = useState("");
   const [questionCount, setQuestionCount] = useState(10);
   const [selectedTypes, setSelectedTypes] = useState<QuestionType[]>(["multiple_choice"]);
   const [generationLoading, setGenerationLoading] = useState(false);
@@ -173,6 +174,7 @@ export default function TeacherGeneratePage() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      formData.append("title", quizTitle.trim());
       formData.append("count", questionCount.toString());
       selectedTypes.forEach((type) => formData.append("types[]", type));
 
@@ -302,8 +304,17 @@ export default function TeacherGeneratePage() {
         </article>
       ) : (
         <article className={styles.panel}>
-          <h3>Generate Questions from PDF</h3>
+          <h3>Generate Questions from your files</h3>
           <form className={styles.form} onSubmit={handleGenerateQuestions}>
+            <label htmlFor="quizTitle">Quiz title</label>
+            <input
+              id="quizTitle"
+              type="text"
+              value={quizTitle}
+              onChange={(e) => setQuizTitle(e.target.value)}
+              placeholder="e.g. Midterm Review - Chapter 3"
+            />
+
             <label htmlFor="lessonFile">Upload lesson PDF</label>
             <input id="lessonFile" type="file" accept=".pdf,application/pdf" onChange={handleFilePick} />
             {selectedFile ? <p className={styles.fileName}>Selected: {selectedFile.name}</p> : null}
