@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { registerWithApi, signIn } from "@/lib/auth";
+import { registerWithApi, setShadowCookies } from "@/lib/auth";
 import "./backdrop.css";
 
 export default function RegisterPage() {
@@ -31,7 +31,7 @@ export default function RegisterPage() {
         role: "teacher",
       });
       setStatus({ type: "success", message: "Account created successfully. Redirecting to your dashboard..." });
-      signIn("teacher");
+      setShadowCookies("teacher");
       setTimeout(() => {
         router.push("/teacher");
       }, 900);
@@ -150,7 +150,14 @@ export default function RegisterPage() {
               </p>
             ) : null}
 
-            <p className="rg-disclaimer rg-full">By continuing, you agree to Teachify terms and privacy policy.</p>
+            <label className="rg-consent rg-full" htmlFor="agreeTerms">
+              <input id="agreeTerms" name="agreeTerms" type="checkbox" required disabled={isLoading} />
+              <span>
+                I agree to the <Link href="/terms">Terms</Link> &amp; <Link href="/privacy">Privacy Policy</Link>.
+              </span>
+            </label>
+
+            <p className="rg-disclaimer rg-full">Please review our terms before creating your account.</p>
           </form>
 
           <p className="rg-footer-text">

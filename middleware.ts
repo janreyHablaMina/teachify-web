@@ -6,51 +6,43 @@ const ROLE_COOKIE = "teachify_role";
 
 // Paths that don't require authentication
 const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password"];
+const AUTH_REDIRECT_PATHS = ["/login", "/register", "/forgot-password"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hostname = request.nextUrl.hostname;
-
-  // In local development, force a single loopback host so Sanctum cookies
-  // are issued and sent on a consistent domain.
-  if (
-    process.env.NODE_ENV === "development" &&
-    hostname === "localhost"
-  ) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.hostname = "127.0.0.1";
-    return NextResponse.redirect(redirectUrl);
-  }
 
   // 1. Get auth state
   const isAuthed = request.cookies.get(AUTH_COOKIE)?.value === "1";
   const userRole = request.cookies.get(ROLE_COOKIE)?.value;
+  const hasValidRole = userRole === "admin" || userRole === "teacher";
+  const hasValidSession = isAuthed && hasValidRole;
 
   // 2. Determine if the path is public or for a specific portal
   const isPublicPath = PUBLIC_PATHS.some(path => pathname === path);
   const isAdminPath = pathname.startsWith("/admin");
   const isTeacherPath = pathname.startsWith("/teacher");
 
-  // Logic A: Redirect authed users away from login/landing to their dashboard
-  if (isPublicPath && isAuthed) {
+  // Logic A: Redirect authed users away from auth pages to their dashboard
+  if (isPublicPath && AUTH_REDIRECT_PATHS.includes(pathname) && hasValidSession) {
     return NextResponse.redirect(new URL(userRole === "admin" ? "/admin" : "/teacher", request.url));
   }
 
   // Logic B: Protect dashboard routes
-  if ((isAdminPath || isTeacherPath) && !isAuthed) {
+  if ((isAdminPath || isTeacherPath) && !hasValidSession) {
     const loginUrl = new URL("/login", request.url);
-    // Optional: add a redirect back parameter
-    // loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.set(AUTH_COOKIE, "", { path: "/", maxAge: 0 });
+    response.cookies.set(ROLE_COOKIE, "", { path: "/", maxAge: 0 });
+    return response;
   }
 
   // Logic C: Enforce role-based access for admins (admins can't go to teacher dashboard and vice versa)
   if (isAdminPath && userRole !== "admin") {
-    return NextResponse.redirect(new URL("/teacher", request.url));
+    return NextResponse.redirect(new URL(hasValidSession ? "/teacher" : "/login", request.url));
   }
 
   if (isTeacherPath && userRole !== "teacher") {
-    return NextResponse.redirect(new URL("/admin", request.url));
+    return NextResponse.redirect(new URL(hasValidSession ? "/admin" : "/login", request.url));
   }
 
   return NextResponse.next();

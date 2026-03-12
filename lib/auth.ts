@@ -9,24 +9,6 @@ type SignInCredentials = {
 const AUTH_COOKIE = "teachify_auth";
 const ROLE_COOKIE = "teachify_role";
 const MAX_AGE_SECONDS = 60 * 60 * 8;
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-export async function getCsrfCookie(): Promise<void> {
-  const response = await fetch(`${API_URL}/sanctum/csrf-cookie`, {
-    method: "GET",
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to initialize CSRF protection.");
-  }
-}
 
 type RegisterPayload = {
   fullname: string;
@@ -38,45 +20,14 @@ type RegisterPayload = {
 
 export async function registerWithApi(payload: RegisterPayload) {
   await getCsrfCookie();
-  const csrfToken = getCookie("XSRF-TOKEN");
-
-  const response = await fetch(`${API_URL}/api/register`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    const message =
-      data?.message ||
-      Object.values(data?.errors ?? {})?.[0]?.[0] ||
-      "Registration failed.";
-    throw new Error(String(message));
-  }
-
-  return data;
+  const response = await api.post("/api/register", payload);
+  return response.data;
 }
 
 export async function logoutFromApi(): Promise<void> {
   try {
     await getCsrfCookie();
-    const csrfToken = getCookie("XSRF-TOKEN");
-
-    await fetch(`${API_URL}/api/logout`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
-      },
-    });
+    await api.post("/api/logout");
   } catch {
     // Clear local auth cookies even if API logout request fails.
   }
@@ -107,13 +58,8 @@ export async function signIn(credentials: SignInCredentials) {
  * Sign out the user
  */
 export async function signOut() {
-  try {
-    await api.post("/api/logout");
-  } finally {
-    // Clear shadow cookies
-    document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-    document.cookie = `${ROLE_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-  }
+  document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  document.cookie = `${ROLE_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
 
 /**
@@ -129,7 +75,7 @@ export function setShadowCookies(role: UserRole) {
  */
 export async function getUser() {
   try {
-    const response = await api.get("/api/user");
+    const response = await api.get("/api/me");
     return response.data.user;
   } catch {
     return null;

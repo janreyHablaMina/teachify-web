@@ -411,6 +411,34 @@
     border-color: #7f1d1d;
 }
 
+.rg-consent {
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1.6px dashed #94a3b8;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.rg-consent input {
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    accent-color: #0f172a;
+}
+
+.rg-consent a {
+    color: var(--rg-ink);
+    font-weight: 900;
+    text-decoration: underline;
+    text-decoration-color: var(--rg-teal);
+    text-decoration-thickness: 2px;
+}
+
 .rg-disclaimer {
     margin: 0;
     font-size: 12px;
