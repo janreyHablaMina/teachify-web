@@ -12,6 +12,14 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
+type ShellUser = {
+  fullname?: string;
+  email?: string;
+  role?: string;
+  plan?: string;
+  plan_tier?: string;
+};
+
 type NavItem = {
   group: string;
   label: string;
@@ -100,9 +108,9 @@ export default function AppShell({ role, children }: AppShellProps) {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [teacherPlan, setTeacherPlan] = useState<"trial" | "basic" | "pro" | "school">("trial");
   const [sidebarNotice, setSidebarNotice] = useState("");
+  const [profile, setProfile] = useState(profileByRole[role]);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const nav = navByRole[role];
-  const profile = profileByRole[role];
   const activeItem = [...nav]
     .sort((a, b) => b.href.length - a.href.length)
     .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
@@ -118,13 +126,27 @@ export default function AppShell({ role, children }: AppShellProps) {
   }, []);
 
   useEffect(() => {
-    if (role !== "teacher") return;
-
     let isMounted = true;
+    setProfile(profileByRole[role]);
+
     getUser()
-      .then((user) => {
+      .then((user: ShellUser | null) => {
         if (!isMounted || !user) return;
-        setTeacherPlan(normalizePlanTier(user.plan_tier ?? user.plan));
+
+        setProfile({
+          name: user.fullname || profileByRole[role].name,
+          email: user.email || profileByRole[role].email,
+          title:
+            user.role === "admin"
+              ? "System Administrator"
+              : user.role === "teacher"
+                ? "Classroom Owner"
+                : "User Account",
+        });
+
+        if (role === "teacher") {
+          setTeacherPlan(normalizePlanTier(user.plan_tier ?? user.plan));
+        }
       })
       .catch(() => {});
 

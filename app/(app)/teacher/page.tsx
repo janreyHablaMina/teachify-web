@@ -61,7 +61,17 @@ export default function TeacherDashboardPage() {
   const planTier: PlanTier = normalizePlanTier(planUser?.plan_tier ?? planUser?.plan);
   const planMeta = PLAN_CATALOG[planTier];
   const limit = planUser?.quiz_generation_limit ?? 3;
-  const used = quizzes.length;
+  const used = useMemo(() => {
+    if (planTier === "basic" || planTier === "pro" || planTier === "school") {
+      const now = new Date();
+      return quizzes.filter((q) => {
+        const d = new Date(q.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length;
+    }
+
+    return quizzes.length;
+  }, [quizzes, planTier]);
   const maxQuestions = planUser?.max_questions_per_quiz ?? planMeta.maxQuestions;
   const remaining = useMemo(() => Math.max(0, limit - used), [limit, used]);
   const progressPercent = useMemo(() => {

@@ -93,7 +93,16 @@ export default function TeacherGeneratePage() {
         const tier = normalizePlanTier(typedUser.plan_tier ?? typedUser.plan);
         setPlanTier(tier);
         setGenerationLimit(typedUser.quiz_generation_limit ?? 3);
-        setGenerationsUsed(Array.isArray(quizzesRes.data) ? quizzesRes.data.length : 0);
+        const allQuizzes = Array.isArray(quizzesRes.data) ? quizzesRes.data : [];
+        const usedCount =
+          tier === "basic" || tier === "pro" || tier === "school"
+            ? allQuizzes.filter((q: any) => {
+                const d = new Date(q.created_at);
+                const now = new Date();
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+              }).length
+            : allQuizzes.length;
+        setGenerationsUsed(usedCount);
       } catch {
       }
     }
@@ -307,7 +316,7 @@ export default function TeacherGeneratePage() {
               placeholder="Generate me a summary of Jose Rizal life"
               required
             />
-            <p className={styles.helperText}>Examples: {summaryExamples.join(" • ")}</p>
+            {!summaryPrompt.trim() ? <p className={styles.helperText}>Examples: {summaryExamples.join(" • ")}</p> : null}
             <button type="submit" className={styles.primaryBtn} disabled={summaryLoading}>
               {summaryLoading ? "Generating..." : "Generate Summary"}
             </button>
@@ -354,10 +363,16 @@ export default function TeacherGeneratePage() {
             />
 
             <label htmlFor="lessonFile">Upload lesson PDF</label>
-            <input id="lessonFile" type="file" accept=".pdf,application/pdf" onChange={handleFilePick} disabled={limitReached} />
+            <input
+              id="lessonFile"
+              type="file"
+              accept={planTier === "basic" ? ".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation" : ".pdf,application/pdf"}
+              onChange={handleFilePick}
+              disabled={limitReached}
+            />
             {selectedFile ? <p className={styles.fileName}>Selected: {selectedFile.name}</p> : null}
             <p className={styles.helperText}>
-              Upload a lesson PDF and Teachify AI will generate quiz questions automatically. Supported format: PDF (max 5MB, 20 pages).
+              Upload your lesson file and Teachify AI will generate quiz questions automatically. Supported formats: {planTier === "basic" ? "PDF, DOCX, PPTX" : "PDF"} (max 5MB; PDF max 20 pages).
             </p>
 
             <label htmlFor="questionCount">How many questions? (up to {maxQuestionLimit})</label>
