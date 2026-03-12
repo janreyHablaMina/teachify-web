@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { signOut, type UserRole } from "@/lib/auth";
+import { logoutFromApi, signOut, type UserRole } from "@/lib/auth";
 import styles from "./app-shell.module.css";
 
 type AppShellProps = {
@@ -89,6 +89,8 @@ export default function AppShell({ role, children }: AppShellProps) {
   const router = useRouter();
   const [now, setNow] = useState(() => new Date());
   const [profileOpen, setProfileOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const nav = navByRole[role];
   const profile = profileByRole[role];
@@ -136,6 +138,15 @@ export default function AppShell({ role, children }: AppShellProps) {
       }).format(now),
     [now]
   );
+
+  async function handleConfirmSignOut() {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    await logoutFromApi();
+    signOut();
+    setLogoutConfirmOpen(false);
+    router.push("/login");
+  }
 
 
   return (
@@ -207,7 +218,7 @@ export default function AppShell({ role, children }: AppShellProps) {
                   <div className={styles.timeTape}>
                     <div className={styles.timeTapeHeader}>
                       <span className={styles.timeDot} />
-                      LIVE CLOCK
+                      LIVE CLOCK {headerDate}
                     </div>
                     <strong className={styles.timeValue}>{headerTime}</strong>
                   </div>
@@ -238,8 +249,7 @@ export default function AppShell({ role, children }: AppShellProps) {
                         className={styles.dropdownSignoutBtn}
                         onClick={() => {
                           setProfileOpen(false);
-                          signOut();
-                          router.push("/login");
+                          setLogoutConfirmOpen(true);
                         }}
                       >
                         Sign Out
@@ -254,6 +264,34 @@ export default function AppShell({ role, children }: AppShellProps) {
           <main className={styles.contentSurface}>{children}</main>
         </section>
       </div>
+
+      {logoutConfirmOpen && (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="logout-confirm-title">
+          <div className={styles.confirmModal}>
+            <p className={styles.confirmTag}>Confirm action</p>
+            <h3 id="logout-confirm-title" className={styles.confirmTitle}>Sign out now?</h3>
+            <p className={styles.confirmText}>You will need to log in again to access your dashboard.</p>
+            <div className={styles.confirmActions}>
+              <button
+                type="button"
+                className={styles.confirmCancelBtn}
+                onClick={() => setLogoutConfirmOpen(false)}
+                disabled={isSigningOut}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.confirmSignoutBtn}
+                onClick={handleConfirmSignOut}
+                disabled={isSigningOut}
+              >
+                {isSigningOut ? "Signing out..." : "Yes, sign out"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

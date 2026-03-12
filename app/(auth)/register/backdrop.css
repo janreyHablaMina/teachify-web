@@ -382,6 +382,35 @@
     box-shadow: 7px 7px 0 var(--rg-ink);
 }
 
+.rg-primary-btn:disabled {
+    opacity: 0.82;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 5px 5px 0 rgba(15, 23, 42, 0.7);
+}
+
+.rg-alert {
+    margin: 2px 0 0;
+    border: var(--rg-border);
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.45;
+    box-shadow: 4px 4px 0 rgba(15, 23, 42, 0.14);
+}
+
+.rg-alert-success {
+    background: #ccfbf1;
+    color: #0f172a;
+    border-color: #0f172a;
+}
+
+.rg-alert-error {
+    background: #fecdd3;
+    color: #7f1d1d;
+    border-color: #7f1d1d;
+}
+
 .rg-disclaimer {
     margin: 0;
     font-size: 12px;

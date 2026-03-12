@@ -1,7 +1,50 @@
+"use client";
+
+import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { registerWithApi, signIn } from "@/lib/auth";
 import "./backdrop.css";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus(null);
+    setIsLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+    const fullname = String(formData.get("fullName") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+    const passwordConfirmation = String(formData.get("confirmPassword") ?? "");
+
+    try {
+      await registerWithApi({
+        fullname,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,
+        role: "teacher",
+      });
+      setStatus({ type: "success", message: "Account created successfully. Redirecting to your dashboard..." });
+      signIn("teacher");
+      setTimeout(() => {
+        router.push("/teacher");
+      }, 900);
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Registration failed. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <main className="register-page-root">
       <section className="register-card">
@@ -51,30 +94,61 @@ export default function RegisterPage() {
             <p className="rg-subtitle">Start your account and access your educator dashboard.</p>
           </div>
 
-          <form className="rg-form-body">
+          <form onSubmit={handleRegister} className="rg-form-body">
             <div className="rg-input-group rg-full">
               <label htmlFor="fullName">Full name</label>
-              <input id="fullName" name="fullName" placeholder="Alex Johnson" />
+              <input id="fullName" name="fullName" placeholder="Alex Johnson" required disabled={isLoading} />
             </div>
 
             <div className="rg-input-group rg-full">
               <label htmlFor="email">Email address</label>
-              <input id="email" name="email" placeholder="teacher@school.edu" type="email" />
+              <input
+                id="email"
+                name="email"
+                placeholder="teacher@school.edu"
+                type="email"
+                required
+                disabled={isLoading}
+                autoComplete="email"
+              />
             </div>
 
             <div className="rg-input-group">
               <label htmlFor="password">Password</label>
-              <input id="password" name="password" placeholder="Enter password" type="password" />
+              <input
+                id="password"
+                name="password"
+                placeholder="Enter password"
+                type="password"
+                minLength={8}
+                required
+                disabled={isLoading}
+                autoComplete="new-password"
+              />
             </div>
 
             <div className="rg-input-group">
               <label htmlFor="confirmPassword">Confirm password</label>
-              <input id="confirmPassword" name="confirmPassword" placeholder="Confirm password" type="password" />
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="Confirm password"
+                type="password"
+                minLength={8}
+                required
+                disabled={isLoading}
+                autoComplete="new-password"
+              />
             </div>
 
-            <button type="button" className="rg-primary-btn rg-full">
-              Create account
+            <button type="submit" className="rg-primary-btn rg-full" disabled={isLoading}>
+              {isLoading ? "Creating account..." : "Create account"}
             </button>
+            {status ? (
+              <p className={`rg-alert rg-full ${status.type === "success" ? "rg-alert-success" : "rg-alert-error"}`}>
+                {status.message}
+              </p>
+            ) : null}
 
             <p className="rg-disclaimer rg-full">By continuing, you agree to Teachify terms and privacy policy.</p>
           </form>
