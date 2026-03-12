@@ -63,6 +63,7 @@ export default function TeacherGeneratePage() {
   const [selectedTypes, setSelectedTypes] = useState<QuestionType[]>(["multiple_choice"]);
   const [generationLoading, setGenerationLoading] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
+  const [lastGeneratedQuizId, setLastGeneratedQuizId] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("");
 
   const isDemoMode = useMemo(
@@ -182,12 +183,37 @@ export default function TeacherGeneratePage() {
       });
 
       setGeneratedQuestions(response.data.quiz.questions);
+      setLastGeneratedQuizId(response.data.quiz.id);
       setStatusMessage(`Successfully generated ${response.data.quiz.questions.length} questions.`);
     } catch (error: any) {
       console.error("Failed to generate questions:", error);
       setStatusMessage(error.response?.data?.error || "Failed to generate questions. Please check the file and try again.");
     } finally {
       setGenerationLoading(false);
+    }
+  }
+
+  async function handleExportQuizPdf(includeAnswers: boolean) {
+    if (!lastGeneratedQuizId) return;
+
+    try {
+      const response = await api.get(`/api/quizzes/${lastGeneratedQuizId}/export-pdf`, {
+        params: {
+          include_answers: includeAnswers ? 1 : 0,
+        },
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", includeAnswers ? "quiz-with-answers.pdf" : "quiz-questions-only.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Quiz export failed:", error);
+      setStatusMessage("Failed to export quiz PDF.");
     }
   }
 
@@ -322,7 +348,17 @@ export default function TeacherGeneratePage() {
 
           {generatedQuestions.length > 0 ? (
             <div className={styles.resultCard}>
-              <h4>Generated Q & A Preview</h4>
+              <div className={styles.resultHeader}>
+                <h4>Generated Q & A Preview</h4>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button type="button" className={styles.secondaryBtn} onClick={() => handleExportQuizPdf(false)}>
+                    Export Questions PDF
+                  </button>
+                  <button type="button" className={styles.secondaryBtn} onClick={() => handleExportQuizPdf(true)}>
+                    Export With Answers PDF
+                  </button>
+                </div>
+              </div>
               {isDemoMode ? (
                 <p className={styles.status}>Demo mode: API quota unavailable. Showing fallback questions.</p>
               ) : null}
