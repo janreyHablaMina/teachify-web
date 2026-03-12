@@ -1,77 +1,132 @@
-﻿"use client";
+"use client";
 
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { getUser } from "@/lib/auth";
 import styles from "./teacher.module.css";
 
-const metrics = [
-  { label: "Quizzes Created", value: "42", delta: "+5 this week" },
-  { label: "Active Classes", value: "5", delta: "On track" },
-  { label: "Assigned This Week", value: "9", delta: "+2 vs last week" },
-  { label: "Avg Score", value: "81%", delta: "+3% improvement" },
-] as const;
-
-const activities = [
-  "Class 5A submitted Quiz: Photosynthesis",
-  "2 Essay responses need manual review",
-  "New draft: Mathematics - Geometry saved",
-  "Reminder notification sent to Class 6B",
-] as const;
+type TeacherPlanUser = {
+  plan?: "free" | "pro";
+  quiz_generation_limit?: number;
+  quizzes_used?: number;
+  max_questions_per_quiz?: number;
+};
 
 export default function TeacherDashboardPage() {
+  const [planUser, setPlanUser] = useState<TeacherPlanUser | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getUser()
+      .then((user) => {
+        if (!isMounted || !user) return;
+
+        setPlanUser({
+          plan: user.plan,
+          quiz_generation_limit: user.quiz_generation_limit,
+          quizzes_used: user.quizzes_used,
+          max_questions_per_quiz: user.max_questions_per_quiz,
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const plan = planUser?.plan ?? "free";
+  const limit = planUser?.quiz_generation_limit ?? 3;
+  const used = planUser?.quizzes_used ?? 0;
+  const maxQuestions = planUser?.max_questions_per_quiz ?? 10;
+  const remaining = useMemo(() => Math.max(0, limit - used), [limit, used]);
+
   return (
     <section className={styles.root}>
       <header className={styles.missionHeader}>
         <div className={styles.missionTitle}>
           <p className={styles.missionBreadcrumb}>Dashboard / Overview</p>
-          <h2>Classroom Analysis</h2>
+          <h2>Free Plan Dashboard</h2>
+          <p className={styles.subtitle}>
+            TRIAL - Free Plan: Perfect for teachers who want to try Teachify AI and experience how AI can generate quizzes automatically.
+          </p>
         </div>
       </header>
 
+      {plan === "free" && (
+        <section className={styles.trialBanner}>
+          <div>
+            <p className={styles.bannerKicker}>Free Trial Banner</p>
+            <h3>{remaining} of {limit} quizzes remaining</h3>
+          </div>
+          <button type="button" className={styles.upgradeBtn}>Upgrade Plan</button>
+        </section>
+      )}
+
       <section className={styles.metricGrid}>
-        {metrics.map((item) => (
-          <article key={item.label} className={styles.metricCard}>
-            <p>{item.label}</p>
-            <strong>{item.value}</strong>
-            <span>{item.delta}</span>
-          </article>
-        ))}
+        <article className={styles.metricCard}>
+          <p>Quizzes Remaining</p>
+          <strong>{remaining}</strong>
+        </article>
+        <article className={styles.metricCard}>
+          <p>Quizzes Used</p>
+          <strong>{used}</strong>
+        </article>
+        <article className={styles.metricCard}>
+          <p>Max Questions</p>
+          <strong>{maxQuestions}</strong>
+        </article>
+        <article className={styles.metricCard}>
+          <p>Plan</p>
+          <strong>{plan.toUpperCase()}</strong>
+        </article>
       </section>
 
       <section className={styles.layoutGrid}>
         <article className={styles.panel}>
           <div className={styles.panelHead}>
-            <h4>Live Activity Feed</h4>
-            <span>Recent Events</span>
+            <h4>Quick Action</h4>
           </div>
-          <div className={styles.feedList}>
-            {activities.map((activity, idx) => (
-              <div key={idx} className={styles.feedSlice}>
-                <div className={styles.feedIcon} />
-                <span className={styles.feedText}>{activity}</span>
-              </div>
-            ))}
-          </div>
+          <Link href="/teacher/generate" className={styles.generateBtn}>Generate Quiz</Link>
         </article>
 
         <article className={styles.panel}>
           <div className={styles.panelHead}>
-            <h4>Platform Usage</h4>
-            <span>Performance Metrics</span>
+            <h4>My Recent Quizzes</h4>
           </div>
-          <div className={styles.perfGrid}>
-            <div className={styles.perfCard}>
-              <p>Engagement</p>
-              <strong>87%</strong>
-            </div>
-            <div className={styles.perfCard}>
-              <p>On-time</p>
-              <strong>91%</strong>
-            </div>
-            <div className={styles.perfCard}>
-              <p>Reviews</p>
-              <strong>3</strong>
-            </div>
+          <div className={styles.quizList}>
+            <div className={styles.quizItem}>Photosynthesis Quiz</div>
+            <div className={styles.quizItem}>Fractions Quiz</div>
           </div>
         </article>
+      </section>
+
+      <section className={styles.panel}>
+        <div className={styles.panelHead}>
+          <h4>Unlock Pro Features</h4>
+        </div>
+        <div className={styles.proFeatureGrid}>
+          <div className={styles.proFeature}>Classrooms</div>
+          <div className={styles.proFeature}>Student Analytics</div>
+          <div className={styles.proFeature}>Assignments</div>
+        </div>
+        <p className={styles.proHint}>
+          Free plan includes: 3 AI quiz generations total, up to 10 questions per quiz, multiple choice questions, basic PDF export, and quiz generator access.
+        </p>
+      </section>
+
+      <section className={styles.panel}>
+        <div className={styles.panelHead}>
+          <h4>Free Plan Features</h4>
+        </div>
+        <div className={styles.featureList}>
+          <div className={styles.featureItem}>3 AI quiz generations (total)</div>
+          <div className={styles.featureItem}>Up to 10 questions per quiz</div>
+          <div className={styles.featureItem}>Multiple choice questions</div>
+          <div className={styles.featureItem}>Basic quiz export (PDF)</div>
+          <div className={styles.featureItem}>Access to quiz generator</div>
+        </div>
       </section>
     </section>
   );

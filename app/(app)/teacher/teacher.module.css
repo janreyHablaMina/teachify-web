@@ -1,270 +1,236 @@
 .root {
-    --ink: #0f172a;
-    --muted: #64748b;
-    --line: rgba(15, 23, 42, 0.05);
-    --hl-yellow: #fef08a;
-    --hl-teal: #99f6e4;
-    --hl-pink: #fda4af;
-    --hl-purple: #e9d5ff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --hl-yellow: #fef08a;
+  --hl-teal: #99f6e4;
+  --hl-pink: #fda4af;
+  --hl-purple: #e9d5ff;
 
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-    position: relative;
-    isolation: isolate;
-    min-height: 100%;
-    padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 100%;
+  padding: 8px 0;
 }
 
-/* Header Section */
 .missionHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .missionTitle h2 {
-    margin: 4px 0 0;
-    font-size: 32px;
-    font-weight: 800;
-    color: var(--ink);
-    letter-spacing: -0.03em;
+  margin: 4px 0 0;
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.03em;
 }
 
 .missionBreadcrumb {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
 }
 
-/* Metric Grid (KPIs) */
+.subtitle {
+  margin: 8px 0 0;
+  max-width: 760px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.trialBanner {
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 16px 18px;
+  background: linear-gradient(120deg, #ffffff 0%, #ecfeff 60%, #fef9c3 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 6px 6px 0 rgba(15, 23, 42, 0.14);
+}
+
+.bannerKicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.trialBanner h3 {
+  margin: 4px 0 0;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.upgradeBtn {
+  border: 2px solid var(--ink);
+  background: var(--hl-yellow);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 11px 14px;
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+}
+
 .metricGrid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .metricCard {
-    background: white;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    border-radius: 20px;
-    padding: 24px 20px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-}
-
-.metricCard::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--card-accent, #e2e8f0);
-}
-
-.metricCard:nth-child(1) {
-    --card-accent: var(--hl-teal);
-}
-
-.metricCard:nth-child(2) {
-    --card-accent: var(--hl-yellow);
-}
-
-.metricCard:nth-child(3) {
-    --card-accent: var(--hl-pink);
-}
-
-.metricCard:nth-child(4) {
-    --card-accent: var(--hl-purple);
-}
-
-.metricCard:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08);
-    border-color: var(--card-accent);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 18px 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
 }
 
 .metricCard p {
-    margin: 0;
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .metricCard strong {
-    font-size: 28px;
-    font-weight: 950;
-    color: var(--ink);
-    letter-spacing: -0.02em;
-    margin-top: 4px;
+  margin-top: 7px;
+  display: block;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 950;
+  color: var(--ink);
 }
 
-.metricCard span {
-    font-size: 11px;
-    font-weight: 700;
-    color: #10b981;
-    margin-top: 4px;
-}
-
-/* Main Layout Grid */
 .layoutGrid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
 .panel {
-    background: white;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    border-radius: 24px;
-    padding: 28px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    position: relative;
-    overflow: hidden;
-}
-
-.panel::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--hl-pink);
-}
-
-.panel:nth-child(2)::before {
-    background: var(--hl-teal);
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .panelHead {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .panelHead h4 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 950;
-    color: var(--ink);
-    letter-spacing: -0.02em;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.02em;
 }
 
-.panelHead span {
-    font-size: 11px;
-    font-weight: 900;
-    color: var(--muted);
-    background: #f1f5f9;
-    padding: 4px 12px;
-    border-radius: 999px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.generateBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border: 2px solid var(--ink);
+  background: var(--hl-teal);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 12px 14px;
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
-/* Feed List (Slices) */
-.feedList {
-    display: flex;
+.quizList,
+.featureList {
+  display: grid;
+  gap: 10px;
+}
+
+.quizItem,
+.featureItem {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 12px 13px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.proFeatureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.proFeature {
+  border: 1.5px dashed rgba(15, 23, 42, 0.35);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff7ed;
+  color: #7c2d12;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.proHint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 700;
+  color: #475569;
+}
+
+@media (max-width: 1160px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .proFeatureGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .trialBanner {
     flex-direction: column;
-    gap: 12px;
-}
-
-.feedSlice {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
-    background: #f8fbff;
-    border-radius: 16px;
-    border: 1px solid rgba(15, 23, 42, 0.04);
-    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-}
-
-.feedSlice:hover {
-    background: white;
-    border-color: var(--hl-teal);
-    transform: translateX(4px);
-    box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.feedIcon {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--hl-teal);
-    box-shadow: 0 0 8px var(--hl-teal);
-}
-
-.feedText {
-    font-size: 14px;
-    font-weight: 750;
-    color: var(--ink);
-}
-
-/* Performance Performance Mini Cards */
-.perfGrid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-}
-
-.perfCard {
-    background: #f8fafc;
-    border: 1px solid rgba(15, 23, 42, 0.05);
-    border-radius: 16px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    transition: all 0.2s ease;
-}
-
-.perfCard:hover {
-    background: white;
-    border-color: var(--hl-yellow);
-    transform: translateY(-2px);
-}
-
-.perfCard p {
-    margin: 0;
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--muted);
-    text-transform: uppercase;
-}
-
-.perfCard strong {
-    font-size: 18px;
-    font-weight: 950;
-    color: var(--ink);
-}
-
-@media (max-width: 1280px) {
-    .metricGrid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .layoutGrid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .metricGrid {
-        grid-template-columns: 1fr;
-    }
+    align-items: flex-start;
+  }
 }

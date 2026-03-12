@@ -46,10 +46,14 @@ export async function getCsrfCookie() {
 export async function signIn(credentials: SignInCredentials) {
   await getCsrfCookie();
   const response = await api.post("/api/login", credentials);
-  const user = response.data.user;
+  const role = response.data?.user?.role;
+
+  if (role !== "admin" && role !== "teacher") {
+    throw new Error("This account role is not allowed to access the web dashboard.");
+  }
 
   // Set shadow cookies for middleware
-  setShadowCookies(user.role);
+  setShadowCookies(role);
 
   return response.data;
 }

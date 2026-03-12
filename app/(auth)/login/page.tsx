@@ -22,12 +22,25 @@ export default function LoginPage() {
     try {
       const data = await signIn({ email, password });
       const role = data.user.role as UserRole;
-      router.push(role === "admin" ? "/admin" : "/teacher");
+
+      if (role === "admin") {
+        router.push("/admin");
+        return;
+      }
+
+      if (role === "teacher") {
+        router.push("/teacher");
+        return;
+      }
+
+      throw new Error("This account role is not allowed to access the web dashboard.");
     } catch (error: unknown) {
       console.error("Login failed:", error);
       const message = isAxiosError<{ message?: string }>(error)
         ? error.response?.data?.message
-        : undefined;
+        : error instanceof Error
+          ? error.message
+          : undefined;
       alert(message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
