@@ -65,6 +65,16 @@ export default function TeacherGeneratePage() {
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [statusMessage, setStatusMessage] = useState<string>("");
 
+  const isDemoMode = useMemo(
+    () =>
+      generatedQuestions.some(
+        (q) =>
+          typeof q?.explanation === "string" &&
+          q.explanation.toLowerCase().includes("fallback question because api quota is currently exceeded")
+      ),
+    [generatedQuestions]
+  );
+
   useEffect(() => {
     let isMounted = true;
 
@@ -266,10 +276,10 @@ export default function TeacherGeneratePage() {
         </article>
       ) : (
         <article className={styles.panel}>
-          <h3>Generate Questions from File</h3>
+          <h3>Generate Questions from PDF</h3>
           <form className={styles.form} onSubmit={handleGenerateQuestions}>
-            <label htmlFor="lessonFile">Upload lesson file (PDF, DOCX, PPTX)</label>
-            <input id="lessonFile" type="file" accept=".pdf,.docx,.pptx" onChange={handleFilePick} />
+            <label htmlFor="lessonFile">Upload lesson PDF</label>
+            <input id="lessonFile" type="file" accept=".pdf,application/pdf" onChange={handleFilePick} />
             {selectedFile ? <p className={styles.fileName}>Selected: {selectedFile.name}</p> : null}
 
             <label htmlFor="questionCount">How many questions? (up to {maxQuestionLimit})</label>
@@ -313,6 +323,9 @@ export default function TeacherGeneratePage() {
           {generatedQuestions.length > 0 ? (
             <div className={styles.resultCard}>
               <h4>Generated Q & A Preview</h4>
+              {isDemoMode ? (
+                <p className={styles.status}>Demo mode: API quota unavailable. Showing fallback questions.</p>
+              ) : null}
               <div className={styles.questionList}>
                 {generatedQuestions.map((q, idx) => (
                   <div key={idx} className={styles.questionItem}>
@@ -327,7 +340,7 @@ export default function TeacherGeneratePage() {
                       </ul>
                     )}
                     {!q.options && <p className={styles.correctAnswer}><strong>Answer:</strong> {q.correct_answer}</p>}
-                    {q.explanation && <p className={styles.explanation}><em>Note: {q.explanation}</em></p>}
+                    {q.explanation && !isDemoMode && <p className={styles.explanation}><em>Note: {q.explanation}</em></p>}
                   </div>
                 ))}
               </div>
