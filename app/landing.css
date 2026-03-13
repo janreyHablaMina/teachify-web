@@ -457,6 +457,105 @@
 /* ══════════════════════════════════════════
    HERO: POLAROID STACK (Bye Blob!)
    ══════════════════════════════════════════ */
+.lp-mobile-menu-toggle {
+    display: none;
+    width: 44px;
+    height: 44px;
+    border: var(--sketch-border);
+    border-radius: 12px;
+    background: var(--hl-teal);
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.lp-mobile-menu-toggle span {
+    width: 18px;
+    height: 2px;
+    background: var(--ink-primary);
+    border-radius: 999px;
+}
+
+.lp-mobile-menu-panel {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .lp-header-pill {
+        border-radius: 24px;
+        padding: 10px 12px 12px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .lp-logo-pill {
+        gap: 10px;
+    }
+
+    .lp-logo-icon-sketch {
+        width: 36px;
+        height: 36px;
+    }
+
+    .lp-logo-icon-sketch svg {
+        width: 34px;
+        height: 34px;
+    }
+
+    .logo-text {
+        font-size: 18px;
+    }
+
+    .lp-nav-sketch,
+    .lp-auth-sketch {
+        display: none;
+    }
+
+    .lp-mobile-menu-toggle {
+        display: inline-flex;
+        margin-left: auto;
+    }
+
+    .lp-mobile-menu-panel {
+        width: 100%;
+        border: var(--sketch-border);
+        border-radius: 14px;
+        padding: 14px;
+        background: #fff;
+        box-shadow: 5px 5px 0 var(--hl-purple);
+        margin-top: 6px;
+    }
+
+    .lp-mobile-menu-panel[hidden] {
+        display: none;
+    }
+
+    .lp-mobile-menu-panel:not([hidden]) {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .lp-mobile-menu-links {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .lp-mobile-menu-auth {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .lp-mobile-menu-auth .sketch-cta-head {
+        padding: 8px 18px;
+    }
+}
+
 .sketch-polaroid-stack {
     position: relative;
     width: 450px;
@@ -1650,13 +1749,18 @@
     }
 
     .lp-header-pill {
-        height: 50px;
-        padding: 0 4px 0 16px;
+        min-height: 50px;
+        padding: 10px 12px;
         gap: 12px;
     }
 
-    .lp-nav-pill {
+    .lp-nav-sketch,
+    .lp-auth-sketch {
         display: none;
+    }
+
+    .lp-mobile-menu-toggle {
+        display: inline-flex;
     }
 
     .lp-hero-v3-title {

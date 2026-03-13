@@ -1,6 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 export default function LandingHeader() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <div className="lp-header-pill-wrap">
       <div className="sketch-canvas">
@@ -30,6 +37,19 @@ export default function LandingHeader() {
             </span>
           </Link>
 
+          <button
+            type="button"
+            className="lp-mobile-menu-toggle"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-expanded={menuOpen}
+            aria-controls="lp-mobile-menu"
+            aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
           <nav className="lp-nav-sketch">
             <Link href="#features" className="sketch-link">
               Features
@@ -53,6 +73,28 @@ export default function LandingHeader() {
               <svg className="cta-sketch-arrow" width="40" height="20" viewBox="0 0 40 20">
                 <path d="M5,10 Q20,0 35,10 M35,10 L30,5 M35,10 L30,15" stroke="var(--ink-primary)" strokeWidth="2" fill="none" />
               </svg>
+            </div>
+          </div>
+
+          <div id="lp-mobile-menu" className="lp-mobile-menu-panel" hidden={!menuOpen}>
+            <nav className="lp-mobile-menu-links">
+              <Link href="#features" className="sketch-link" onClick={closeMenu}>
+                Features
+              </Link>
+              <Link href="#blog" className="sketch-link" onClick={closeMenu}>
+                Blog
+              </Link>
+              <Link href="#pricing" className="sketch-link sale-hl" onClick={closeMenu}>
+                Sale!
+              </Link>
+            </nav>
+            <div className="lp-mobile-menu-auth">
+              <Link href="/login" className="login-sketch" onClick={closeMenu}>
+                Login
+              </Link>
+              <Link href="/register" className="sketch-cta-head hl-yellow" onClick={closeMenu}>
+                Get Pro
+              </Link>
             </div>
           </div>
         </header>
