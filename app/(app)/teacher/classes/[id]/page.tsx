@@ -5,6 +5,8 @@ import Link from "next/link";
 import api from "@/lib/axios";
 import styles from "./classroom-detail.module.css";
 import DateTimePicker from "./DateTimePicker";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ToastProvider";
 
 type Student = {
   id: number;
@@ -34,10 +36,16 @@ type Classroom = {
 
 export default function ClassroomDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
+  const { showToast } = useToast();
   const [classroom, setClassroom] = useState<Classroom | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"students" | "assignments" | "analytics">("students");
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", room: "", schedule: "", is_active: true });
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [expiration, setExpiration] = useState("null");
 
@@ -67,6 +75,49 @@ export default function ClassroomDetailPage({ params }: { params: Promise<{ id: 
       setLoading(false);
     }
   }
+
+  const openSettings = () => {
+    if (classroom) {
+      setEditForm({ 
+        name: classroom.name, 
+        room: classroom.room || "", 
+        schedule: classroom.schedule || "",
+        is_active: classroom.is_active
+      });
+      setShowSettingsModal(true);
+    }
+  };
+
+  const handleUpdateClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    try {
+      const response = await api.put(`/api/classrooms/${id}`, editForm);
+      setClassroom(prev => prev ? { ...prev, ...response.data.classroom } : null);
+      setShowSettingsModal(false);
+      showToast("Classroom updated successfully!", "success");
+    } catch (error) {
+      console.error("Failed to update classroom:", error);
+      showToast("Failed to update classroom. Please try again.", "error");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDeleteClass = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/classrooms/${id}`);
+      router.push("/teacher/classes");
+    } catch (error) {
+      console.error("Failed to delete classroom:", error);
+      showToast("Failed to delete classroom. Please try again.", "error");
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const [expirationType, setExpirationType] = useState<"none" | "preset" | "custom">("none");
   const [activePreset, setActivePreset] = useState<string | null>(null);
@@ -128,9 +179,98 @@ export default function ClassroomDetailPage({ params }: { params: Promise<{ id: 
         <div className={styles.headerActions}>
           <button className={styles.btnSecondary} onClick={() => setShowInviteModal(true)}>Invite Students</button>
           <button className={styles.btnSecondary}>Assign Quiz</button>
-          <button className={styles.btnPrimary}>Class Settings</button>
+          <button className={styles.btnPrimary} onClick={openSettings}>Class Settings</button>
         </div>
       </header>
+
+      {showSettingsModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3>Class Settings</h3>
+              <button type="button" className={styles.btnClose} onClick={() => setShowSettingsModal(false)}>&times;</button>
+            </div>
+            <div className={styles.modalBody}>
+              <form onSubmit={handleUpdateClass} className={styles.form}>
+                <div className={styles.field}>
+                  <label>Class Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.name}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label>Room (Optional)</label>
+                  <input
+                    type="text"
+                    value={editForm.room}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, room: e.target.value }))}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label>Schedule (Optional)</label>
+                  <input
+                    type="text"
+                    value={editForm.schedule}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, schedule: e.target.value }))}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label>Class Status</label>
+                  <select
+                    value={editForm.is_active ? "active" : "inactive"}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, is_active: e.target.value === "active" }))}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                <div className={styles.modalActions}>
+                  <button type="button" className={styles.btnDanger} onClick={() => setShowDeleteConfirm(true)} disabled={isDeleting}>
+                    {isDeleting ? "Deleting..." : "Delete Class"}
+                  </button>
+                  <button type="button" className={styles.btnSecondary} onClick={() => setShowSettingsModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.btnPrimary} disabled={isUpdating}>
+                    {isUpdating ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
+          <div className={styles.confirmModal}>
+            <p className={styles.confirmTag}>Critical Action</p>
+            <h3 className={styles.confirmTitle}>Delete Classroom?</h3>
+            <p className={styles.confirmText}>Once deleted, all assignments, grades, and student progress in this classroom will be permanently lost.</p>
+            <div className={styles.confirmActions}>
+              <button
+                type="button"
+                className={styles.confirmCancelBtn}
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.confirmSignoutBtn}
+                onClick={handleDeleteClass}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Yes, delete class"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showInviteModal && (
         <div className={styles.modalOverlay}>

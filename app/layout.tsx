@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Manrope, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -20,6 +20,8 @@ const uiMono = IBM_Plex_Mono({
   subsets: ["latin"],
 });
 
+import { ToastProvider } from "@/components/ToastProvider";
+
 export const metadata: Metadata = {
   title: "Teachify",
   description: "Teachify dashboard and auth UI",
@@ -33,7 +35,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${uiSans.variable} ${uiDisplay.variable} ${uiMono.variable} antialiased`}>
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );
