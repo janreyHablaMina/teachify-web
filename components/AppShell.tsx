@@ -283,7 +283,7 @@ export default function AppShell({ role, children }: AppShellProps) {
               <div className={styles.topbarLeadWrap}>
                 <div className={styles.topbarDivider} aria-hidden="true" />
                 <div className={styles.topbarGreet}>
-                  <p>{role === "admin" ? "Platform Administrator" : "Educator Account"}
+                  <p>{role === "admin" ? "Platform Administrator" : role === "teacher" ? "Educator Account" : "Student Learner"}
                     {role === "teacher" && (teacherPlan === "pro" || teacherPlan === "school") && (
                       <span className={styles.topbarBadgePro}>PRO</span>
                     )}

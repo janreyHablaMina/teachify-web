@@ -41,8 +41,8 @@ export default function ClassroomDetailPage({ params }: { params: Promise<{ id: 
   const [copied, setCopied] = useState(false);
   const [expiration, setExpiration] = useState("null");
 
-  const inviteLink = typeof window !== 'undefined'
-    ? `${window.location.origin}/register/student`
+  const inviteLink = typeof window !== 'undefined' && classroom
+    ? `${window.location.origin}/register/student?code=${classroom.join_code}`
     : '';
 
   useEffect(() => {

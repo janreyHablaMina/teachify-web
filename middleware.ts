@@ -5,7 +5,7 @@ const AUTH_COOKIE = "teachify_auth";
 const ROLE_COOKIE = "teachify_role";
 
 // Paths that don't require authentication
-const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password", "/register/student"];
 const AUTH_REDIRECT_PATHS = ["/login", "/register", "/forgot-password"];
 
 export function middleware(request: NextRequest) {
