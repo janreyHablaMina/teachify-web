@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import api from "@/lib/axios";
 import styles from "./classes.module.css";
 
@@ -119,37 +120,39 @@ export default function TeacherClassesPage() {
         ) : (
           <div className={styles.classGrid}>
             {classrooms.map((cls) => (
-              <article key={cls.id} className={styles.classCard}>
-                <div className={styles.classHead}>
-                  <h4>{cls.name}</h4>
-                  <span className={cls.is_active ? styles.badgeActive : styles.badgeInactive}>
-                    {cls.is_active ? "Active" : "Inactive"}
-                  </span>
-                </div>
+              <Link key={cls.id} href={`/teacher/classes/${cls.id}`} className={styles.classLink}>
+                <article className={styles.classCard}>
+                  <div className={styles.classHead}>
+                    <h4>{cls.name}</h4>
+                    <span className={cls.is_active ? styles.badgeActive : styles.badgeInactive}>
+                      {cls.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
 
-                <div className={styles.classMeta}>
-                  <div className={styles.metaItem}>
-                    <p>Join Code</p>
-                    <strong className={styles.highlight}>{cls.join_code}</strong>
-                  </div>
-                  <div className={styles.metaItem}>
-                    <p>Students</p>
-                    <strong>{cls.students_count} enrolled</strong>
-                  </div>
-                  {cls.room && (
+                  <div className={styles.classMeta}>
                     <div className={styles.metaItem}>
-                      <p>Room</p>
-                      <strong>Room {cls.room}</strong>
+                      <p>Join Code</p>
+                      <strong className={styles.highlight}>{cls.join_code}</strong>
                     </div>
-                  )}
-                  {cls.schedule && (
                     <div className={styles.metaItem}>
-                      <p>Schedule</p>
-                      <strong>{cls.schedule}</strong>
+                      <p>Students</p>
+                      <strong>{cls.students_count} enrolled</strong>
                     </div>
-                  )}
-                </div>
-              </article>
+                    {cls.room && (
+                      <div className={styles.metaItem}>
+                        <p>Room</p>
+                        <strong>Room {cls.room}</strong>
+                      </div>
+                    )}
+                    {cls.schedule && (
+                      <div className={styles.metaItem}>
+                        <p>Schedule</p>
+                        <strong>{cls.schedule}</strong>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              </Link>
             ))}
           </div>
         )}

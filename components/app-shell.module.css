@@ -373,14 +373,16 @@
 }
 
 .topbar {
-  background: white;
-  padding: 24px 40px;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border-bottom: 3px double var(--ink);
+    background: white;
+    padding: 16px 40px;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 3.5px solid var(--ink);
+    box-shadow: 0 8px 0 var(--hl-yellow); /* Premium Offset Shadow */
+    margin-bottom: 8px;
 }
 
 .topbarNote {
@@ -441,24 +443,24 @@
 }
 
 .topbarMain {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
 }
 
 .topbarLeadWrap {
-  display: flex;
-  align-items: flex-end;
-  gap: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
 .topbarDivider {
-  width: 3px;
-  height: 52px;
-  background: var(--ink);
-  border-radius: 999px;
-  transform: rotate(-2deg);
+    width: 3.5px;
+    height: 48px;
+    background: var(--ink);
+    border-radius: 999px;
+    transform: rotate(-1.5deg);
 }
 
 .topbarSubtitle {
@@ -484,12 +486,13 @@
 }
 
 .topbarGreet h3 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 950;
-  color: var(--ink);
-  letter-spacing: -0.04em;
-  line-height: 1;
+    margin: 0;
+    font-size: 24px;
+    font-weight: 950;
+    color: var(--ink);
+    letter-spacing: -0.05em;
+    line-height: 1;
+    text-transform: uppercase;
 }
 
 .topbarSearchWrap {
@@ -725,7 +728,6 @@
 .contentSurface {
   padding: 32px 40px;
   position: relative;
-  z-index: 1;
 }
 
 .modalBackdrop {
