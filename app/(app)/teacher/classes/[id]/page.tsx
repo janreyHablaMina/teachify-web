@@ -46,6 +46,9 @@ export default function ClassroomDetailPage({ params }: { params: Promise<{ id: 
   const [editForm, setEditForm] = useState({ name: "", room: "", schedule: "", is_active: true });
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
+  const [studentToRemove, setStudentToRemove] = useState<Student | null>(null);
+  const [isRemovingStudent, setIsRemovingStudent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [expiration, setExpiration] = useState("null");
 
@@ -85,6 +88,30 @@ export default function ClassroomDetailPage({ params }: { params: Promise<{ id: 
         is_active: classroom.is_active
       });
       setShowSettingsModal(true);
+    }
+  };
+
+  const confirmRemoveStudent = (student: Student) => {
+    setStudentToRemove(student);
+    setActiveDropdown(null);
+  };
+
+  const executeRemoveStudent = async () => {
+    if (!studentToRemove || !classroom) return;
+    setIsRemovingStudent(true);
+    try {
+      // In a real app we'd call an API like: await api.delete(`/api/classrooms/${id}/students/${studentToRemove.id}`);
+      // Then we'd update state:
+      setClassroom({
+        ...classroom,
+        students: classroom.students.filter(s => s.id !== studentToRemove.id)
+      });
+      showToast("Student removed successfully", "success");
+    } catch (e) {
+      showToast("Failed to remove student", "error");
+    } finally {
+      setIsRemovingStudent(false);
+      setStudentToRemove(null);
     }
   };
 
@@ -272,6 +299,34 @@ export default function ClassroomDetailPage({ params }: { params: Promise<{ id: 
         </div>
       )}
 
+      {studentToRemove && (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
+          <div className={styles.confirmModal}>
+            <p className={styles.confirmTag}>Confirm action</p>
+            <h3 className={styles.confirmTitle}>Remove student?</h3>
+            <p className={styles.confirmText}>Are you sure you want to remove <strong>{studentToRemove.fullname}</strong> from this class? They will lose access to all assignments.</p>
+            <div className={styles.confirmActions}>
+              <button
+                type="button"
+                className={styles.confirmCancelBtn}
+                onClick={() => setStudentToRemove(null)}
+                disabled={isRemovingStudent}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.confirmSignoutBtn}
+                onClick={executeRemoveStudent}
+                disabled={isRemovingStudent}
+              >
+                {isRemovingStudent ? "Removing..." : "Yes, remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showInviteModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
@@ -403,7 +458,23 @@ export default function ClassroomDetailPage({ params }: { params: Promise<{ id: 
                         <td><strong>{student.fullname}</strong></td>
                         <td>{student.email}</td>
                         <td><span className={styles.performanceGood}>85%</span></td>
-                        <td><button className={styles.btnText}>View Profile</button></td>
+                        <td>
+                          <div className={styles.actionMenu}>
+                            <button 
+                              className={styles.btnActionToggle} 
+                              onClick={() => setActiveDropdown(activeDropdown === student.id ? null : student.id)}
+                            >
+                              &#8943;
+                            </button>
+                            {activeDropdown === student.id && (
+                              <div className={styles.actionDropdown}>
+                                <button className={styles.dropdownItem} onClick={() => setActiveDropdown(null)}>View Profile</button>
+                                <button className={styles.dropdownItem} onClick={() => setActiveDropdown(null)}>Message</button>
+                                <button className={styles.dropdownItemDanger} onClick={() => confirmRemoveStudent(student)}>Remove Student</button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
