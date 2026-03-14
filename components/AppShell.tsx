@@ -251,7 +251,7 @@ export default function AppShell({ role, children }: AppShellProps) {
                         <span className={styles.navIcon} aria-hidden="true">
                           <NavIcon icon={item.icon} />
                         </span>
-                        <span className={styles.navLabel}>{item.label}</span>
+                        <span className={styles.navLabel}>{item.label} {item.href === "/teacher/classes" && (teacherPlan === "pro" || teacherPlan === "school") && <span className={styles.navBadgePro}>PRO</span>}</span>
                       </Link>
                     );
                   })}
@@ -273,7 +273,11 @@ export default function AppShell({ role, children }: AppShellProps) {
               <div className={styles.topbarLeadWrap}>
                 <div className={styles.topbarDivider} aria-hidden="true" />
                 <div className={styles.topbarGreet}>
-                  <p>{role === "admin" ? "Platform Administrator" : "Educator Account"}</p>
+                  <p>{role === "admin" ? "Platform Administrator" : "Educator Account"}
+                    {role === "teacher" && (teacherPlan === "pro" || teacherPlan === "school") && (
+                      <span className={styles.topbarBadgePro}>PRO</span>
+                    )}
+</p>
                   <h3>{profile.name.toUpperCase()}</h3>
                   <small className={styles.topbarSubtitle}>
                     {role === "admin"
