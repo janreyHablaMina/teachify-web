@@ -9,7 +9,7 @@ export default async function ProtectedLayout({
   const cookieStore = await cookies();
   const role = cookieStore.get("teachify_role")?.value;
 
-  if (role !== "admin" && role !== "teacher") {
+  if (role !== "admin" && role !== "teacher" && role !== "student") {
     redirect("/login");
   }
 

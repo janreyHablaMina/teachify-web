@@ -1,6 +1,6 @@
 import api from "./axios";
 
-export type UserRole = "admin" | "teacher";
+export type UserRole = "admin" | "teacher" | "student";
 type SignInCredentials = {
   email: string;
   password: string;
@@ -48,7 +48,7 @@ export async function signIn(credentials: SignInCredentials) {
   const response = await api.post("/api/login", credentials);
   const role = response.data?.user?.role;
 
-  if (role !== "admin" && role !== "teacher") {
+  if (role !== "admin" && role !== "teacher" && role !== "student") {
     throw new Error("This account role is not allowed to access the web dashboard.");
   }
 

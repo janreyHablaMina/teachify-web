@@ -14,21 +14,26 @@ export function middleware(request: NextRequest) {
   // 1. Get auth state
   const isAuthed = request.cookies.get(AUTH_COOKIE)?.value === "1";
   const userRole = request.cookies.get(ROLE_COOKIE)?.value;
-  const hasValidRole = userRole === "admin" || userRole === "teacher";
+  const hasValidRole = userRole === "admin" || userRole === "teacher" || userRole === "student";
   const hasValidSession = isAuthed && hasValidRole;
 
   // 2. Determine if the path is public or for a specific portal
   const isPublicPath = PUBLIC_PATHS.some(path => pathname === path);
   const isAdminPath = pathname.startsWith("/admin");
   const isTeacherPath = pathname.startsWith("/teacher");
+  const isStudentPath = pathname.startsWith("/student");
 
   // Logic A: Redirect authed users away from auth pages to their dashboard
   if (isPublicPath && AUTH_REDIRECT_PATHS.includes(pathname) && hasValidSession) {
-    return NextResponse.redirect(new URL(userRole === "admin" ? "/admin" : "/teacher", request.url));
+    let target = "/login";
+    if (userRole === "admin") target = "/admin";
+    else if (userRole === "teacher") target = "/teacher";
+    else if (userRole === "student") target = "/student";
+    return NextResponse.redirect(new URL(target, request.url));
   }
 
   // Logic B: Protect dashboard routes
-  if ((isAdminPath || isTeacherPath) && !hasValidSession) {
+  if ((isAdminPath || isTeacherPath || isStudentPath) && !hasValidSession) {
     const loginUrl = new URL("/login", request.url);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.set(AUTH_COOKIE, "", { path: "/", maxAge: 0 });
@@ -36,13 +41,26 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // Logic C: Enforce role-based access for admins (admins can't go to teacher dashboard and vice versa)
+  // Logic C: Enforce role-based access
   if (isAdminPath && userRole !== "admin") {
-    return NextResponse.redirect(new URL(hasValidSession ? "/teacher" : "/login", request.url));
+    let target = "/login";
+    if (userRole === "teacher") target = "/teacher";
+    else if (userRole === "student") target = "/student";
+    return NextResponse.redirect(new URL(target, request.url));
   }
 
   if (isTeacherPath && userRole !== "teacher") {
-    return NextResponse.redirect(new URL(hasValidSession ? "/admin" : "/login", request.url));
+    let target = "/login";
+    if (userRole === "admin") target = "/admin";
+    else if (userRole === "student") target = "/student";
+    return NextResponse.redirect(new URL(target, request.url));
+  }
+
+  if (isStudentPath && userRole !== "student") {
+    let target = "/login";
+    if (userRole === "admin") target = "/admin";
+    else if (userRole === "teacher") target = "/teacher";
+    return NextResponse.redirect(new URL(target, request.url));
   }
 
   return NextResponse.next();

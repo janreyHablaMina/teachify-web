@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useState } from "react";
 import Image from "next/image";
@@ -33,6 +33,11 @@ export default function LoginPage() {
         return;
       }
 
+      if (role === "student") {
+        router.push("/student");
+        return;
+      }
+
       throw new Error("This account role is not allowed to access the web dashboard.");
     } catch (error: unknown) {
       console.error("Login failed:", error);
@@ -64,7 +69,7 @@ export default function LoginPage() {
             </div>
             <div className="lc-header-text">
               <h1 className="lc-main-title">Welcome Back</h1>
-              <p className="lc-subtitle">Login to your educator dashboard</p>
+              <p className="lc-subtitle">Login to your Teachify account</p>
             </div>
           </div>
 
@@ -75,7 +80,7 @@ export default function LoginPage() {
                 <div className="lc-input-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9 7 9-7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="22 9 12 2 2 9" /></svg>
                 </div>
-                <input id="email" name="email" type="email" required disabled={isLoading} placeholder="teacher@school.edu" autoComplete="email" />
+                <input id="email" name="email" type="email" required disabled={isLoading} placeholder="you@example.com" autoComplete="email" />
               </div>
             </div>
 
