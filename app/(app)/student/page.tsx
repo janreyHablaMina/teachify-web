@@ -4,47 +4,57 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "./dashboard.module.css";
 import { getUser } from "@/lib/auth";
+import api from "@/lib/axios";
 
 export default function StudentDashboard() {
   const [userName, setUserName] = useState("Student");
+  const [classrooms, setClassrooms] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
+    let isMounted = true;
     getUser().then(user => {
-      if (user?.fullname) setUserName(user.fullname.split(' ')[0]);
+      if (user?.fullname && isMounted) setUserName(user.fullname.split(' ')[0]);
     });
+
+    Promise.all([
+      api.get("/api/classrooms").catch(() => ({ data: [] })),
+      api.get("/api/assignments").catch(() => ({ data: [] }))
+    ]).then(([classroomsRes, assignmentsRes]) => {
+      if (isMounted) {
+        setClassrooms(classroomsRes.data ?? []);
+        setAssignments(assignmentsRes.data ?? []);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const enrolledClasses = [
-    { id: 1, title: "English Literature", teacher: "Prof. Sarah Miller", progress: 65, color: "#fef08a" },
-    { id: 2, title: "Modern History", teacher: "Dr. James Wilson", progress: 40, color: "#dbeafe" },
-    { id: 3, title: "Advanced Mathematics", teacher: "Mrs. Elena Petrova", progress: 85, color: "#dcfce7" },
-  ];
-
-  const upcomingAssignments = [
-    { id: 1, title: "Shakespeare Essay", subject: "English", dueDate: "Today", urgent: true },
-    { id: 2, title: "Calculus Quiz", subject: "Mathematics", dueDate: "Tomorrow", urgent: false },
-    { id: 3, title: "War & Peace Summary", subject: "History", dueDate: "Mar 18", urgent: false },
-  ];
+  const colors = ["#fef08a", "#dbeafe", "#dcfce7", "#ffedd5", "#fce7f3", "#e0e7ff"];
 
   return (
     <div className={styles.container}>
       <header className={styles.welcomeSection}>
         <h1 className={styles.welcomeHeading}>Hello, {userName}! 👋</h1>
-        <p className={styles.welcomeSub}>Ready to master your classes today? You have 3 tasks due soon.</p>
+        <p className={styles.welcomeSub}>Ready to master your classes today? You have {assignments.length} tasks due soon.</p>
       </header>
 
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Active Classes</span>
-          <div className={styles.statValue}>8</div>
+          <div className={styles.statValue}>{loading ? "..." : classrooms.length}</div>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Completed Quizzes</span>
-          <div className={styles.statValue}>24</div>
+          <div className={styles.statValue}>0</div>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Overall Progress</span>
-          <div className={styles.statValue}>72<span className={styles.unit}>%</span></div>
+          <div className={styles.statValue}>0<span className={styles.unit}>%</span></div>
         </div>
       </div>
 
@@ -55,25 +65,31 @@ export default function StudentDashboard() {
             <Link href="/student/classes" className={styles.viewAll}>View All Classes →</Link>
           </div>
           <div className={styles.classGrid}>
-            {enrolledClasses.map(cls => (
-              <Link href={`/student/classes/${cls.id}`} key={cls.id} className={styles.classCard}>
-                <div className={styles.cardHeader} style={{ backgroundColor: cls.color }}>
-                  <h3 className={styles.classTitle}>{cls.title}</h3>
-                  <span className={styles.teacherName}>{cls.teacher}</span>
-                </div>
-                <div className={styles.cardBody}>
-                  <div className={styles.progressContainer}>
-                    <div className={styles.progressLabel}>
-                      <span>Completion</span>
-                      <span>{cls.progress}%</span>
-                    </div>
-                    <div className={styles.progressBar}>
-                      <div className={styles.progressFill} style={{ width: `${cls.progress}%` }}></div>
+            {loading ? (
+              <p>Loading classes...</p>
+            ) : classrooms.length === 0 ? (
+              <p>You haven't joined any classes yet.</p>
+            ) : (
+              classrooms.slice(0, 3).map((cls, index) => (
+                <Link href={`/student/classes/${cls.id}`} key={cls.id} className={styles.classCard}>
+                  <div className={styles.cardHeader} style={{ backgroundColor: colors[index % colors.length] }}>
+                    <h3 className={styles.classTitle}>{cls.name}</h3>
+                    <span className={styles.teacherName}>{cls.teacher?.fullname || "Instructor"}</span>
+                  </div>
+                  <div className={styles.cardBody}>
+                    <div className={styles.progressContainer}>
+                      <div className={styles.progressLabel}>
+                        <span>Completion</span>
+                        <span>0%</span>
+                      </div>
+                      <div className={styles.progressBar}>
+                        <div className={styles.progressFill} style={{ width: `0%` }}></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            )}
           </div>
         </section>
 
@@ -83,17 +99,26 @@ export default function StudentDashboard() {
             <Link href="/student/assignments" className={styles.viewAll}>All Tasks →</Link>
           </div>
           <div className={styles.assignmentsList}>
-            {upcomingAssignments.map(task => (
-              <div key={task.id} className={styles.assignmentItem}>
-                <div className={styles.assignIcon}>📖</div>
-                <div className={styles.assignContent}>
-                  <h3 className={styles.assignTitle}>{task.title}</h3>
-                  <div className={`${styles.assignMeta} ${task.urgent ? styles.urgent : ''}`}>
-                    {task.subject} • Due {task.dueDate}
+            {loading ? (
+              <p>Loading tasks...</p>
+            ) : assignments.length === 0 ? (
+              <p>No upcoming tasks. You're all caught up!</p>
+            ) : (
+              assignments.slice(0, 5).map(task => {
+                const isUrgent = task.deadline_at && new Date(task.deadline_at).getTime() - Date.now() < 86400000 * 2;
+                return (
+                  <div key={task.id} className={styles.assignmentItem}>
+                    <div className={styles.assignIcon}>📖</div>
+                    <div className={styles.assignContent}>
+                      <h3 className={styles.assignTitle}>{task.quiz?.title || "Quiz"}</h3>
+                      <div className={`${styles.assignMeta} ${isUrgent ? styles.urgent : ''}`}>
+                        {task.classroom?.name || "Class"} • Due {task.deadline_at ? new Date(task.deadline_at).toLocaleDateString() : "Anytime"}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </aside>
       </div>

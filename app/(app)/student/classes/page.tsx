@@ -21,6 +21,9 @@ export default function MyClassesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [classes, setClasses] = useState<StudentClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
     fetchClasses();
@@ -34,6 +37,24 @@ export default function MyClassesPage() {
       console.error("Failed to fetch classes:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleJoinClass = async () => {
+    if (!joinCode || joinCode.length !== 6) return;
+    setIsJoining(true);
+    try {
+      const response = await api.post("/api/classrooms/join-by-code", {
+        join_code: joinCode.toUpperCase()
+      });
+      alert(response.data.message);
+      setShowJoinModal(false);
+      setJoinCode("");
+      fetchClasses();
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Failed to join class.");
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -70,7 +91,7 @@ export default function MyClassesPage() {
             />
           </div>
           
-          <button className={styles.joinBtn}>
+          <button className={styles.joinBtn} onClick={() => setShowJoinModal(true)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14m-7-7v14"/>
             </svg>
@@ -78,6 +99,58 @@ export default function MyClassesPage() {
           </button>
         </div>
       </header>
+
+      {/* Join Modal */}
+      {showJoinModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.4)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 100,
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: 'white', padding: '32px', borderRadius: '24px',
+            border: '3px solid #0f172a', boxShadow: '12px 12px 0 #0f172a',
+            width: '100%', maxWidth: '400px', display: 'flex',
+            flexDirection: 'column', gap: '20px'
+          }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 950, color: '#0f172a', margin: 0 }}>Join a class</h2>
+            <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Enter the 6-character code provided by your teacher.</p>
+            
+            <input 
+              type="text" 
+              placeholder="JOIN CODE"
+              maxLength={6}
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              style={{
+                width: '100%', padding: '16px', borderRadius: '14px',
+                border: '2px solid #0f172a', fontSize: '20px',
+                fontWeight: 900, textAlign: 'center', letterSpacing: '0.2em',
+                background: '#f8fafc'
+              }}
+            />
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className={styles.joinBtn} 
+                onClick={() => setShowJoinModal(false)}
+                style={{ background: 'white', color: '#0f172a', flex: 1, justifyContent: 'center' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.joinBtn} 
+                onClick={handleJoinClass}
+                disabled={isJoining || joinCode.length !== 6}
+                style={{ flex: 1, justifyContent: 'center', opacity: (isJoining || joinCode.length !== 6) ? 0.6 : 1 }}
+              >
+                {isJoining ? "Joining..." : "Join"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className={styles.grid}>
@@ -147,7 +220,7 @@ export default function MyClassesPage() {
               Clear Search
             </button>
           ) : (
-            <button className={styles.joinBtn}>
+            <button className={styles.joinBtn} onClick={() => setShowJoinModal(true)}>
               Join a Class
             </button>
           )}

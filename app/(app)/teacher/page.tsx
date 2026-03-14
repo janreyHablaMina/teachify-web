@@ -24,13 +24,18 @@ type QuizSummary = {
 export default function TeacherDashboardPage() {
   const [planUser, setPlanUser] = useState<TeacherPlanUser | null>(null);
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
+  const [classrooms, setClassrooms] = useState<any[]>([]);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadDashboardData() {
       try {
-        const [user, quizzesRes] = await Promise.all([getUser(), api.get("/api/quizzes")]);
+        const [user, quizzesRes, classroomsRes] = await Promise.all([
+          getUser(), 
+          api.get("/api/quizzes"),
+          api.get("/api/classrooms")
+        ]);
         if (!isMounted || !user) return;
 
         setPlanUser({
@@ -41,7 +46,9 @@ export default function TeacherDashboardPage() {
           max_questions_per_quiz: user.max_questions_per_quiz,
         });
         setQuizzes(quizzesRes.data ?? []);
-      } catch {
+        setClassrooms(classroomsRes.data ?? []);
+      } catch (e) {
+        console.error("Failed to load dashboard data:", e);
       }
     }
 
@@ -115,19 +122,19 @@ export default function TeacherDashboardPage() {
 
       <section className={styles.metricGrid}>
         <article className={styles.metricCard}>
-          <p>Quizzes Remaining</p>
-          <strong>{remaining}</strong>
+          <p>Active Classes</p>
+          <strong>{classrooms.filter((c: any) => c.is_active).length}</strong>
         </article>
         <article className={styles.metricCard}>
-          <p>Quizzes Used</p>
+          <p>Completed Quizzes</p>
           <strong>{used}</strong>
         </article>
         <article className={styles.metricCard}>
-          <p>Max Questions</p>
-          <strong>{maxQuestions}</strong>
+          <p>Overall Progress</p>
+          <strong>{Math.round(progressPercent)}%</strong>
         </article>
         <article className={styles.metricCard}>
-          <p>Plan</p>
+          <p>Plan Tier</p>
           <strong>{planTier.toUpperCase()}</strong>
         </article>
       </section>

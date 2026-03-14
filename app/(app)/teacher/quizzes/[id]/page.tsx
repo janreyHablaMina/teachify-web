@@ -62,6 +62,43 @@ export default function QuizDetailPage() {
     };
   }, [quizId]);
 
+  const [classrooms, setClassrooms] = useState<any[]>([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedClassroomId, setSelectedClassroomId] = useState("");
+  const [deadline, setDeadline] = useState("");
+
+  useEffect(() => {
+    if (showAssignModal) {
+      api.get("/api/classrooms").then((res) => {
+        setClassrooms(res.data ?? []);
+      }).catch(err => {
+        console.error("Failed to load classrooms for assignment", err);
+      });
+    }
+  }, [showAssignModal]);
+
+  async function handleAssign() {
+    if (!quizId || !selectedClassroomId) return;
+    setIsBusy(true);
+    setStatusMessage("");
+    try {
+      await api.post(`/api/classrooms/${selectedClassroomId}/assignments`, {
+        quiz_id: quizId,
+        deadline_at: deadline || null,
+        is_randomized: false,
+        anti_cheat_mode: false
+      });
+      setShowAssignModal(false);
+      setStatusMessage("Quiz assigned successfully!");
+      setSelectedClassroomId("");
+      setDeadline("");
+    } catch (err: any) {
+      setStatusMessage(err?.response?.data?.error || "Failed to assign quiz.");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
   async function exportQuizPdf(includeAnswers: boolean) {
     if (!quizId) return;
 
@@ -138,6 +175,9 @@ export default function QuizDetailPage() {
           <button className="btn-sketch btn-danger" type="button" onClick={deleteQuiz} disabled={isBusy}>
             Delete
           </button>
+          <button className="btn-sketch btn-success" type="button" onClick={() => setShowAssignModal(true)} disabled={isBusy}>
+            Assign
+          </button>
           <button className="btn-sketch btn-primary" type="button" onClick={() => exportQuizPdf(false)}>
             Export Questions PDF
           </button>
@@ -199,6 +239,36 @@ export default function QuizDetailPage() {
             ))}
           </div>
         </>
+      )}
+
+      {showAssignModal && (
+        <div className="modal-overlay">
+          <div className="modal-content sketch-border">
+            <h3>Assign Quiz</h3>
+            <p className="modal-desc">Select a classroom to assign this quiz to.</p>
+            <div className="form-group">
+              <label>Select Classroom</label>
+              <select value={selectedClassroomId} onChange={e => setSelectedClassroomId(e.target.value)} className="sketch-input">
+                <option value="">-- Choose a Class --</option>
+                {classrooms.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label>Deadline (Optional)</label>
+              <input type="datetime-local" className="sketch-input" value={deadline} onChange={e => setDeadline(e.target.value)} />
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn-sketch btn-ghost" onClick={() => setShowAssignModal(false)}>Cancel</button>
+              <button className="btn-sketch btn-primary" onClick={handleAssign} disabled={isBusy || !selectedClassroomId}>
+                Confirm Assign
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <style jsx>{`
@@ -292,6 +362,15 @@ export default function QuizDetailPage() {
           background: #feef89;
           color: #0f172a;
         }
+        .btn-success {
+          background: #dcfce7;
+          color: #166534;
+          border-color: #166534;
+          box-shadow: 3px 3px 0 #166534;
+        }
+        .btn-success:active {
+          box-shadow: 1px 1px 0 #166534;
+        }
         .btn-ghost {
           background: #fff;
           color: #0f172a;
@@ -311,6 +390,64 @@ export default function QuizDetailPage() {
           color: #b91c1c;
           margin: 0;
           font-weight: 600;
+        }
+        .modal-overlay {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(15, 23, 42, 0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 50;
+          backdrop-filter: blur(2px);
+        }
+        .modal-content {
+          background: #fff;
+          padding: 2rem;
+          border-radius: 12px;
+          width: 100%;
+          max-width: 480px;
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+        .modal-content h3 {
+          margin: 0;
+          font-size: 1.4rem;
+          color: #0f172a;
+        }
+        .modal-desc {
+          margin: 0;
+          color: #475569;
+          font-size: 0.95rem;
+        }
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .form-group label {
+          font-weight: 700;
+          color: #334155;
+          font-size: 0.9rem;
+        }
+        .sketch-input {
+          padding: 0.75rem;
+          border: 2px solid #cbd5e1;
+          border-radius: 8px;
+          font-family: inherit;
+          font-size: 1rem;
+          transition: border-color 0.2s;
+        }
+        .sketch-input:focus {
+          outline: none;
+          border-color: #0f172a;
+        }
+        .modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          margin-top: 0.5rem;
         }
       `}</style>
     </section>
