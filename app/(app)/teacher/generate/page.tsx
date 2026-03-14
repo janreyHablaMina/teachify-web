@@ -134,7 +134,7 @@ export default function TeacherGeneratePage() {
   }
 
   function toggleType(type: QuestionType) {
-    if (isTrial && type !== "multiple_choice") return;
+    if (planTier === "trial" && type !== "multiple_choice") return;
 
     setSelectedTypes((prev) => {
       if (prev.includes(type)) {
@@ -266,7 +266,7 @@ export default function TeacherGeneratePage() {
         <p>
           {isTrial
             ? "Trial plan supports up to 10 questions and multiple choice only."
-            : "You can generate up to 50 questions and mix advanced question types."}
+            : `You can generate up to ${maxQuestionLimit} questions and mix advanced question types.`}
         </p>
       </section>
 
@@ -366,13 +366,13 @@ export default function TeacherGeneratePage() {
             <input
               id="lessonFile"
               type="file"
-              accept={planTier === "basic" ? ".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation" : ".pdf,application/pdf"}
+              accept={["basic", "pro", "school"].includes(planTier) ? ".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation" : ".pdf,application/pdf"}
               onChange={handleFilePick}
               disabled={limitReached}
             />
             {selectedFile ? <p className={styles.fileName}>Selected: {selectedFile.name}</p> : null}
             <p className={styles.helperText}>
-              Upload your lesson file and Teachify AI will generate quiz questions automatically. Supported formats: {planTier === "basic" ? "PDF, DOCX, PPTX" : "PDF"} (max 5MB; PDF max 20 pages).
+              Upload your lesson file and Teachify AI will generate quiz questions automatically. Supported formats: {["basic", "pro", "school"].includes(planTier) ? "PDF, DOCX, PPTX" : "PDF"} (max 5MB; PDF max 20 pages).
             </p>
 
             <label htmlFor="questionCount">How many questions? (up to {maxQuestionLimit})</label>
@@ -402,7 +402,7 @@ export default function TeacherGeneratePage() {
                     />
                     <span className={styles.typeLabel}>
                       {questionTypeLabel[type]}
-                      {locked ? <em className={styles.lockBadge}>🔒 Pro+</em> : null}
+                      {locked ? <em className={styles.lockBadge}>🔒 Basic+</em> : null}
                     </span>
                   </label>
                 );
