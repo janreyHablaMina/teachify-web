@@ -56,31 +56,51 @@ function exportTextToPdf(title: string, content: string) {
 export default function TeacherGeneratePage() {
   const [mode, setMode] = useState<Mode>("chat");
   const [planTier, setPlanTier] = useState<PlanTier>("trial");
+  const [generationLoading, setGenerationLoading] = useState(false);
 
   const [summaryPrompt, setSummaryPrompt] = useState("Generate me a summary of Jose Rizal life.");
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+  const loadingMessages = [
+    "Teachify AI is reading your file...",
+    "Analyzing lesson content...",
+    "Identifying key concepts...",
+    "Structuring question sets...",
+    "Vetting accuracy with AI...",
+    "Almost there, finalizing your quiz...",
+    "Polishing the answers...",
+    "Wrapping things up..."
+  ];
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (generationLoading) {
+      interval = setInterval(() => {
+        setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [generationLoading]);
+
   const [summaryResult, setSummaryResult] = useState<Record<string, string> | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [quizTitle, setQuizTitle] = useState("");
-  const [questionCount, setQuestionCount] = useState(10);
   const [selectedTypes, setSelectedTypes] = useState<QuestionType[]>(["multiple_choice"]);
-  const [generationLoading, setGenerationLoading] = useState(false);
+  const [typeCounts, setTypeCounts] = useState<Record<QuestionType, number>>({
+    multiple_choice: 10,
+    true_false: 0,
+    short_answer: 0,
+    essay: 0,
+    enumeration: 0,
+  });
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
   const [lastGeneratedQuizId, setLastGeneratedQuizId] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [generationLimit, setGenerationLimit] = useState<number>(3);
   const [generationsUsed, setGenerationsUsed] = useState<number>(0);
-
-  const isDemoMode = useMemo(
-    () =>
-      generatedQuestions.some(
-        (q) =>
-          typeof q?.explanation === "string" &&
-          q.explanation.toLowerCase().includes("fallback question because api quota is currently exceeded")
-      ),
-    [generatedQuestions]
-  );
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -137,14 +157,58 @@ export default function TeacherGeneratePage() {
     if (planTier === "trial" && type !== "multiple_choice") return;
 
     setSelectedTypes((prev) => {
-      if (prev.includes(type)) {
-        const next = prev.filter((x) => x !== type);
-        return next.length > 0 ? next : ["multiple_choice"];
+      const isChecked = prev.includes(type);
+      let next: QuestionType[];
+      
+      if (isChecked) {
+        next = prev.filter((x) => x !== type);
+        if (next.length === 0) next = ["multiple_choice"];
+      } else {
+        next = [...prev, type];
       }
 
-      return [...prev, type];
+      // Sync typeCounts
+      const newCounts = { ...typeCounts };
+      if (!next.includes(type)) {
+        newCounts[type] = 0;
+      } else if (newCounts[type] === 0) {
+        newCounts[type] = 5; // Default when checked
+      }
+      setTypeCounts(newCounts);
+      
+      return next;
     });
   }
+
+  function handleTypeCountChange(type: QuestionType, val: number) {
+    const safeVal = Math.max(0, Math.min(val, maxQuestionLimit));
+    setTypeCounts(prev => ({ ...prev, [type]: safeVal }));
+    
+    if (safeVal > 0 && !selectedTypes.includes(type)) {
+      setSelectedTypes(prev => [...prev, type]);
+    } else if (safeVal === 0 && selectedTypes.includes(type)) {
+      if (selectedTypes.length > 1) {
+        setSelectedTypes(prev => prev.filter(t => t !== type));
+      } else {
+        // Don't uncheck the last one, keep at least 1
+        setTypeCounts(prev => ({ ...prev, [type]: 1 }));
+      }
+    }
+  }
+
+  const totalCalculatedCount = useMemo(() => {
+    return Object.values(typeCounts).reduce((a, b) => a + b, 0);
+  }, [typeCounts]);
+
+  const isDemoMode = useMemo(
+    () =>
+      generatedQuestions.some(
+        (q) =>
+          typeof q?.explanation === "string" &&
+          q.explanation.toLowerCase().includes("fallback question because api quota is currently exceeded")
+      ),
+    [generatedQuestions]
+  );
 
   async function handleGenerateSummary(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -202,8 +266,11 @@ export default function TeacherGeneratePage() {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("title", quizTitle.trim());
-      formData.append("count", questionCount.toString());
-      selectedTypes.forEach((type) => formData.append("types[]", type));
+      formData.append("count", totalCalculatedCount.toString());
+      selectedTypes.forEach((type) => {
+        formData.append("types[]", type);
+        formData.append(`type_counts[${type}]`, typeCounts[type].toString());
+      });
 
       const response = await api.post("/api/quizzes/generate-from-upload", formData, {
         headers: {
@@ -214,6 +281,7 @@ export default function TeacherGeneratePage() {
       setGeneratedQuestions(response.data.quiz.questions);
       setLastGeneratedQuizId(response.data.quiz.id);
       setGenerationsUsed((prev) => prev + 1);
+      setShowSuccess(true);
       setStatusMessage(`Successfully generated ${response.data.quiz.questions.length} questions.`);
     } catch (error: any) {
       console.error("Failed to generate questions:", error);
@@ -375,46 +443,57 @@ export default function TeacherGeneratePage() {
               Upload your lesson file and Teachify AI will generate quiz questions automatically. Supported formats: {["basic", "pro", "school"].includes(planTier) ? "PDF, DOCX, PPTX" : "PDF"} (max 5MB; PDF max 20 pages).
             </p>
 
-            <label htmlFor="questionCount">How many questions? (up to {maxQuestionLimit})</label>
-            <input
-              id="questionCount"
-              type="number"
-              min={1}
-              max={maxQuestionLimit}
-              value={questionCount}
-              onChange={(e) => setQuestionCount(Number(e.target.value) || 1)}
-              disabled={limitReached}
-            />
-            <p className={styles.helperText}>Your plan allows up to {maxQuestionLimit} questions per quiz.</p>
-
-            <div className={styles.typeGrid}>
+            <label>Question Configuration (Total: {totalCalculatedCount})</label>
+            <div className={styles.typeConfigList}>
               {(Object.keys(questionTypeLabel) as QuestionType[]).map((type) => {
                 const locked = isTrial && advancedTypes.includes(type);
                 const checked = selectedTypes.includes(type);
+                const count = typeCounts[type];
 
                 return (
-                  <label key={type} className={`${styles.typeItem} ${locked ? styles.typeLocked : ""}`}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleType(type)}
-                      disabled={locked || limitReached}
-                    />
-                    <span className={styles.typeLabel}>
-                      {questionTypeLabel[type]}
-                      {locked ? <em className={styles.lockBadge}>🔒 Basic+</em> : null}
-                    </span>
-                  </label>
+                  <div key={type} className={`${styles.typeConfigRow} ${locked ? styles.typeRowLocked : ""}`}>
+                    <label className={styles.typeCheckboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleType(type)}
+                        disabled={locked || limitReached}
+                      />
+                      <span className={styles.typeLabelName}>
+                        {questionTypeLabel[type]}
+                        {locked ? <em className={styles.lockBadge}>🔒 Basic+</em> : null}
+                      </span>
+                    </label>
+                    
+                    {checked && !locked && (
+                      <div className={styles.countInputWrapper}>
+                        <input
+                          type="number"
+                          min={1}
+                          max={maxQuestionLimit}
+                          value={count}
+                          onChange={(e) => handleTypeCountChange(type, Number(e.target.value) || 0)}
+                          className={styles.miniInput}
+                          disabled={limitReached}
+                        />
+                        <span className={styles.unitText}>questions</span>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
+
+            {totalCalculatedCount > maxQuestionLimit && (
+              <p className={styles.errorText}>Total questions ({totalCalculatedCount}) exceeds your plan limit of {maxQuestionLimit}.</p>
+            )}
 
             {limitReached ? (
               <button type="button" className={styles.upgradeBtnLarge}>
                 Upgrade Plan
               </button>
             ) : (
-              <button type="submit" className={styles.primaryBtn} disabled={generationLoading}>
+              <button type="submit" className={styles.primaryBtn} disabled={generationLoading || totalCalculatedCount === 0 || totalCalculatedCount > maxQuestionLimit}>
                 {generationLoading ? "Generating quiz with AI..." : "Generate Q & A"}
               </button>
             )}
@@ -458,6 +537,48 @@ export default function TeacherGeneratePage() {
             </div>
           ) : null}
         </article>
+      )}
+
+      {generationLoading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.loadingModal}>
+            <div className={styles.loadingAnimation}>
+              <div className={styles.loadingCircle} />
+              <div className={styles.loadingBrain}>🧠</div>
+            </div>
+            <div>
+              <h3 className={styles.loadingTitle}>Generating your Quiz</h3>
+              <p className={styles.loadingSub}>{loadingMessages[loadingMessageIndex]}</p>
+            </div>
+            <div className={styles.loadingProgress}>
+              <div className={styles.loadingBar} />
+            </div>
+            <p className={styles.helperText} style={{ textAlign: 'center' }}>
+              This usually takes 30-60 seconds depending on file length.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {showSuccess && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.successModal}>
+            <div className={styles.successBadge}>
+              <div className={styles.successIcon}>✨</div>
+            </div>
+            <h3 className={styles.successTitle}>Quiz Generated!</h3>
+            <p className={styles.successSub}>
+              We've successfully generated <strong>{generatedQuestions.length} questions</strong> from your lesson. You can now review, export, or assign them to your class.
+            </p>
+            <button 
+              type="button"
+              className={styles.successBtn} 
+              onClick={() => setShowSuccess(false)}
+            >
+              Continue to Review
+            </button>
+          </div>
+        </div>
       )}
 
       {statusMessage ? <p className={styles.status}>{statusMessage}</p> : null}
