@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import api from "@/lib/axios";
 import { getUser } from "@/lib/auth";
 import { normalizePlanTier, PLAN_CATALOG, type PlanTier } from "@/lib/plans";
@@ -31,12 +32,23 @@ export default function TeacherDashboardPage() {
 
     async function loadDashboardData() {
       try {
-        const [user, quizzesRes, classroomsRes] = await Promise.all([
-          getUser(), 
+        const user = await getUser();
+        if (!isMounted || !user) {
+          setPlanUser(null);
+          setQuizzes([]);
+          setClassrooms([]);
+          return;
+        }
+
+        const [quizzesRes, classroomsRes] = await Promise.allSettled([
           api.get("/api/quizzes"),
-          api.get("/api/classrooms")
+          api.get("/api/classrooms"),
         ]);
-        if (!isMounted || !user) return;
+
+        const quizzesData =
+          quizzesRes.status === "fulfilled" ? quizzesRes.value.data ?? [] : [];
+        const classroomsData =
+          classroomsRes.status === "fulfilled" ? classroomsRes.value.data ?? [] : [];
 
         setPlanUser({
           plan: user.plan,
@@ -45,9 +57,13 @@ export default function TeacherDashboardPage() {
           quizzes_used: user.quizzes_used,
           max_questions_per_quiz: user.max_questions_per_quiz,
         });
-        setQuizzes(quizzesRes.data ?? []);
-        setClassrooms(classroomsRes.data ?? []);
+        setQuizzes(quizzesData);
+        setClassrooms(classroomsData);
       } catch (e) {
+        if (axios.isAxiosError(e) && e.response?.status === 401) {
+          // Session may be expired; avoid noisy console errors for expected auth failures.
+          return;
+        }
         console.error("Failed to load dashboard data:", e);
       }
     }

@@ -1,6 +1,6 @@
-﻿@import "tailwindcss";
-
 @import "tailwindcss";
+@source "./app/**/*.{js,ts,jsx,tsx,mdx}";
+@source "./components/**/*.{js,ts,jsx,tsx,mdx}";
 
 :root {
   --background: #fdfcfb;
@@ -117,3 +117,4 @@ body {
   background: #14532d;
   transform: translateY(-1px);
 }
+
