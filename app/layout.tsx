@@ -5,7 +5,7 @@ import "./globals.css";
 const uiSans = Manrope({
   variable: "--font-ui-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const uiDisplay = Manrope({
