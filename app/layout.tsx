@@ -1,30 +1,21 @@
 import type { Metadata } from "next";
-import { Manrope, IBM_Plex_Mono } from "next/font/google";
+import { Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const uiSans = Manrope({
-  variable: "--font-ui-sans",
+const manropeSans = Manrope({
+  variable: "--font-manrope-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
 });
 
-const uiDisplay = Manrope({
-  variable: "--font-ui-display",
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
-const uiMono = IBM_Plex_Mono({
-  variable: "--font-ui-mono",
-  weight: ["400", "500"],
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-import { ToastProvider } from "@/components/ToastProvider";
 
 export const metadata: Metadata = {
-  title: "Teachify",
-  description: "Teachify dashboard and auth UI",
+  title: "Teachify App",
+  description: "Teachify admin migration app",
 };
 
 export default function RootLayout({
@@ -34,10 +25,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${uiSans.variable} ${uiDisplay.variable} ${uiMono.variable} antialiased`}>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+      <body
+        className={`${manropeSans.variable} ${geistMono.variable} antialiased`}
+      >
+        {children}
       </body>
     </html>
   );

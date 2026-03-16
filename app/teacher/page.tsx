@@ -1,0 +1,83 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { DashboardHeader } from "@/components/teacher/dashboard/dashboard-header";
+import { MetricsGrid } from "@/components/teacher/dashboard/metrics-grid";
+import { normalizePlanTier, PLAN_CATALOG } from "@/components/teacher/dashboard/plan";
+import { PlanBanner } from "@/components/teacher/dashboard/plan-banner";
+import { PlanFeaturesPanel } from "@/components/teacher/dashboard/plan-features-panel";
+import { RecentQuizzesPanel } from "@/components/teacher/dashboard/recent-quizzes-panel";
+import { UnlockProPanel } from "@/components/teacher/dashboard/unlock-pro-panel";
+import type { ClassroomSummary, QuizSummary, TeacherPlanUser } from "@/components/teacher/dashboard/types";
+
+export default function TeacherDashboardPage() {
+  const [planUser] = useState<TeacherPlanUser>({
+    plan: "trial",
+    plan_tier: "trial",
+    quiz_generation_limit: 3,
+    quizzes_used: 0,
+    max_questions_per_quiz: 10,
+  });
+
+  const [quizzes] = useState<QuizSummary[]>([]);
+  const [classrooms] = useState<ClassroomSummary[]>([]);
+
+  const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);
+  const planMeta = PLAN_CATALOG[planTier];
+  const limit = planUser.quiz_generation_limit ?? 3;
+
+  const used = useMemo(() => {
+    if (planTier === "basic" || planTier === "pro" || planTier === "school") {
+      const now = new Date();
+      return quizzes.filter((q) => {
+        const d = new Date(q.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length;
+    }
+    return quizzes.length;
+  }, [quizzes, planTier]);
+
+  const maxQuestions = planUser.max_questions_per_quiz ?? planMeta.maxQuestions;
+  const remaining = useMemo(() => Math.max(0, limit - used), [limit, used]);
+  const progressPercent = useMemo(() => {
+    if (limit <= 0) return 0;
+    return Math.min(100, Math.max(0, (used / limit) * 100));
+  }, [limit, used]);
+
+  const recentQuizzes = quizzes.slice(0, 5);
+  const activeClasses = classrooms.filter((c) => c.is_active).length;
+
+  return (
+    <section className="flex min-h-full w-full flex-col gap-[22px] py-2">
+      <DashboardHeader planTier={planTier} planMeta={planMeta} />
+
+      {(planTier === "trial" || planTier === "basic") && (
+        <PlanBanner
+          planMeta={planMeta}
+          remaining={remaining}
+          limit={limit}
+          used={used}
+          progressPercent={progressPercent}
+        />
+      )}
+
+      <MetricsGrid
+        activeClasses={activeClasses}
+        used={used}
+        progressPercent={progressPercent}
+        planTierLabel={planTier.toUpperCase()}
+      />
+
+      <p className="-mt-1.5 text-[12px] font-bold text-slate-600">
+        Current plan includes: {planMeta.quizLimitLabel}, up to {maxQuestions} questions per quiz.
+      </p>
+
+      <section className={`grid gap-4 ${recentQuizzes.length === 0 ? "grid-cols-1" : "grid-cols-1 min-[1160px]:grid-cols-2"}`}>
+        {recentQuizzes.length > 0 ? <PlanFeaturesPanel planMeta={planMeta} /> : null}
+        <RecentQuizzesPanel quizzes={recentQuizzes} />
+      </section>
+
+      <UnlockProPanel />
+    </section>
+  );
+}
