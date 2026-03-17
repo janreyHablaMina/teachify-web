@@ -4,18 +4,6 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const encodedName = `${name}=`;
-  const parts = document.cookie.split("; ");
-  for (const part of parts) {
-    if (part.startsWith(encodedName)) {
-      return decodeURIComponent(part.substring(encodedName.length));
-    }
-  }
-  return null;
-}
-
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -40,21 +28,11 @@ export default function RegisterPage() {
     }
 
     try {
-      await fetch(`${apiBaseUrl}/sanctum/csrf-cookie`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const xsrfToken = getCookie("XSRF-TOKEN");
-
       const response = await fetch(`${apiBaseUrl}/api/register`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          "X-Requested-With": "XMLHttpRequest",
-          ...(xsrfToken ? { "X-XSRF-TOKEN": xsrfToken } : {}),
         },
         body: JSON.stringify({
           fullname: fullName,
@@ -76,35 +54,8 @@ export default function RegisterPage() {
         throw new Error(requestId ? `${baseMessage} (req: ${requestId})` : baseMessage);
       }
 
-      await fetch(`${apiBaseUrl}/sanctum/csrf-cookie`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const loginXsrfToken = getCookie("XSRF-TOKEN");
-
-      const loginResponse = await fetch(`${apiBaseUrl}/api/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "X-Requested-With": "XMLHttpRequest",
-          ...(loginXsrfToken ? { "X-XSRF-TOKEN": loginXsrfToken } : {}),
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const loginData = await loginResponse.json().catch(() => ({}));
-
-      if (!loginResponse.ok) {
-        const loginRequestId = loginResponse.headers.get("x-railway-request-id");
-        const loginBaseMessage = loginData?.message || "Account created, but automatic login failed. Please sign in manually.";
-        throw new Error(loginRequestId ? `${loginBaseMessage} (req: ${loginRequestId})` : loginBaseMessage);
-      }
-
-      if (loginData?.token && typeof window !== "undefined") {
-        localStorage.setItem("teachify_token", String(loginData.token));
+      if (data?.token && typeof window !== "undefined") {
+        localStorage.setItem("teachify_token", String(data.token));
       }
 
       setStatus({ type: "success", message: "Account created successfully. Redirecting to your dashboard..." });

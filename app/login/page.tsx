@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,15 +8,90 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: "error"; message: string } | null>(null);
+  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://teachify-api-production.up.railway.app").replace(/\/$/, "");
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function checkExistingSession() {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("teachify_token") : null;
+        const response = await fetch(`${apiBaseUrl}/api/me`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        if (!response.ok) return;
+        const data = await response.json().catch(() => ({}));
+        const role = String(data?.user?.role ?? "");
+        if (!mounted) return;
+        if (role === "admin") router.replace("/admin");
+        else if (role === "teacher") router.replace("/teacher");
+        else if (role === "student") router.replace("/");
+      } catch {
+        // stay on login page
+      }
+    }
+
+    checkExistingSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [apiBaseUrl, router]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setStatus(null);
     setIsLoading(true);
 
-    setTimeout(() => {
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const password = String(formData.get("password") ?? "");
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const requestId = response.headers.get("x-railway-request-id");
+        const validationMessages = data?.errors
+          ? Object.values(data.errors).flat().join(" ")
+          : null;
+        const baseMessage = validationMessages || data?.message || "Login failed. Please try again.";
+        throw new Error(requestId ? `${baseMessage} (req: ${requestId})` : baseMessage);
+      }
+
+      if (data?.token && typeof window !== "undefined") {
+        localStorage.setItem("teachify_token", String(data.token));
+      }
+
+      const role = String(data?.user?.role ?? "teacher");
+      const nextRoute = role === "admin" ? "/admin" : role === "student" ? "/" : "/teacher";
+      router.push(nextRoute);
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Login failed. Please try again.";
+      setStatus({ type: "error", message });
+    } finally {
       setIsLoading(false);
-      router.push("/teacher");
-    }, 900);
+    }
   }
 
   return (
@@ -98,6 +173,12 @@ export default function LoginPage() {
                   </>
                 )}
               </button>
+
+              {status ? (
+                <p className="border-2 border-red-900 bg-rose-200 px-3 py-2.5 text-[12px] font-extrabold leading-[1.45] text-red-900 shadow-[4px_4px_0_rgba(15,23,42,0.14)]">
+                  {status.message}
+                </p>
+              ) : null}
 
               <div className="mt-4 flex items-center justify-center gap-[14px] border-t border-dashed border-slate-400 pt-[14px]">
                 <p className="m-0 text-[13px] font-bold text-slate-600">

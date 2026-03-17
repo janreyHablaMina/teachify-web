@@ -17,18 +17,6 @@ const gochiHand = Gochi_Hand({
   weight: "400",
 });
 
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const encodedName = `${name}=`;
-  const parts = document.cookie.split("; ");
-  for (const part of parts) {
-    if (part.startsWith(encodedName)) {
-      return decodeURIComponent(part.substring(encodedName.length));
-    }
-  }
-  return null;
-}
-
 export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: TeacherTopbarProps) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -51,21 +39,12 @@ export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: Teach
     setIsSigningOut(true);
 
     try {
-      await fetch(`${apiBaseUrl}/sanctum/csrf-cookie`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const xsrfToken = getCookie("XSRF-TOKEN");
       const token = typeof window !== "undefined" ? localStorage.getItem("teachify_token") : null;
 
       await fetch(`${apiBaseUrl}/api/logout`, {
         method: "POST",
-        credentials: "include",
         headers: {
           Accept: "application/json",
-          "X-Requested-With": "XMLHttpRequest",
-          ...(xsrfToken ? { "X-XSRF-TOKEN": xsrfToken } : {}),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
