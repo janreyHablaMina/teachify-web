@@ -1,6 +1,9 @@
 "use client";
 
+import { UserRow } from "./types";
+
 interface UserActionMenuProps {
+  user: UserRow;
   isOpen: boolean;
   onToggle: () => void;
   onEdit: () => void;
@@ -8,11 +11,14 @@ interface UserActionMenuProps {
 }
 
 export function UserActionMenu({
+  user,
   isOpen,
   onToggle,
   onEdit,
   onDelete,
 }: UserActionMenuProps) {
+  void user;
+
   return (
     <div className="relative flex justify-end">
       <button
