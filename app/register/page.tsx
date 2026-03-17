@@ -103,6 +103,10 @@ export default function RegisterPage() {
         throw new Error(loginRequestId ? `${loginBaseMessage} (req: ${loginRequestId})` : loginBaseMessage);
       }
 
+      if (loginData?.token && typeof window !== "undefined") {
+        localStorage.setItem("teachify_token", String(loginData.token));
+      }
+
       setStatus({ type: "success", message: "Account created successfully. Redirecting to your dashboard..." });
       setTimeout(() => router.push("/teacher"), 900);
     } catch (error) {
