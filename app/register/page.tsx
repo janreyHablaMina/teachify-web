@@ -76,6 +76,33 @@ export default function RegisterPage() {
         throw new Error(requestId ? `${baseMessage} (req: ${requestId})` : baseMessage);
       }
 
+      await fetch(`${apiBaseUrl}/sanctum/csrf-cookie`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const loginXsrfToken = getCookie("XSRF-TOKEN");
+
+      const loginResponse = await fetch(`${apiBaseUrl}/api/login`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          ...(loginXsrfToken ? { "X-XSRF-TOKEN": loginXsrfToken } : {}),
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const loginData = await loginResponse.json().catch(() => ({}));
+
+      if (!loginResponse.ok) {
+        const loginRequestId = loginResponse.headers.get("x-railway-request-id");
+        const loginBaseMessage = loginData?.message || "Account created, but automatic login failed. Please sign in manually.";
+        throw new Error(loginRequestId ? `${loginBaseMessage} (req: ${loginRequestId})` : loginBaseMessage);
+      }
+
       setStatus({ type: "success", message: "Account created successfully. Redirecting to your dashboard..." });
       setTimeout(() => router.push("/teacher"), 900);
     } catch (error) {
