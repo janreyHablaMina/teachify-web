@@ -1,4 +1,4 @@
-import { NavItem } from "./types";
+import { NavItem } from "../ui/nav/types";
 
 export const teacherNavItems: NavItem[] = [
   { group: "Main", label: "Overview", icon: "overview", href: "/teacher" },
