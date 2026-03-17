@@ -4,35 +4,26 @@ import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiLogin, apiMe, getApiErrorMessage } from "@/lib/api/client";
+import { getRouteForRole, getStoredToken, storeToken } from "@/lib/auth/session";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{ type: "error"; message: string } | null>(null);
-  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://teachify-api-production.up.railway.app").replace(/\/$/, "");
 
   useEffect(() => {
     let mounted = true;
 
     async function checkExistingSession() {
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("teachify_token") : null;
-        const response = await fetch(`${apiBaseUrl}/api/me`, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
+        const token = getStoredToken();
+        const { response, data } = await apiMe(token ?? undefined);
 
         if (!response.ok) return;
-        const data = await response.json().catch(() => ({}));
         const role = String(data?.user?.role ?? "");
         if (!mounted) return;
-        if (role === "admin") router.replace("/admin");
-        else if (role === "teacher") router.replace("/teacher");
-        else if (role === "student") router.replace("/");
+        router.replace(getRouteForRole(role));
       } catch {
         // stay on login page
       }
@@ -43,7 +34,7 @@ export default function LoginPage() {
     return () => {
       mounted = false;
     };
-  }, [apiBaseUrl, router]);
+  }, [router]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,35 +46,18 @@ export default function LoginPage() {
     const password = String(formData.get("password") ?? "");
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      const data = await response.json().catch(() => ({}));
+      const { response, data } = await apiLogin({ email, password });
 
       if (!response.ok) {
-        const requestId = response.headers.get("x-railway-request-id");
-        const validationMessages = data?.errors
-          ? Object.values(data.errors).flat().join(" ")
-          : null;
-        const baseMessage = validationMessages || data?.message || "Login failed. Please try again.";
-        throw new Error(requestId ? `${baseMessage} (req: ${requestId})` : baseMessage);
+        throw new Error(getApiErrorMessage(response, data, "Login failed. Please try again."));
       }
 
-      if (data?.token && typeof window !== "undefined") {
-        localStorage.setItem("teachify_token", String(data.token));
+      if (typeof data?.token === "string") {
+        storeToken(data.token);
       }
 
       const role = String(data?.user?.role ?? "teacher");
-      const nextRoute = role === "admin" ? "/admin" : role === "student" ? "/" : "/teacher";
+      const nextRoute = getRouteForRole(role);
       router.push(nextRoute);
       router.refresh();
     } catch (error) {

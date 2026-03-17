@@ -6,13 +6,14 @@ import { TeacherSidebar } from "@/components/teacher/teacher-sidebar";
 import { TeacherTopbar } from "@/components/teacher/teacher-topbar";
 import { teacherNavItems } from "@/components/teacher/data";
 import { NavItem } from "@/components/ui/nav/types";
+import { apiMe } from "@/lib/api/client";
+import { getRouteForRole, getStoredToken } from "@/lib/auth/session";
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [now, setNow] = useState(new Date());
   const [authReady, setAuthReady] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://teachify-api-production.up.railway.app").replace(/\/$/, "");
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -24,24 +25,14 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
     async function verifyAuth() {
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("teachify_token") : null;
-        const response = await fetch(`${apiBaseUrl}/api/me`, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
+        const token = getStoredToken();
+        const { response, data } = await apiMe(token ?? undefined);
 
         if (!response.ok) throw new Error("Unauthorized");
-        const data = await response.json().catch(() => ({}));
         const role = String(data?.user?.role ?? "");
 
         if (role !== "teacher") {
-          if (role === "admin") router.replace("/admin");
-          else if (role === "student") router.replace("/");
-          else router.replace("/login");
+          router.replace(role ? getRouteForRole(role) : "/login");
           return;
         }
 
@@ -62,7 +53,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     return () => {
       mounted = false;
     };
-  }, [apiBaseUrl, router]);
+  }, [router]);
 
   if (!authReady || !isAuthorized) {
     return (

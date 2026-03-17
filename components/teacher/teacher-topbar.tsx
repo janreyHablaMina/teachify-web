@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { Gochi_Hand } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
+import { apiLogout } from "@/lib/api/client";
+import { clearStoredToken, getStoredToken } from "@/lib/auth/session";
 
 type TeacherTopbarProps = {
   monthLabel: string;
@@ -23,7 +25,6 @@ export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: Teach
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://teachify-api-production.up.railway.app").replace(/\/$/, "");
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -39,21 +40,12 @@ export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: Teach
     setIsSigningOut(true);
 
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("teachify_token") : null;
-
-      await fetch(`${apiBaseUrl}/api/logout`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+      const token = getStoredToken();
+      await apiLogout(token ?? undefined);
     } catch {
       // We still clear local auth state and redirect, even if API logout fails.
     } finally {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("teachify_token");
-      }
+      clearStoredToken();
       setIsSigningOut(false);
       setIsLogoutModalOpen(false);
       setIsDropdownOpen(false);

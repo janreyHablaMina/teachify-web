@@ -3,12 +3,13 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiRegister, getApiErrorMessage } from "@/lib/api/client";
+import { storeToken } from "@/lib/auth/session";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://teachify-api-production.up.railway.app").replace(/\/$/, "");
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,34 +29,20 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          fullname: fullName,
-          email,
-          password,
-          password_confirmation: confirmPassword,
-          role: "teacher",
-        }),
+      const { response, data } = await apiRegister({
+        fullname: fullName,
+        email,
+        password,
+        password_confirmation: confirmPassword,
+        role: "teacher",
       });
 
-      const data = await response.json().catch(() => ({}));
-
       if (!response.ok) {
-        const requestId = response.headers.get("x-railway-request-id");
-        const validationMessages = data?.errors
-          ? Object.values(data.errors).flat().join(" ")
-          : null;
-        const baseMessage = validationMessages || data?.message || "Registration failed. Please try again.";
-        throw new Error(requestId ? `${baseMessage} (req: ${requestId})` : baseMessage);
+        throw new Error(getApiErrorMessage(response, data, "Registration failed. Please try again."));
       }
 
-      if (data?.token && typeof window !== "undefined") {
-        localStorage.setItem("teachify_token", String(data.token));
+      if (typeof data?.token === "string") {
+        storeToken(data.token);
       }
 
       setStatus({ type: "success", message: "Account created successfully. Redirecting to your dashboard..." });

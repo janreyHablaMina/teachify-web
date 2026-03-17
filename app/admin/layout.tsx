@@ -6,6 +6,8 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { navItems } from "@/components/admin/data";
 import { NavItem } from "@/components/ui/nav/types";
+import { apiMe } from "@/lib/api/client";
+import { getRouteForRole, getStoredToken } from "@/lib/auth/session";
 
 export default function AdminLayout({
   children,
@@ -16,7 +18,6 @@ export default function AdminLayout({
   const [now, setNow] = useState(() => new Date());
   const [authReady, setAuthReady] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://teachify-api-production.up.railway.app").replace(/\/$/, "");
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -28,24 +29,14 @@ export default function AdminLayout({
 
     async function verifyAuth() {
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("teachify_token") : null;
-        const response = await fetch(`${apiBaseUrl}/api/me`, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
+        const token = getStoredToken();
+        const { response, data } = await apiMe(token ?? undefined);
 
         if (!response.ok) throw new Error("Unauthorized");
-        const data = await response.json().catch(() => ({}));
         const role = String(data?.user?.role ?? "");
 
         if (role !== "admin") {
-          if (role === "teacher") router.replace("/teacher");
-          else if (role === "student") router.replace("/");
-          else router.replace("/login");
+          router.replace(role ? getRouteForRole(role) : "/login");
           return;
         }
 
@@ -66,7 +57,7 @@ export default function AdminLayout({
     return () => {
       mounted = false;
     };
-  }, [apiBaseUrl, router]);
+  }, [router]);
 
   const monthLabel = useMemo(
     () => now.toLocaleString("default", { month: "short" }).toUpperCase(),
