@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Gochi_Hand } from "next/font/google";
+import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
 
 type TeacherTopbarProps = {
@@ -16,11 +17,25 @@ const gochiHand = Gochi_Hand({
   weight: "400",
 });
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const encodedName = `${name}=`;
+  const parts = document.cookie.split("; ");
+  for (const part of parts) {
+    if (part.startsWith(encodedName)) {
+      return decodeURIComponent(part.substring(encodedName.length));
+    }
+  }
+  return null;
+}
+
 export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: TeacherTopbarProps) {
+  const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://teachify-api-production.up.railway.app").replace(/\/$/, "");
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -32,12 +47,40 @@ export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: Teach
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsSigningOut(true);
-    setTimeout(() => {
+
+    try {
+      await fetch(`${apiBaseUrl}/sanctum/csrf-cookie`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const xsrfToken = getCookie("XSRF-TOKEN");
+      const token = typeof window !== "undefined" ? localStorage.getItem("teachify_token") : null;
+
+      await fetch(`${apiBaseUrl}/api/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          ...(xsrfToken ? { "X-XSRF-TOKEN": xsrfToken } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+    } catch {
+      // We still clear local auth state and redirect, even if API logout fails.
+    } finally {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("teachify_token");
+      }
       setIsSigningOut(false);
       setIsLogoutModalOpen(false);
-    }, 1500);
+      setIsDropdownOpen(false);
+      router.push("/login");
+      router.refresh();
+    }
   };
 
   return (
