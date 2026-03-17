@@ -8,6 +8,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://teachify-api-production.up.railway.app").replace(/\/$/, "");
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -15,6 +16,8 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     const formData = new FormData(event.currentTarget);
+    const fullName = String(formData.get("fullName") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
     const password = String(formData.get("password") ?? "");
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
@@ -24,11 +27,45 @@ export default function RegisterPage() {
       return;
     }
 
-    setTimeout(() => {
+    try {
+      await fetch(`${apiBaseUrl}/sanctum/csrf-cookie`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const response = await fetch(`${apiBaseUrl}/api/register`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          fullname: fullName,
+          email,
+          password,
+          password_confirmation: confirmPassword,
+          role: "teacher",
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const validationMessages = data?.errors
+          ? Object.values(data.errors).flat().join(" ")
+          : null;
+        throw new Error(validationMessages || data?.message || "Registration failed. Please try again.");
+      }
+
       setStatus({ type: "success", message: "Account created successfully. Redirecting to your dashboard..." });
+      setTimeout(() => router.push("/teacher"), 900);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Registration failed. Please try again.";
+      setStatus({ type: "error", message });
+    } finally {
       setIsLoading(false);
-      setTimeout(() => router.push("/teacher"), 800);
-    }, 900);
+    }
   }
 
   return (
