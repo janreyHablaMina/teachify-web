@@ -18,7 +18,7 @@ export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSideb
   const classesLocked = normalizedTier !== "pro" && normalizedTier !== "school";
 
   return (
-    <aside className="hidden h-screen flex-col overflow-y-auto border-r-2 border-[#0f172a] bg-white/80 px-4 py-6 backdrop-blur lg:flex">
+    <aside className="hidden h-screen flex-col overflow-hidden border-r-2 border-[#0f172a] bg-white/80 px-4 py-6 backdrop-blur lg:flex">
       <div className="mb-8 flex items-center justify-center rounded-[2px] border-2 border-[#0f172a] bg-white p-5 shadow-[8px_8px_0_#fef08a] [transform:rotate(-1deg)] transition hover:[transform:rotate(0deg)_scale(1.02)] hover:shadow-[10px_10px_0_#0f172a]">
         <div className="flex items-center gap-3">
           <Image

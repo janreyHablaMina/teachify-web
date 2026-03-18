@@ -15,7 +15,7 @@ export function DashboardHeader({ planTier, planMeta, userName, userEmail }: Das
       <div>
         <p className="m-0 text-[12px] font-extrabold uppercase tracking-[0.09em] text-slate-500">Dashboard / Overview</p>
         <h2 className="mt-1 text-[32px] font-black tracking-[-0.03em] text-slate-900">
-          {userName ? `Welcome back, ${userName}` : `${planMeta.label} Dashboard`}
+          {userName ? `Welcome back, ${userName}` : "Dashboard Overview"}
         </h2>
         {userEmail ? (
           <p className="mt-1 text-[12px] font-extrabold uppercase tracking-[0.08em] text-slate-500">

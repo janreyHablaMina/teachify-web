@@ -1,15 +1,10 @@
 "use client";
 
 import { useState } from "react";
-
-type GeneratePayload = {
-  title: string;
-  file: File;
-  types: string[];
-};
+import type { GeneratePayload } from "./types";
 
 interface FileUploadWorkspaceProps {
-  onGenerate: (data: GeneratePayload) => void;
+  onGenerate: (data: GeneratePayload) => void | Promise<void>;
   isLoading: boolean;
   planTier: string;
 }
@@ -18,6 +13,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(["multiple_choice"]);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
 
   const questionTypes = [
     { id: "multiple_choice", label: "Multiple Choice", locked: false },
@@ -29,7 +25,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !title) return;
-    onGenerate({ title, file, types: selectedTypes });
+    onGenerate({ title, file, types: selectedTypes, difficulty });
   };
 
   return (
@@ -73,6 +69,26 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
                 <p className="m-0 text-[11px] font-bold text-slate-400">PDF max 20 pages (5MB)</p>
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Difficulty Level</label>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {(["easy", "medium", "hard"] as const).map((level) => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => setDifficulty(level)}
+                className={`rounded-xl border-2 px-4 py-3 text-[13px] font-black uppercase tracking-[0.06em] transition-all ${
+                  difficulty === level
+                    ? "border-slate-900 bg-[#fef08a] text-slate-900 shadow-[3px_3px_0_#0f172a]"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-900 hover:text-slate-900"
+                }`}
+              >
+                {level}
+              </button>
+            ))}
           </div>
         </div>
 

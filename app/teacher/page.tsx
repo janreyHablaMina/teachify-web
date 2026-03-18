@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import { DashboardHeader } from "@/components/teacher/dashboard/dashboard-header";
 import { MetricsGrid } from "@/components/teacher/dashboard/metrics-grid";
 import { normalizePlanTier, PLAN_CATALOG } from "@/components/teacher/dashboard/plan";
@@ -9,9 +10,6 @@ import { PlanFeaturesPanel } from "@/components/teacher/dashboard/plan-features-
 import { RecentQuizzesPanel } from "@/components/teacher/dashboard/recent-quizzes-panel";
 import { UnlockProPanel } from "@/components/teacher/dashboard/unlock-pro-panel";
 import type { ClassroomSummary, QuizSummary, TeacherPlanUser } from "@/components/teacher/dashboard/types";
-import { apiMe } from "@/lib/api/client";
-import { parseTeacherProfile } from "@/lib/auth/profile";
-import { getStoredToken } from "@/lib/auth/session";
 
 const DEFAULT_PLAN_USER: TeacherPlanUser = {
   plan: "trial",
@@ -22,51 +20,31 @@ const DEFAULT_PLAN_USER: TeacherPlanUser = {
 };
 
 export default function TeacherDashboardPage() {
-  const [planUser, setPlanUser] = useState<TeacherPlanUser>(DEFAULT_PLAN_USER);
-  const [userName, setUserName] = useState("Educator");
-  const [userEmail, setUserEmail] = useState("");
+  const session = useTeacherSession();
 
   const [quizzes] = useState<QuizSummary[]>([]);
   const [classrooms] = useState<ClassroomSummary[]>([]);
 
-  useEffect(() => {
-    let mounted = true;
+  const planUser: TeacherPlanUser = useMemo(
+    () => ({
+      ...DEFAULT_PLAN_USER,
+      ...(session?.plan ? { plan: session.plan } : {}),
+      ...(session?.planTier ? { plan_tier: session.planTier } : {}),
+      ...(typeof session?.quizGenerationLimit === "number"
+        ? { quiz_generation_limit: session.quizGenerationLimit }
+        : {}),
+      ...(typeof session?.quizzesUsed === "number"
+        ? { quizzes_used: session.quizzesUsed }
+        : {}),
+      ...(typeof session?.maxQuestionsPerQuiz === "number"
+        ? { max_questions_per_quiz: session.maxQuestionsPerQuiz }
+        : {}),
+    }),
+    [session]
+  );
 
-    async function loadDashboardProfile() {
-      try {
-        const token = getStoredToken();
-        const { response, data } = await apiMe(token ?? undefined);
-        if (!response.ok || !mounted) return;
-        const parsedProfile = parseTeacherProfile(data);
-
-        setUserName(parsedProfile.name);
-        setUserEmail(parsedProfile.email);
-
-        setPlanUser((prev) => ({
-          ...prev,
-          ...(parsedProfile.plan ? { plan: parsedProfile.plan } : {}),
-          ...(parsedProfile.planTier ? { plan_tier: parsedProfile.planTier } : {}),
-          ...(typeof parsedProfile.quizGenerationLimit === "number"
-            ? { quiz_generation_limit: parsedProfile.quizGenerationLimit }
-            : {}),
-          ...(typeof parsedProfile.quizzesUsed === "number"
-            ? { quizzes_used: parsedProfile.quizzesUsed }
-            : {}),
-          ...(typeof parsedProfile.maxQuestionsPerQuiz === "number"
-            ? { max_questions_per_quiz: parsedProfile.maxQuestionsPerQuiz }
-            : {}),
-        }));
-      } catch {
-        // Keep dashboard usable with local defaults if /api/me fails.
-      }
-    }
-
-    loadDashboardProfile();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const userName = session?.name && session.name !== "Educator" ? session.name : "";
+  const userEmail = session?.email ?? "";
 
   const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);
   const planMeta = PLAN_CATALOG[planTier];

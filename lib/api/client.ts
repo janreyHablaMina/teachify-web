@@ -87,6 +87,30 @@ export async function apiGenerateSummary(payload: {
   return { response, data };
 }
 
+export async function apiGenerateQuizFromFile(payload: {
+  title: string;
+  file: File;
+  types: string[];
+  difficulty: "easy" | "medium" | "hard";
+  questionCount: number;
+}): Promise<{ response: Response; data: JsonObject }> {
+  const formData = new FormData();
+  formData.append("title", payload.title);
+  formData.append("file", payload.file);
+  formData.append("types", payload.types.join(","));
+  formData.append("difficulty", payload.difficulty);
+  formData.append("questionCount", String(payload.questionCount));
+
+  const response = await fetch("/api/teacher/quiz-generate", {
+    method: "POST",
+    headers: buildHeaders(),
+    body: formData,
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export function getApiErrorMessage(
   response: Response,
   data: JsonObject,

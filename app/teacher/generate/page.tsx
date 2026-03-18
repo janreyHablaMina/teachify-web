@@ -7,28 +7,28 @@ import { UsageStats } from "@/components/teacher/generate/usage-stats";
 import { ModeSwitcher } from "@/components/teacher/generate/mode-switcher";
 import { FileUploadWorkspace } from "@/components/teacher/generate/file-upload-workspace";
 import { LoadingOverlay } from "@/components/teacher/generate/loading-overlay";
+import type { GeneratePayload, GeneratedQuiz } from "@/components/teacher/generate/types";
 import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
-import { apiGenerateSummary, apiMe, getApiErrorMessage } from "@/lib/api/client";
+import { apiMe } from "@/lib/api/client";
 import { parseTeacherProfile } from "@/lib/auth/profile";
 import { getStoredToken } from "@/lib/auth/session";
-
-type GeneratePayload = {
-  title: string;
-  file: File;
-  types: string[];
-};
+import { generateQuizFromFile, generateQuestionsFromSummary, generateSummary } from "@/lib/teacher/generate-service";
+import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 
 export default function TeacherGeneratePage() {
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
-  const [showResult, setShowResult] = useState(false);
+  const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
+  const [fileGenerateError, setFileGenerateError] = useState("");
   const [summaryPrompt, setSummaryPrompt] = useState("");
   const [summaryResult, setSummaryResult] = useState("");
   const [summaryError, setSummaryError] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
   const [questionsResult, setQuestionsResult] = useState("");
   const [questionsError, setQuestionsError] = useState("");
   const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
+  const [isQuestionsExpanded, setIsQuestionsExpanded] = useState(false);
   const [planUser, setPlanUser] = useState<TeacherPlanUser>({
     plan: "trial",
     plan_tier: "trial",
@@ -84,14 +84,22 @@ export default function TeacherGeneratePage() {
     return Math.min(100, Math.max(0, (used / limit) * 100));
   }, [limit, used]);
   const limitLabel = planTier === "trial" ? "Total Limit" : "Monthly Limit";
+  const maxQuestions = planUser.max_questions_per_quiz ?? planMeta.maxQuestions;
 
-  const handleGenerate = (data: GeneratePayload) => {
-    void data;
+  const handleGenerate = async (data: GeneratePayload) => {
     setIsLoading(true);
-    setTimeout(() => {
+    setFileGenerateError("");
+
+    try {
+      const quiz = await generateQuizFromFile(data, maxQuestions);
+      setGeneratedQuiz(quiz);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to generate quiz from file.";
+      setFileGenerateError(message);
+      setGeneratedQuiz(null);
+    } finally {
       setIsLoading(false);
-      setShowResult(true);
-    }, 4000);
+    }
   };
 
   const handleGenerateSummary = async () => {
@@ -101,19 +109,12 @@ export default function TeacherGeneratePage() {
     setIsSummaryLoading(true);
 
     try {
-      const { response, data } = await apiGenerateSummary({ prompt: summaryPrompt.trim() });
-      if (!response.ok) {
-        throw new Error(getApiErrorMessage(response, data, "Failed to generate summary."));
-      }
-
-      const generatedSummary = typeof data.summary === "string" ? data.summary.trim() : "";
-      if (!generatedSummary) {
-        throw new Error("No summary was generated. Please try again.");
-      }
-
+      const generatedSummary = await generateSummary(summaryPrompt);
       setSummaryResult(generatedSummary);
+      setIsSummaryExpanded(false);
       setQuestionsResult("");
       setQuestionsError("");
+      setIsQuestionsExpanded(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate summary.";
       setSummaryError(message);
@@ -123,104 +124,7 @@ export default function TeacherGeneratePage() {
   };
 
   const handleSaveSummaryAsPdf = () => {
-    if (!summaryResult.trim()) return;
-    const encoder = new TextEncoder();
-    const byteLength = (value: string) => encoder.encode(value).length;
-    const escapePdfText = (value: string) =>
-      value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-    const sanitize = (value: string) =>
-      value.replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim();
-    const wrapLine = (line: string, maxChars: number) => {
-      const words = sanitize(line).split(" ").filter(Boolean);
-      if (words.length === 0) return [""];
-      const lines: string[] = [];
-      let current = "";
-      for (const word of words) {
-        const next = current ? `${current} ${word}` : word;
-        if (next.length <= maxChars) {
-          current = next;
-          continue;
-        }
-        if (current) lines.push(current);
-        current = word;
-      }
-      if (current) lines.push(current);
-      return lines;
-    };
-
-    const rawLines = summaryResult.split(/\r?\n/);
-    const bodyLines = rawLines.flatMap((line) => (line.trim() ? wrapLine(line, 88) : [""]));
-    const allLines = [`AI Summary - ${new Date().toLocaleString()}`, "", ...bodyLines];
-    const linesPerPage = 46;
-    const pages: string[][] = [];
-    for (let i = 0; i < allLines.length; i += linesPerPage) {
-      pages.push(allLines.slice(i, i + linesPerPage));
-    }
-
-    const pageCount = Math.max(1, pages.length);
-    const pageObjectIds = Array.from({ length: pageCount }, (_, i) => 3 + i);
-    const contentObjectIds = Array.from({ length: pageCount }, (_, i) => 3 + pageCount + i);
-    const fontObjectId = 3 + pageCount * 2;
-
-    const objects = new Map<number, string>();
-    objects.set(1, "<< /Type /Catalog /Pages 2 0 R >>");
-    objects.set(
-      2,
-      `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageCount} >>`
-    );
-
-    for (let i = 0; i < pageCount; i += 1) {
-      const pageId = pageObjectIds[i];
-      const contentId = contentObjectIds[i];
-      const pageLines = pages[i] ?? [""];
-      const textOps = [
-        "BT",
-        "/F1 12 Tf",
-        "16 TL",
-        "50 760 Td",
-      ];
-      for (const line of pageLines) {
-        textOps.push(`(${escapePdfText(line)}) Tj`);
-        textOps.push("T*");
-      }
-      textOps.push("ET");
-      const stream = textOps.join("\n");
-      const contentBody = `<< /Length ${byteLength(stream)} >>\nstream\n${stream}\nendstream`;
-      objects.set(contentId, contentBody);
-
-      const pageBody = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontObjectId} 0 R >> >> /Contents ${contentId} 0 R >>`;
-      objects.set(pageId, pageBody);
-    }
-
-    objects.set(fontObjectId, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-
-    const maxObjectId = fontObjectId;
-    let pdf = "%PDF-1.4\n";
-    const offsets: number[] = Array(maxObjectId + 1).fill(0);
-
-    for (let id = 1; id <= maxObjectId; id += 1) {
-      const body = objects.get(id) ?? "";
-      offsets[id] = byteLength(pdf);
-      pdf += `${id} 0 obj\n${body}\nendobj\n`;
-    }
-
-    const xrefOffset = byteLength(pdf);
-    pdf += `xref\n0 ${maxObjectId + 1}\n`;
-    pdf += "0000000000 65535 f \n";
-    for (let id = 1; id <= maxObjectId; id += 1) {
-      pdf += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
-    }
-    pdf += `trailer\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
-    const blob = new Blob([encoder.encode(pdf)], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `teachify-summary-${Date.now()}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadSummaryPdf(summaryResult);
   };
 
   const handleGenerateQuestionsFromSummary = async () => {
@@ -229,21 +133,9 @@ export default function TeacherGeneratePage() {
     setIsQuestionsLoading(true);
 
     try {
-      const { response, data } = await apiGenerateSummary({
-        prompt: summaryResult,
-        task: "questions",
-      });
-
-      if (!response.ok) {
-        throw new Error(getApiErrorMessage(response, data, "Failed to generate questions."));
-      }
-
-      const generatedQuestions = typeof data.summary === "string" ? data.summary.trim() : "";
-      if (!generatedQuestions) {
-        throw new Error("No questions were generated. Please try again.");
-      }
-
+      const generatedQuestions = await generateQuestionsFromSummary(summaryResult);
       setQuestionsResult(generatedQuestions);
+      setIsQuestionsExpanded(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate questions.";
       setQuestionsError(message);
@@ -271,11 +163,54 @@ export default function TeacherGeneratePage() {
       <ModeSwitcher mode={mode} setMode={setMode} />
 
       {mode === "file" ? (
-        <FileUploadWorkspace
-          onGenerate={handleGenerate}
-          isLoading={isLoading}
-          planTier={planTier}
-        />
+        <>
+          <FileUploadWorkspace
+            onGenerate={handleGenerate}
+            isLoading={isLoading}
+            planTier={planTier}
+          />
+
+          {fileGenerateError ? (
+            <p className="mt-4 rounded-lg border-2 border-red-900 bg-rose-100 px-4 py-3 text-left text-[13px] font-bold text-red-800">
+              {fileGenerateError}
+            </p>
+          ) : null}
+
+          {generatedQuiz ? (
+            <article className="mt-8 rounded-[18px] border-2 border-dashed border-slate-900/35 bg-teal-50 p-6">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h4 className="m-0 text-[22px] font-black text-[#0f172a]">{generatedQuiz.title}</h4>
+                  <p className="mt-1 text-[13px] font-bold uppercase tracking-[0.08em] text-slate-600">
+                    Difficulty: {generatedQuiz.difficulty} | {generatedQuiz.questions.length} Questions
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                {generatedQuiz.questions.map((question, idx) => (
+                  <article key={`${idx}-${question.question}`} className="rounded-xl border-2 border-slate-900 bg-white p-4 shadow-[3px_3px_0_#0f172a]">
+                    <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
+                      Q{idx + 1} - {question.type.replace("_", " ")}
+                    </p>
+                    <p className="mt-2 text-[15px] font-bold text-[#0f172a]">{question.question}</p>
+                    {Array.isArray(question.choices) && question.choices.length > 0 ? (
+                      <ul className="mt-3 list-disc pl-5 text-[14px] font-semibold text-slate-700">
+                        {question.choices.map((choice, choiceIndex) => (
+                          <li key={`${idx}-${choiceIndex}`}>{choice}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <p className="mt-3 text-[13px] font-black text-teal-700">Answer: {question.answer}</p>
+                    {question.explanation ? (
+                      <p className="mt-1 text-[13px] font-semibold text-slate-600">{question.explanation}</p>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            </article>
+          ) : null}
+        </>
       ) : (
         <article className="rounded-[18px] border border-slate-900/10 bg-white p-10 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.03)]">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-slate-900 bg-yellow-200 shadow-[4px_4px_0_#0f172a]">
@@ -308,9 +243,16 @@ export default function TeacherGeneratePage() {
 
             {summaryResult ? (
               <div className="mt-5 rounded-xl border-2 border-slate-900 bg-white p-5 text-left shadow-[4px_4px_0_#0f172a]">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                  <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Generated Summary</p>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-dashed border-slate-300 pb-3">
+                  <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Summary ready</p>
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsSummaryExpanded((prev) => !prev)}
+                      className="rounded-md border-2 border-slate-900 bg-[#ecfeff] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 transition hover:bg-teal-100"
+                    >
+                      {isSummaryExpanded ? "Hide Summary" : "View Summary"}
+                    </button>
                     <button
                       type="button"
                       onClick={handleSaveSummaryAsPdf}
@@ -328,7 +270,11 @@ export default function TeacherGeneratePage() {
                     </button>
                   </div>
                 </div>
-                <p className="m-0 whitespace-pre-wrap text-[14px] font-semibold leading-[1.7] text-[#0f172a]">{summaryResult}</p>
+                {isSummaryExpanded ? (
+                  <p className="m-0 whitespace-pre-wrap text-[14px] font-semibold leading-[1.7] text-[#0f172a]">{summaryResult}</p>
+                ) : (
+                  <p className="m-0 text-[13px] font-semibold text-slate-600">Click <strong>View Summary</strong> to open the generated content.</p>
+                )}
               </div>
             ) : null}
 
@@ -340,28 +286,23 @@ export default function TeacherGeneratePage() {
 
             {questionsResult ? (
               <div className="mt-5 rounded-xl border-2 border-slate-900 bg-white p-5 text-left shadow-[4px_4px_0_#0f172a]">
-                <p className="m-0 mb-2 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Generated Questions</p>
-                <p className="m-0 whitespace-pre-wrap text-[14px] font-semibold leading-[1.7] text-[#0f172a]">{questionsResult}</p>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-dashed border-slate-300 pb-3">
+                  <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Questions ready</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuestionsExpanded((prev) => !prev)}
+                    className="rounded-md border-2 border-slate-900 bg-[#ecfeff] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 transition hover:bg-teal-100"
+                  >
+                    {isQuestionsExpanded ? "Hide Questions" : "View Questions"}
+                  </button>
+                </div>
+                {isQuestionsExpanded ? (
+                  <p className="m-0 whitespace-pre-wrap text-[14px] font-semibold leading-[1.7] text-[#0f172a]">{questionsResult}</p>
+                ) : (
+                  <p className="m-0 text-[13px] font-semibold text-slate-600">Click <strong>View Questions</strong> to open the generated question set.</p>
+                )}
               </div>
             ) : null}
-          </div>
-        </article>
-      )}
-
-      {showResult && (
-        <article className="mt-8 rounded-[18px] border-2 border-dashed border-slate-900/35 bg-teal-50 p-8">
-          <div className="flex flex-col items-center text-center">
-            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border-2 border-slate-900 bg-white text-xl font-black text-slate-900">OK</span>
-            <h4 className="mt-4 text-[22px] font-black text-[#0f172a]">Quiz Successfully Generated!</h4>
-            <p className="mt-2 text-[14px] font-bold text-[#0f172a]/70">Your quiz &quot;Midterm Review&quot; is ready with 15 questions.</p>
-            <div className="mt-8 flex gap-4">
-              <button className="rounded-[10px] border-2 border-slate-900 bg-white px-8 py-3 text-[13px] font-black uppercase tracking-wider text-slate-900 shadow-[4px_4px_0_#0f172a] transition hover:bg-slate-50">
-                View Quiz
-              </button>
-              <button onClick={() => setShowResult(false)} className="rounded-[10px] border-2 border-slate-900 bg-[#99f6e4] px-8 py-3 text-[13px] font-black uppercase tracking-wider text-slate-900 transition hover:-translate-y-1 hover:bg-[#5eead4]">
-                Dismiss
-              </button>
-            </div>
           </div>
         </article>
       )}
