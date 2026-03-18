@@ -4,49 +4,62 @@ export const PLAN_CATALOG: Record<PlanTier, PlanMeta> = {
   trial: {
     label: "Free Plan",
     priceLabel: "Free",
-    quizLimitLabel: "3 quiz generations/month",
+    description: "Great for teachers who want to try Teachify AI and experience automatic quiz generation.",
+    quizLimitLabel: "3 AI quiz generations total",
     maxQuestions: 10,
-    features: ["AI quiz generation", "Multiple question types", "Basic editing", "Export options"],
+    features: [
+      "3 AI quiz generations total",
+      "Up to 10 questions per quiz",
+      "Multiple choice questions",
+      "Basic PDF export",
+    ],
+    limitations: ["No classroom features", "No document upload"],
   },
   basic: {
     label: "Basic Plan",
     priceLabel: "$7/month",
-    quizLimitLabel: "30 quiz generations/month",
-    maxQuestions: 20,
-    features: ["Everything in Free", "Higher monthly limit", "More question capacity", "Priority generation"],
+    description: "Ideal for teachers who need AI quiz generation without classroom management.",
+    quizLimitLabel: "50 quizzes per month",
+    maxQuestions: 50,
+    features: ["50 quizzes per month", "Up to 50 questions per quiz", "Document to quiz generation", "Question bank"],
+    limitations: ["No classroom management", "No analytics"],
   },
   pro: {
     label: "Pro Plan",
     priceLabel: "$14/month",
-    quizLimitLabel: "200 quiz generations/month",
+    description: "Complete AI assistant for teachers who manage quizzes, classrooms, and performance.",
+    quizLimitLabel: "200 quizzes per month",
     maxQuestions: 50,
     features: [
       "Classrooms",
-      "Student Analytics",
-      "Assignments",
-      "Advanced teacher workflow",
-      "Priority support",
-      "Enhanced exports",
+      "Everything in Basic",
+      "200 quizzes per month",
+      "Classroom creation + join codes",
+      "Assignments and grading",
+      "Student performance analytics",
     ],
+    limitations: [],
   },
   school: {
     label: "School Plan",
-    priceLabel: "$49/month",
-    quizLimitLabel: "Unlimited quiz generations",
+    priceLabel: "$59/month",
+    description: "For schools that want AI teaching tools across multiple teachers and classrooms.",
+    quizLimitLabel: "Up to 1000 quizzes per month",
     maxQuestions: 100,
     features: [
-      "All Pro features",
-      "Multi-teacher workspace",
-      "Centralized analytics",
-      "Institution controls",
-      "Shared question bank",
-      "Priority support",
+      "Up to 20 teachers",
+      "Up to 1000 quizzes per month",
+      "Unlimited classrooms",
+      "School admin dashboard",
+      "Priority AI processing",
     ],
+    limitations: [],
   },
 };
 
 export function normalizePlanTier(value?: string): PlanTier {
   const v = (value ?? "trial").toLowerCase();
+  if (v === "free") return "trial";
   if (v === "basic" || v === "pro" || v === "school" || v === "trial") return v;
   return "trial";
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardHeader } from "@/components/teacher/dashboard/dashboard-header";
 import { MetricsGrid } from "@/components/teacher/dashboard/metrics-grid";
 import { normalizePlanTier, PLAN_CATALOG } from "@/components/teacher/dashboard/plan";
@@ -9,18 +9,64 @@ import { PlanFeaturesPanel } from "@/components/teacher/dashboard/plan-features-
 import { RecentQuizzesPanel } from "@/components/teacher/dashboard/recent-quizzes-panel";
 import { UnlockProPanel } from "@/components/teacher/dashboard/unlock-pro-panel";
 import type { ClassroomSummary, QuizSummary, TeacherPlanUser } from "@/components/teacher/dashboard/types";
+import { apiMe } from "@/lib/api/client";
+import { parseTeacherProfile } from "@/lib/auth/profile";
+import { getStoredToken } from "@/lib/auth/session";
+
+const DEFAULT_PLAN_USER: TeacherPlanUser = {
+  plan: "trial",
+  plan_tier: "trial",
+  quiz_generation_limit: 3,
+  quizzes_used: 0,
+  max_questions_per_quiz: 10,
+};
 
 export default function TeacherDashboardPage() {
-  const [planUser] = useState<TeacherPlanUser>({
-    plan: "trial",
-    plan_tier: "trial",
-    quiz_generation_limit: 3,
-    quizzes_used: 0,
-    max_questions_per_quiz: 10,
-  });
+  const [planUser, setPlanUser] = useState<TeacherPlanUser>(DEFAULT_PLAN_USER);
+  const [userName, setUserName] = useState("Educator");
+  const [userEmail, setUserEmail] = useState("");
 
   const [quizzes] = useState<QuizSummary[]>([]);
   const [classrooms] = useState<ClassroomSummary[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadDashboardProfile() {
+      try {
+        const token = getStoredToken();
+        const { response, data } = await apiMe(token ?? undefined);
+        if (!response.ok || !mounted) return;
+        const parsedProfile = parseTeacherProfile(data);
+
+        setUserName(parsedProfile.name);
+        setUserEmail(parsedProfile.email);
+
+        setPlanUser((prev) => ({
+          ...prev,
+          ...(parsedProfile.plan ? { plan: parsedProfile.plan } : {}),
+          ...(parsedProfile.planTier ? { plan_tier: parsedProfile.planTier } : {}),
+          ...(typeof parsedProfile.quizGenerationLimit === "number"
+            ? { quiz_generation_limit: parsedProfile.quizGenerationLimit }
+            : {}),
+          ...(typeof parsedProfile.quizzesUsed === "number"
+            ? { quizzes_used: parsedProfile.quizzesUsed }
+            : {}),
+          ...(typeof parsedProfile.maxQuestionsPerQuiz === "number"
+            ? { max_questions_per_quiz: parsedProfile.maxQuestionsPerQuiz }
+            : {}),
+        }));
+      } catch {
+        // Keep dashboard usable with local defaults if /api/me fails.
+      }
+    }
+
+    loadDashboardProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);
   const planMeta = PLAN_CATALOG[planTier];
@@ -46,10 +92,11 @@ export default function TeacherDashboardPage() {
 
   const recentQuizzes = quizzes.slice(0, 5);
   const activeClasses = classrooms.filter((c) => c.is_active).length;
+  const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
 
   return (
     <section className="flex min-h-full w-full flex-col gap-[22px] py-2">
-      <DashboardHeader planTier={planTier} planMeta={planMeta} />
+      <DashboardHeader planTier={planTier} planMeta={planMeta} userName={userName} userEmail={userEmail} />
 
       {(planTier === "trial" || planTier === "basic") && (
         <PlanBanner
@@ -65,15 +112,18 @@ export default function TeacherDashboardPage() {
         activeClasses={activeClasses}
         used={used}
         progressPercent={progressPercent}
-        planTierLabel={planTier.toUpperCase()}
+        planTierLabel={planTierLabel}
+        planTier={planTier}
+        limit={limit}
+        maxQuestions={maxQuestions}
       />
 
       <p className="-mt-1.5 text-[12px] font-bold text-slate-600">
         Current plan includes: {planMeta.quizLimitLabel}, up to {maxQuestions} questions per quiz.
       </p>
 
-      <section className={`grid gap-4 ${recentQuizzes.length === 0 ? "grid-cols-1" : "grid-cols-1 min-[1160px]:grid-cols-2"}`}>
-        {recentQuizzes.length > 0 ? <PlanFeaturesPanel planMeta={planMeta} /> : null}
+      <section className="grid grid-cols-1 gap-4 min-[1160px]:grid-cols-2">
+        <PlanFeaturesPanel planMeta={planMeta} planTier={planTier} />
         <RecentQuizzesPanel quizzes={recentQuizzes} />
       </section>
 

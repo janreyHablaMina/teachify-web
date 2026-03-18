@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TeacherHeader } from "@/components/teacher/teacher-header";
+import { PLAN_CATALOG, normalizePlanTier } from "@/components/teacher/dashboard/plan";
 import { UsageStats } from "@/components/teacher/generate/usage-stats";
 import { ModeSwitcher } from "@/components/teacher/generate/mode-switcher";
 import { FileUploadWorkspace } from "@/components/teacher/generate/file-upload-workspace";
 import { LoadingOverlay } from "@/components/teacher/generate/loading-overlay";
+import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
+import { apiMe } from "@/lib/api/client";
+import { parseTeacherProfile } from "@/lib/auth/profile";
+import { getStoredToken } from "@/lib/auth/session";
 
 type GeneratePayload = {
   title: string;
@@ -17,6 +22,61 @@ export default function TeacherGeneratePage() {
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [planUser, setPlanUser] = useState<TeacherPlanUser>({
+    plan: "trial",
+    plan_tier: "trial",
+    quiz_generation_limit: 3,
+    quizzes_used: 0,
+    max_questions_per_quiz: 10,
+  });
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPlan() {
+      try {
+        const token = getStoredToken();
+        const { response, data } = await apiMe(token ?? undefined);
+        if (!response.ok || !mounted) return;
+
+        const parsedProfile = parseTeacherProfile(data);
+        setPlanUser((prev) => ({
+          ...prev,
+          plan: parsedProfile.plan,
+          plan_tier: parsedProfile.planTier,
+          ...(typeof parsedProfile.quizGenerationLimit === "number"
+            ? { quiz_generation_limit: parsedProfile.quizGenerationLimit }
+            : {}),
+          ...(typeof parsedProfile.quizzesUsed === "number"
+            ? { quizzes_used: parsedProfile.quizzesUsed }
+            : {}),
+          ...(typeof parsedProfile.maxQuestionsPerQuiz === "number"
+            ? { max_questions_per_quiz: parsedProfile.maxQuestionsPerQuiz }
+            : {}),
+        }));
+      } catch {
+        // Keep default UI values if profile fetch fails.
+      }
+    }
+
+    loadPlan();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);
+  const planMeta = PLAN_CATALOG[planTier];
+  const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
+  const limit = planUser.quiz_generation_limit ?? (planTier === "trial" ? 3 : 0);
+  const used = planUser.quizzes_used ?? 0;
+  const remaining = Math.max(0, limit - used);
+  const progress = useMemo(() => {
+    if (limit <= 0) return 0;
+    return Math.min(100, Math.max(0, (used / limit) * 100));
+  }, [limit, used]);
+  const limitLabel = planTier === "trial" ? "Total Limit" : "Monthly Limit";
 
   const handleGenerate = (data: GeneratePayload) => {
     void data;
@@ -30,16 +90,17 @@ export default function TeacherGeneratePage() {
   return (
     <section className="w-full">
       <TeacherHeader
-        planLabel="Pro Plan"
-        planTier="PRO"
-        priceLabel="$14/month"
+        planLabel={planMeta.label}
+        planTier={planTierLabel}
+        priceLabel={planMeta.priceLabel}
       />
 
       <UsageStats
-        remaining={155}
-        limit={200}
-        progress={22.5}
-        planLabel="Pro Plan"
+        remaining={remaining}
+        limit={limit}
+        progress={progress}
+        planLabel={planMeta.label}
+        limitLabel={limitLabel}
       />
 
       <ModeSwitcher mode={mode} setMode={setMode} />
@@ -48,7 +109,7 @@ export default function TeacherGeneratePage() {
         <FileUploadWorkspace
           onGenerate={handleGenerate}
           isLoading={isLoading}
-          planTier="pro"
+          planTier={planTier}
         />
       ) : (
         <article className="rounded-[18px] border border-slate-900/10 bg-white p-10 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.03)]">

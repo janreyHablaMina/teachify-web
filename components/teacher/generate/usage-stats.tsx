@@ -5,9 +5,10 @@ interface UsageStatsProps {
   limit: number;
   progress: number;
   planLabel: string;
+  limitLabel?: string;
 }
 
-export function UsageStats({ remaining, limit, progress, planLabel }: UsageStatsProps) {
+export function UsageStats({ remaining, limit, progress, planLabel, limitLabel = "Monthly Limit" }: UsageStatsProps) {
   return (
     <section className="mb-8 rounded-[18px] border border-slate-900/10 bg-white p-5 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.03)]">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
@@ -16,8 +17,8 @@ export function UsageStats({ remaining, limit, progress, planLabel }: UsageStats
           <p className="mt-1 text-[18px] font-black text-[#0f172a]">{remaining} generations remaining</p>
         </div>
         <div className="text-right">
-          <p className="m-0 text-[11px] font-black uppercase tracking-widest text-slate-500">Monthly Limit</p>
-          <p className="mt-1 text-[18px] font-black text-[#0f172a]">{limit} quizzes</p>
+          <p className="m-0 text-[11px] font-black uppercase tracking-widest text-slate-500">{limitLabel}</p>
+          <p className="mt-1 text-[18px] font-black text-[#0f172a]">{limit} generations</p>
         </div>
       </div>
       <div className="h-4 w-full overflow-hidden rounded-full border-2 border-slate-900 bg-slate-100 p-[2px]">

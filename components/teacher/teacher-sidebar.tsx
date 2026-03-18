@@ -8,10 +8,14 @@ import { NavItem } from "../ui/nav/types";
 
 type TeacherSidebarProps = {
   groupedNav: Record<string, NavItem[]>;
+  planLabel: string;
+  planTier: string;
 };
 
-export function TeacherSidebar({ groupedNav }: TeacherSidebarProps) {
+export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSidebarProps) {
   const pathname = usePathname();
+  const normalizedTier = planTier.toLowerCase();
+  const classesLocked = normalizedTier !== "pro" && normalizedTier !== "school";
 
   return (
     <aside className="hidden h-screen flex-col overflow-y-auto border-r-2 border-[#0f172a] bg-white/80 px-4 py-6 backdrop-blur lg:flex">
@@ -60,6 +64,18 @@ export function TeacherSidebar({ groupedNav }: TeacherSidebarProps) {
                       </span>
                     </span>
                     <span>{item.label}</span>
+                    {item.href === "/teacher/classes" && classesLocked ? (
+                      <span
+                        className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-[6px] border-[1.5px] border-[#0f172a] bg-white text-[#0f172a] shadow-[1.5px_1.5px_0_#fef08a] transition group-hover:-translate-y-0.5 group-hover:shadow-[2.5px_2.5px_0_#99f6e4]"
+                        title="Pro feature"
+                        aria-label="Pro feature locked"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <rect x="4" y="11" width="16" height="9" rx="2" />
+                          <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+                        </svg>
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}
@@ -71,7 +87,7 @@ export function TeacherSidebar({ groupedNav }: TeacherSidebarProps) {
       <div className="mt-auto mb-3 rounded-lg border-2 border-[#0f172a] bg-white p-3 shadow-[4px_4px_0_rgba(0,0,0,0.1)] [transform:rotate(1deg)]">
         <p className="text-[11px] font-normal uppercase tracking-[0.1em] text-slate-600">Teacher Account</p>
         <span className="mt-1 inline-flex rounded-full border-[1.5px] border-[#0f172a] bg-teal-100 px-2.5 py-1 text-xs font-normal text-[#0f172a]">
-          Pro Plan Active
+          {planLabel} Active
         </span>
       </div>
     </aside>

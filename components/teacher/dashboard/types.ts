@@ -3,9 +3,11 @@ export type PlanTier = "trial" | "basic" | "pro" | "school";
 export type PlanMeta = {
   label: string;
   priceLabel: string;
+  description: string;
   quizLimitLabel: string;
   maxQuestions: number;
   features: string[];
+  limitations: string[];
 };
 
 export type TeacherPlanUser = {

@@ -12,6 +12,9 @@ type TeacherTopbarProps = {
   day: number;
   headerDate: string;
   headerTime: string;
+  userName?: string;
+  userEmail?: string;
+  userPlanLabel?: string;
 };
 
 const gochiHand = Gochi_Hand({
@@ -19,12 +22,32 @@ const gochiHand = Gochi_Hand({
   weight: "400",
 });
 
-export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: TeacherTopbarProps) {
+function getInitial(name?: string): string {
+  if (!name) return "E";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "E";
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+}
+
+export function TeacherTopbar({
+  monthLabel,
+  day,
+  headerDate,
+  headerTime,
+  userName,
+  userEmail,
+  userPlanLabel,
+}: TeacherTopbarProps) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const displayName = userName?.trim() ? userName.trim() : "Educator";
+  const displayEmail = userEmail?.trim() ? userEmail.trim() : "";
+  const displayPlan = userPlanLabel?.trim() ? userPlanLabel.trim() : "Free";
+  const displayInitial = getInitial(displayName);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -61,10 +84,10 @@ export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: Teach
           <div className="flex items-center gap-5">
             <div className="h-12 w-[3.5px] rounded-full bg-[#0f172a] [transform:rotate(-1.5deg)]" />
             <div>
-              <p className="m-0 text-[11px] font-normal uppercase tracking-[0.1em] text-slate-600">Educator Account <span className="ml-[6px] inline-block rounded-[3px] border border-[#0f172a] bg-[#fef08a] px-[6px] py-[1px] text-[8px] font-black text-[#0f172a] shadow-[1.5px_1.5px_0_#fda4af]">PRO</span></p>
-              <h3 className="m-0 text-2xl font-black uppercase leading-none tracking-[-0.05em] text-[#0f172a]">PROF. SARAH JENKINS</h3>
+              <p className="m-0 text-[11px] font-normal uppercase tracking-[0.1em] text-slate-600">Educator Account <span className="ml-[6px] inline-block rounded-[3px] border border-[#0f172a] bg-[#fef08a] px-[6px] py-[1px] text-[8px] font-black text-[#0f172a] shadow-[1.5px_1.5px_0_#fda4af]">{displayPlan.toUpperCase()}</span></p>
+              <h3 className="m-0 text-2xl font-black uppercase leading-none tracking-[-0.05em] text-[#0f172a]">{displayName}</h3>
               <small className={`${gochiHand.className} mt-2 inline-block rounded bg-[#fef08a] px-2 py-0.5 text-sm font-normal text-slate-600 [transform:rotate(1deg)]`}>
-                Managing students, classes, and quizzes.
+                Managing your students, classes, and quizzes.
               </small>
             </div>
           </div>
@@ -100,17 +123,17 @@ export function TeacherTopbar({ monthLabel, day, headerDate, headerTime }: Teach
                 className="rounded-full border-2 border-[#0f172a] bg-white p-1 shadow-[4px_4px_0_#fda4af] transition hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fda4af] text-base font-black text-[#0f172a]">
-                  S
+                  {displayInitial}
                 </span>
               </button>
 
               {isDropdownOpen && (
                 <div className="absolute right-0 top-full mt-4 w-[260px] overflow-hidden rounded-xl border-[3px] border-[#0f172a] bg-white p-2 shadow-[8px_8px_0_#0f172a] transition-all [transform:rotate(1deg)] z-[1000]">
                   <div className="mb-2 border-b-[2px] border-[#0f172a] pb-4 pt-4 px-3">
-                    <p className="m-0 text-[18px] font-[950] tracking-tight text-[#0f172a]">Sarah Jenkins</p>
-                    <p className="m-0 mt-1 text-[13px] font-bold text-slate-500">sarah.j@teachify.ai</p>
+                    <p className="m-0 text-[18px] font-[950] tracking-tight text-[#0f172a]">{displayName}</p>
+                    {displayEmail ? <p className="m-0 mt-1 text-[13px] font-bold text-slate-500">{displayEmail}</p> : null}
                     <span className="mt-3 inline-block rounded-full border-[1.5px] border-[#0f172a] bg-[#fef08a] px-3 py-1 text-[11px] font-black text-[#0f172a] leading-tight">
-                      Educator (Pro)
+                      Educator ({displayPlan})
                     </span>
                   </div>
                   
