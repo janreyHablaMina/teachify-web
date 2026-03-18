@@ -14,6 +14,7 @@ import { parseTeacherProfile } from "@/lib/auth/profile";
 import { getStoredToken } from "@/lib/auth/session";
 import { generateQuizFromFile, generateQuestionsFromSummary, generateSummary } from "@/lib/teacher/generate-service";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
+import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
 
 export default function TeacherGeneratePage() {
   const [mode, setMode] = useState<"chat" | "file">("file");
@@ -93,6 +94,7 @@ export default function TeacherGeneratePage() {
     try {
       const quiz = await generateQuizFromFile(data, maxQuestions);
       setGeneratedQuiz(quiz);
+      addGeneratedQuizToStore(quiz);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate quiz from file.";
       setFileGenerateError(message);

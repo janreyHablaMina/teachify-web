@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavIcon } from "../ui/nav/nav-icon";
 import { NavItem } from "../ui/nav/types";
+import { useToast } from "@/components/ui/toast/toast-provider";
 
 type TeacherSidebarProps = {
   groupedNav: Record<string, NavItem[]>;
@@ -13,6 +14,7 @@ type TeacherSidebarProps = {
 };
 
 export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSidebarProps) {
+  const { showToast } = useToast();
   const pathname = usePathname();
   const normalizedTier = planTier.toLowerCase();
   const classesLocked = normalizedTier !== "pro" && normalizedTier !== "school";
@@ -45,6 +47,13 @@ export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSideb
                   <Link
                     key={item.label}
                     href={item.href}
+                    onClick={(event) => {
+                      const isLockedClasses = item.href === "/teacher/classes" && classesLocked;
+                      if (!isLockedClasses) return;
+
+                      event.preventDefault();
+                      showToast("Classes is available on Pro and School plans.", "error");
+                    }}
                     className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-[10px] text-left text-[15px] font-normal text-[#0f172a] transition ${
                       isActive
                         ? "border-2 border-[#0f172a] bg-white shadow-[4px_4px_0_#99f6e4] [transform:rotate(-1deg)]"

@@ -1,19 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { QuizCard } from "@/components/teacher/quizzes/quiz-card";
-import { Quiz } from "@/components/teacher/quizzes/types";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
+import {
+  deleteTeacherQuizFromStore,
+  getStoredTeacherQuizzes,
+  subscribeTeacherQuizzes,
+} from "@/lib/teacher/quiz-store";
+import type { Quiz } from "@/components/teacher/quizzes/types";
 
 export default function TeacherQuizzesPage() {
-  const [quizzes, setQuizzes] = useState<Quiz[]>([
-    { id: 1, title: "Modern Physics - Quantum Mechanics", topic: "Physics", type: "file", questions_count: 20, created_at: "2026-03-10T10:00:00Z" },
-    { id: 2, title: "Biology: Photosynthesis", topic: "Biology", type: "file", questions_count: 15, created_at: "2026-03-12T14:30:00Z" },
-    { id: 3, title: "European History: The Renaissance", topic: "History", type: "manual", questions_count: 50, created_at: "2026-03-14T09:15:00Z" },
-    { id: 4, title: "Chemical Bonding Fundamentals", topic: "Chemistry", type: "file", questions_count: 25, created_at: "2026-03-15T16:45:00Z" },
-    { id: 5, title: "English Literature: Macbeth Act 1", topic: "English", type: "manual", questions_count: 10, created_at: "2026-03-16T11:20:00Z" },
-  ]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>(() => getStoredTeacherQuizzes());
+
+  useEffect(() => {
+    const unsubscribe = subscribeTeacherQuizzes(() => {
+      setQuizzes(getStoredTeacherQuizzes());
+    });
+    return unsubscribe;
+  }, []);
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState<number | null>(null);
@@ -21,12 +27,9 @@ export default function TeacherQuizzesPage() {
   const handleDelete = () => {
     if (!quizToDelete) return;
     setIsDeleting(true);
-    // Mimic API call
-    setTimeout(() => {
-      setQuizzes(quizzes.filter(q => q.id !== quizToDelete));
-      setIsDeleting(false);
-      setQuizToDelete(null);
-    }, 1000);
+    deleteTeacherQuizFromStore(quizToDelete);
+    setIsDeleting(false);
+    setQuizToDelete(null);
   };
 
   return (

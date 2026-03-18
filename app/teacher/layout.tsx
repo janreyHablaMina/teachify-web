@@ -1,22 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { TeacherSidebar } from "@/components/teacher/teacher-sidebar";
 import { TeacherSessionProvider } from "@/components/teacher/teacher-session-context";
 import { TeacherTopbar } from "@/components/teacher/teacher-topbar";
 import { teacherNavItems } from "@/components/teacher/data";
 import { NavItem } from "@/components/ui/nav/types";
+import { ToastProvider, useToast } from "@/components/ui/toast/toast-provider";
 import { apiMe } from "@/lib/api/client";
 import { parseTeacherProfile, type TeacherProfile } from "@/lib/auth/profile";
 import { getRouteForRole, getStoredToken } from "@/lib/auth/session";
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ToastProvider>
+      <TeacherLayoutShell>{children}</TeacherLayoutShell>
+    </ToastProvider>
+  );
+}
+
+function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
+  const { showToast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
   const [now, setNow] = useState(new Date());
   const [authReady, setAuthReady] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [session, setSession] = useState<TeacherProfile | null>(null);
+  const blockedToastShownRef = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -60,6 +72,26 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     };
   }, [router]);
 
+  useEffect(() => {
+    if (!authReady || !isAuthorized || !session) return;
+
+    const isClassesRoute = pathname.startsWith("/teacher/classes");
+    if (!isClassesRoute) return;
+
+    const tier = session.planTier.toLowerCase();
+    const canAccessClasses = tier === "pro" || tier === "school";
+    if (!canAccessClasses) {
+      if (!blockedToastShownRef.current) {
+        showToast("Classes is available on Pro and School plans.", "error");
+        blockedToastShownRef.current = true;
+      }
+      router.replace("/teacher");
+      return;
+    }
+
+    blockedToastShownRef.current = false;
+  }, [authReady, isAuthorized, session, pathname, router, showToast]);
+
   if (!authReady || !isAuthorized) {
     return (
       <div className="flex min-h-screen bg-[#f8fafc]">
@@ -95,6 +127,20 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
               <div className="h-48 rounded bg-slate-200" />
             </div>
           </main>
+        </div>
+      </div>
+    );
+  }
+
+  const isClassesRoute = pathname.startsWith("/teacher/classes");
+  const tier = session?.planTier?.toLowerCase() ?? "trial";
+  const canAccessClasses = tier === "pro" || tier === "school";
+
+  if (isClassesRoute && !canAccessClasses) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-[#f8fafc]">
+        <div className="rounded border-2 border-slate-900 bg-white px-4 py-3 text-sm font-black text-slate-900 shadow-[4px_4px_0_#0f172a]">
+          Redirecting to dashboard...
         </div>
       </div>
     );
