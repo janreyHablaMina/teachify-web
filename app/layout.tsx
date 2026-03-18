@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   description: "Teachify admin migration app",
 };
 
+import { ToastProvider } from "@/components/ui/toast/toast-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +30,9 @@ export default function RootLayout({
       <body
         className={`${manropeSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

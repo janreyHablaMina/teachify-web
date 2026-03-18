@@ -2,8 +2,10 @@
 
 import { StudentList } from "@/components/teacher/classes/student-list";
 import { Student } from "@/components/teacher/classes/types";
-import { Users, GraduationCap, ClipboardList, TrendingUp } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, TrendingUp, UserPlus } from "lucide-react";
 import Link from "next/link";
+import React, { useState, use } from "react";
+import { InviteStudentsModal } from "@/components/teacher/classes/invite-students-modal";
 
 const MOCK_STUDENTS: Student[] = [
   { id: 1, fullname: "Marcus Aurelius", email: "marcus@rome.edu", enrolled_at: "2024-02-01T10:00:00Z" },
@@ -16,7 +18,9 @@ const MOCK_STUDENTS: Student[] = [
   { id: 8, fullname: "Albert Einstein", email: "relativity@emc2.de", enrolled_at: "2024-02-22T09:15:00Z" },
 ];
 
-export default function TeacherClassDetails({ params }: { params: { id: string } }) {
+export default function TeacherClassDetails({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = use(paramsPromise);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const className = "Section 10A - Physics"; // This would come from API
   const joinCode = "PH-9921"; // This would come from API
   
@@ -61,6 +65,13 @@ export default function TeacherClassDetails({ params }: { params: { id: string }
 
         {/* Compact Actions */}
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex h-11 items-center gap-2 rounded-xl bg-white border-2 border-[#0f172a] px-5 text-[13px] font-black text-[#0f172a] shadow-[4px_4px_0_#99f6e4] transition-all hover:-translate-y-0.5 active:translate-y-0"
+          >
+            <UserPlus className="h-4 w-4" />
+            Invite Students
+          </button>
           <button className="flex h-11 items-center gap-2 rounded-xl bg-white border border-slate-200 px-5 text-[13px] font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300">
             Export Roster
           </button>
@@ -98,6 +109,13 @@ export default function TeacherClassDetails({ params }: { params: { id: string }
       <section>
         <StudentList students={MOCK_STUDENTS} />
       </section>
+
+      <InviteStudentsModal 
+        isOpen={isInviteModalOpen} 
+        onClose={() => setIsInviteModalOpen(false)} 
+        joinCode={joinCode}
+        classId={params.id}
+      />
     </div>
   );
 }

@@ -31,7 +31,7 @@ export async function apiRegister(payload: {
   email: string;
   password: string;
   password_confirmation: string;
-  role: "teacher";
+  role: "teacher" | "student";
 }): Promise<{ response: Response; data: JsonObject }> {
   const response = await fetch(`${API_BASE_URL}/api/register`, {
     method: "POST",
@@ -132,6 +132,38 @@ export async function apiCreateClassroom(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiUpdateInviteExpiration(
+  token: string | undefined,
+  classId: string | number,
+  expiresAt: string | null
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}/invite-expiration`, {
+    method: "PATCH",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ expires_at: expiresAt }),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiJoinClassByCode(token: string | undefined, joinCode: string): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms/join-by-code`, {
+    method: "POST",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ join_code: joinCode }),
   });
 
   const data = await parseJson(response);

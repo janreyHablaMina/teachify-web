@@ -18,5 +18,6 @@ export function clearStoredToken(): void {
 export function getRouteForRole(role: string): string {
   if (role === "admin") return "/admin";
   if (role === "teacher") return "/teacher";
+  if (role === "student") return "/student";
   return "/";
 }
