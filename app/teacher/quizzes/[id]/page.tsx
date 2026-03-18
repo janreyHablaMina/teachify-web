@@ -1,6 +1,6 @@
 export default function TeacherQuizDetailsPlaceholder({ params }: { params: { id: string } }) {
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full">
       <header className="mb-8">
         <p className="m-0 text-[13px] font-bold uppercase tracking-[0.1em] text-slate-500">Dashboard / Quizzes / Details</p>
         <h2 className="text-[32px] font-black leading-none tracking-[-0.03em] text-[#0f172a]">Quiz ID: {params.id}</h2>

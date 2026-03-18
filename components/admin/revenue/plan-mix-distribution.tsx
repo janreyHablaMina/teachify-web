@@ -3,9 +3,9 @@
 import { PlanMix } from "./types";
 
 const planDistribution: PlanMix[] = [
-  { plan: "Basic users", users: 35, percent: 57 },
-  { plan: "Pro users", users: 20, percent: 33 },
-  { plan: "School plans", users: 6, percent: 10 },
+  { plan: "Free users", users: 12, percent: 18 },
+  { plan: "Basic users", users: 35, percent: 52 },
+  { plan: "Pro users", users: 20, percent: 30 },
 ];
 
 export function PlanMixDistribution() {

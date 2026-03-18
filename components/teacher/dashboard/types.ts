@@ -5,6 +5,7 @@ export type PlanMeta = {
   priceLabel: string;
   description: string;
   quizLimitLabel: string;
+  quizLimit: number;
   maxQuestions: number;
   features: string[];
   limitations: string[];

@@ -2,6 +2,7 @@
 
 import { UserRow, UserPlan } from "./types";
 import { UserActionMenu } from "./user-action-menu";
+import { normalizePlanTier, PLAN_CATALOG } from "@/components/teacher/dashboard/plan";
 
 interface UserTableRowProps {
   user: UserRow;
@@ -90,7 +91,7 @@ export function UserTableRow({
         <div className="h-1 w-full max-w-[60px] overflow-hidden rounded-full bg-slate-100">
           <div
             className="h-full bg-[#99f6e4]"
-            style={{ width: `${Math.min((user.quizzesGenerated / 200) * 100, 100)}%` }}
+            style={{ width: `${Math.min((user.quizzesGenerated / PLAN_CATALOG[normalizePlanTier(user.plan)].quizLimit) * 100, 100)}%` }}
           />
         </div>
       </div>

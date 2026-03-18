@@ -6,6 +6,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanMeta> = {
     priceLabel: "Free",
     description: "Great for teachers who want to try Teachify AI and experience automatic quiz generation.",
     quizLimitLabel: "3 AI quiz generations total",
+    quizLimit: 3,
     maxQuestions: 10,
     features: [
       "3 AI quiz generations total",
@@ -20,6 +21,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanMeta> = {
     priceLabel: "$7/month",
     description: "Ideal for teachers who need AI quiz generation without classroom management.",
     quizLimitLabel: "50 quizzes per month",
+    quizLimit: 50,
     maxQuestions: 50,
     features: ["50 quizzes per month", "Up to 50 questions per quiz", "Document to quiz generation", "Question bank"],
     limitations: ["No classroom management", "No analytics"],
@@ -29,6 +31,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanMeta> = {
     priceLabel: "$14/month",
     description: "Complete AI assistant for teachers who manage quizzes, classrooms, and performance.",
     quizLimitLabel: "200 quizzes per month",
+    quizLimit: 200,
     maxQuestions: 50,
     features: [
       "Classrooms",
@@ -45,6 +48,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanMeta> = {
     priceLabel: "$59/month",
     description: "For schools that want AI teaching tools across multiple teachers and classrooms.",
     quizLimitLabel: "Up to 1000 quizzes per month",
+    quizLimit: 1000,
     maxQuestions: 100,
     features: [
       "Up to 20 teachers",

@@ -111,6 +111,33 @@ export async function apiGenerateQuizFromFile(payload: {
   return { response, data };
 }
 
+export async function apiGetClassrooms(token?: string): Promise<{ response: Response; data: any }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms`, {
+    method: "GET",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiCreateClassroom(
+  token: string | undefined,
+  payload: { name: string; room?: string; schedule?: string }
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms`, {
+    method: "POST",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export function getApiErrorMessage(
   response: Response,
   data: JsonObject,

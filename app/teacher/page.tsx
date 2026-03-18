@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import { DashboardHeader } from "@/components/teacher/dashboard/dashboard-header";
 import { MetricsGrid } from "@/components/teacher/dashboard/metrics-grid";
 import { normalizePlanTier, PLAN_CATALOG } from "@/components/teacher/dashboard/plan";
@@ -9,7 +7,15 @@ import { PlanBanner } from "@/components/teacher/dashboard/plan-banner";
 import { PlanFeaturesPanel } from "@/components/teacher/dashboard/plan-features-panel";
 import { RecentQuizzesPanel } from "@/components/teacher/dashboard/recent-quizzes-panel";
 import { UnlockProPanel } from "@/components/teacher/dashboard/unlock-pro-panel";
+import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import type { ClassroomSummary, QuizSummary, TeacherPlanUser } from "@/components/teacher/dashboard/types";
+import { useEffect, useMemo, useState } from "react";
+import { getStoredTeacherQuizzes, subscribeTeacherQuizzes } from "@/lib/teacher/quiz-store";
+import { getStoredTeacherClassrooms, subscribeTeacherClassrooms, setStoredTeacherClassrooms } from "@/lib/teacher/classroom-store";
+import { Classroom } from "@/components/teacher/classes/types";
+
+import { apiGetClassrooms } from "@/lib/api/client";
+import { getStoredToken } from "@/lib/auth/session";
 
 const DEFAULT_PLAN_USER: TeacherPlanUser = {
   plan: "trial",
@@ -22,8 +28,35 @@ const DEFAULT_PLAN_USER: TeacherPlanUser = {
 export default function TeacherDashboardPage() {
   const session = useTeacherSession();
 
-  const [quizzes] = useState<QuizSummary[]>([]);
-  const [classrooms] = useState<ClassroomSummary[]>([]);
+  const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
+  const [classrooms, setClassrooms] = useState<ClassroomSummary[]>([]);
+
+  useEffect(() => {
+    // Quizzes
+    setQuizzes(getStoredTeacherQuizzes());
+    const unsubQuizzes = subscribeTeacherQuizzes(() => setQuizzes(getStoredTeacherQuizzes()));
+
+    // Classrooms
+    const fetchClassrooms = async () => {
+      try {
+        const token = getStoredToken();
+        const { response, data } = await apiGetClassrooms(token ?? undefined);
+        if (response.ok) {
+          setClassrooms(data);
+        }
+      } catch {
+        // Fallback or silent error for dashboard metrics
+      }
+    };
+
+    fetchClassrooms();
+    const unsubCls = subscribeTeacherClassrooms(() => fetchClassrooms());
+
+    return () => {
+      unsubQuizzes();
+      unsubCls();
+    };
+  }, []);
 
   const planUser: TeacherPlanUser = useMemo(
     () => ({
