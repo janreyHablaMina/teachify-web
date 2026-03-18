@@ -70,6 +70,23 @@ export async function apiLogout(token?: string): Promise<Response> {
   });
 }
 
+export async function apiGenerateSummary(payload: {
+  prompt: string;
+  task?: "summary" | "questions";
+}): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch("/api/teacher/summary", {
+    method: "POST",
+    headers: {
+      ...buildHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export function getApiErrorMessage(
   response: Response,
   data: JsonObject,
