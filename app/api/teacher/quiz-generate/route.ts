@@ -47,14 +47,14 @@ function parseQuizOutput(raw: string): GeneratedQuiz | null {
     const difficulty =
       typeof parsed.difficulty === "string" && parsed.difficulty.trim() ? parsed.difficulty.trim() : "medium";
     const questions = Array.isArray(parsed.questions)
-      ? parsed.questions
+      ? (parsed.questions
           .map((q) => {
             const qq = q as Partial<GeneratedQuestion>;
             if (typeof qq.question !== "string" || !qq.question.trim()) return null;
             if (typeof qq.answer !== "string" || !qq.answer.trim()) return null;
             const type = typeof qq.type === "string" && qq.type.trim() ? qq.type.trim() : "multiple_choice";
             const choices = Array.isArray(qq.choices)
-              ? qq.choices.filter((c): c is string => typeof c === "string" && c.trim())
+              ? qq.choices.filter((c): c is string => typeof c === "string" && Boolean(c.trim()))
               : undefined;
             return {
               type,
@@ -64,7 +64,7 @@ function parseQuizOutput(raw: string): GeneratedQuiz | null {
               explanation: typeof qq.explanation === "string" ? qq.explanation.trim() : undefined,
             };
           })
-          .filter((item): item is GeneratedQuestion => Boolean(item))
+          .filter(Boolean) as GeneratedQuestion[])
       : [];
 
     if (questions.length === 0) return null;
@@ -91,6 +91,7 @@ export async function POST(request: Request) {
   let difficulty = "medium";
   let types: string[] = ["multiple_choice"];
   let questionCount = 10;
+  let enumerationCount = 5;
   let file: File | null = null;
 
   try {
@@ -101,6 +102,7 @@ export async function POST(request: Request) {
     types = rawTypes.split(",").map((t) => t.trim()).filter(Boolean);
     const rawCount = Number(formData.get("questionCount") ?? 10);
     questionCount = Number.isFinite(rawCount) ? Math.max(1, Math.min(50, Math.floor(rawCount))) : 10;
+    enumerationCount = Number(formData.get("enumerationCount") ?? 5);
 
     const maybeFile = formData.get("file");
     if (!(maybeFile instanceof File)) {
@@ -121,6 +123,13 @@ export async function POST(request: Request) {
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64Data = buffer.toString("base64");
+    
+    let enumerationInstruction = "";
+    if (types.includes("enumeration")) {
+      const eCount = Number.isFinite(enumerationCount) ? Math.max(2, Math.min(20, enumerationCount)) : 5;
+      enumerationInstruction = `For enumeration questions, the answer must contain exactly ${eCount} distinct items from the text. Return these items as a comma-separated list in the "answer" field.`;
+    }
+
     const prompt = [
       "You are an expert teacher assistant.",
       `Generate exactly ${questionCount} questions from the uploaded lesson document.`,
@@ -128,11 +137,15 @@ export async function POST(request: Request) {
       `Difficulty level: ${difficulty}`,
       `Allowed question types: ${types.join(", ")}`,
       "Return strictly valid JSON using this shape:",
-      '{"title":"string","difficulty":"easy|medium|hard","questions":[{"type":"multiple_choice|true_false|short_answer|essay","question":"string","choices":["A","B","C","D"],"answer":"string","explanation":"string"}]}',
+      '{"title":"string","difficulty":"easy|medium|hard","questions":[{"type":"multiple_choice|true_false|short_answer|essay|enumeration|matching|identification|fill_in_the_blanks","question":"string","choices":["A","B","C","D"],"answer":"string","explanation":"string"}]}',
       "For true_false use choices [\"True\",\"False\"].",
-      "For short_answer or essay, omit choices.",
+      "For short_answer, essay, identification, fill_in_the_blanks or enumeration, omit choices.",
+      "For identification, provide a short 1-3 word answer.",
+      "For fill_in_the_blanks, provide the full sentence with the blank replaced by '_______' in the question field.",
+      "For matching, the question should be the stimulus and the answer should be the correct matching response.",
+      enumerationInstruction,
       "Ensure all questions are based on the uploaded document only.",
-    ].join("\n");
+    ].filter(Boolean).join("\n");
 
     const geminiResponse = await fetch(
       `${baseUrl}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,

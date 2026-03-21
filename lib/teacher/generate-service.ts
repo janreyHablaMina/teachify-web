@@ -49,6 +49,7 @@ export async function generateQuizFromFile(
     types: payload.types,
     difficulty: payload.difficulty,
     questionCount: Math.min(10, maxQuestions),
+    enumerationCount: payload.enumerationCount,
   });
 
   if (!response.ok) {

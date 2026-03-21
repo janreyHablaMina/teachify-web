@@ -93,6 +93,7 @@ export async function apiGenerateQuizFromFile(payload: {
   types: string[];
   difficulty: "easy" | "medium" | "hard";
   questionCount: number;
+  enumerationCount?: number;
 }): Promise<{ response: Response; data: JsonObject }> {
   const formData = new FormData();
   formData.append("title", payload.title);
@@ -100,6 +101,9 @@ export async function apiGenerateQuizFromFile(payload: {
   formData.append("types", payload.types.join(","));
   formData.append("difficulty", payload.difficulty);
   formData.append("questionCount", String(payload.questionCount));
+  if (typeof payload.enumerationCount === "number") {
+    formData.append("enumerationCount", String(payload.enumerationCount));
+  }
 
   const response = await fetch("/api/teacher/quiz-generate", {
     method: "POST",
