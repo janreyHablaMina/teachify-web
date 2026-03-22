@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { PLAN_CATALOG, normalizePlanTier } from "@/components/teacher/dashboard/plan";
 import { UsageStats } from "@/components/teacher/generate/usage-stats";
@@ -16,7 +17,7 @@ import { generateQuizFromFile, generateQuestionsFromSummary, generateSummary } f
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
 import { Modal } from "@/components/ui/modal";
-import { Check, Copy, FileText, HelpCircle, BookOpen, ArrowRight, Clock } from "lucide-react";
+import { Check, Copy, FileText, HelpCircle, BookOpen, ArrowRight, Clock, Download, Sparkles } from "lucide-react";
 import { useToast } from "@/components/ui/toast/toast-provider";
 
 export default function TeacherGeneratePage() {
@@ -35,6 +36,8 @@ export default function TeacherGeneratePage() {
   const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [summaryTopic, setSummaryTopic] = useState("");
+  const [lastAddedId, setLastAddedId] = useState<number | null>(null);
   const [summaries, setSummaries] = useState<any[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [planUser, setPlanUser] = useState<TeacherPlanUser>({
@@ -52,6 +55,10 @@ export default function TeacherGeneratePage() {
       setIsHistoryLoading(true);
       const { response, data } = await apiGetSummaries(token);
       if (response.ok) {
+        if (data.length > 0 && summaries.length > 0 && data[0].id !== summaries[0].id) {
+           setLastAddedId(data[0].id);
+           setTimeout(() => setLastAddedId(null), 3000); // Remove highlight after 3s
+        }
         setSummaries(data);
       }
     } catch (error) {
@@ -136,15 +143,21 @@ export default function TeacherGeneratePage() {
 
     try {
       const generatedSummary = await generateSummary(summaryPrompt);
-      setSummaryResult(generatedSummary);
-      setIsSummaryModalOpen(true);
+      const cleanedSummary = generatedSummary
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/\n\n(?=#)/g, '\n')
+        .replace(/^(#+.*)\n\n/gm, '$1\n');
+        
+      setSummaryResult(cleanedSummary);
       
       // Auto-save to backend
       try {
         const token = getStoredToken();
         if (token) {
-          await apiStoreSummary(token, { topic: summaryPrompt, content: generatedSummary });
+          const finalTopic = summaryTopic.trim() || summaryPrompt.substring(0, 50);
+          await apiStoreSummary(token, { topic: finalTopic, content: cleanedSummary });
           loadHistory(); // Refresh history list
+          showToast("Lesson generated and saved to history!", "success");
         }
       } catch (saveError) {
         console.error("Failed to auto-save summary:", saveError);
@@ -152,6 +165,8 @@ export default function TeacherGeneratePage() {
       setQuestionsResult("");
       setQuestionsError("");
       setIsQuestionsModalOpen(false);
+      setSummaryPrompt(""); // Clear input
+      setSummaryTopic(""); // Clear topic
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate summary.";
       setSummaryError(message);
@@ -261,28 +276,52 @@ export default function TeacherGeneratePage() {
         </>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
-          {/* Left Column: Generator */}
-          <article className="rounded-[18px] border-2 border-slate-900 bg-white p-8 text-center shadow-[6px_6px_0_#94a3b8]">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-slate-900 bg-yellow-200 shadow-[4px_4px_0_#0f172a]">
-              <span className="text-3xl font-black text-slate-900">AI</span>
-            </div>
-            <h3 className="text-[24px] font-black text-[#0f172a]">AI Chat Summary</h3>
-            <p className="mt-2 text-[15px] font-bold text-slate-500 max-w-md mx-auto">
-              Ask AI to summarize complex topics or compare different models.
-            </p>
-            <div className="mt-8 text-left">
-              <textarea
-                className="w-full rounded-xl border-2 border-slate-900 bg-slate-50 p-6 text-[15px] font-bold outline-none transition focus:bg-white focus:ring-4 focus:ring-teal-500/10 shadow-inner"
-                placeholder="e.g. Summarize the life of Jose Rizal for 5th graders..."
-                rows={4}
-                value={summaryPrompt}
-                onChange={(event) => setSummaryPrompt(event.target.value)}
-              />
+          <article className="rounded-[18px] border-2 border-slate-900 bg-white shadow-[6px_6px_0_#94a3b8] overflow-hidden">
+             {/* Redesigned AI Header */}
+             <div className="border-b-2 border-slate-900 bg-indigo-50/50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+               <div className="flex items-center gap-4 text-left">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-slate-900 bg-white text-indigo-500 shadow-[3px_3px_0_#0f172a]">
+                    <Sparkles size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-[20px] font-black text-[#0f172a]">Teachify AI</h3>
+                    <p className="text-[13px] font-bold text-slate-500">Enhanced synthesis & curriculum design assistant.</p>
+                  </div>
+               </div>
+             </div>
+
+             <div className="p-8 text-left space-y-6">
+              <div>
+                <label className="block text-[12px] font-black uppercase tracking-wider text-slate-400 mb-1.5 ml-1">
+                  Lesson Topic
+                </label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border-2 border-slate-900 bg-slate-50 px-6 py-3.5 text-[15px] font-bold outline-none transition focus:bg-white focus:ring-4 focus:ring-teal-500/10 shadow-inner"
+                  placeholder="e.g. Life of Snow White"
+                  value={summaryTopic}
+                  onChange={(event) => setSummaryTopic(event.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-black uppercase tracking-wider text-slate-400 mb-1.5 ml-1">
+                  AI Instructions
+                </label>
+                <textarea
+                  className="w-full rounded-xl border-2 border-slate-900 bg-slate-50 p-6 text-[15px] font-bold outline-none transition focus:bg-white focus:ring-4 focus:ring-teal-500/10 shadow-inner"
+                  placeholder="e.g. Summarize the life of Snow White for 5th graders..."
+                  rows={4}
+                  value={summaryPrompt}
+                  onChange={(event) => setSummaryPrompt(event.target.value)}
+                />
+              </div>
+
               <button
                 type="button"
                 onClick={handleGenerateSummary}
                 disabled={isSummaryLoading || !summaryPrompt.trim()}
-                className="mt-6 w-full rounded-xl border-2 border-slate-900 bg-[#99f6e4] py-4 text-[14px] font-black uppercase tracking-wider text-slate-900 shadow-[4px_4px_0_#0f172a] transition hover:-translate-y-1 hover:bg-[#5eead4] disabled:transform-none disabled:opacity-50 disabled:shadow-none active:translate-y-0"
+                className="mt-2 w-full rounded-xl border-2 border-slate-900 bg-[#99f6e4] py-4 text-[14px] font-black uppercase tracking-wider text-slate-900 shadow-[4px_4px_0_#0f172a] transition hover:-translate-y-1 hover:bg-[#5eead4] disabled:transform-none disabled:opacity-50 disabled:shadow-none active:translate-y-0"
               >
                 {isSummaryLoading ? "Generating Summary..." : "Generate Summary"}
               </button>
@@ -291,69 +330,6 @@ export default function TeacherGeneratePage() {
                 <p className="mt-4 rounded-lg border-2 border-red-900 bg-rose-100 px-4 py-3 text-left text-[13px] font-bold text-red-800">
                   {summaryError}
                 </p>
-              ) : null}
-
-              {summaryResult ? (
-                <div className="mt-5 rounded-2xl border-2 border-slate-900 bg-white p-5 text-left shadow-[4px_4px_0_#0f172a] animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl border-[1.5px] border-slate-900 bg-blue-50 text-blue-500 shadow-[2px_2px_0_#0f172a]">
-                        <FileText size={20} />
-                      </div>
-                      <div>
-                        <p className="m-0 text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">Result ready</p>
-                        <h5 className="m-0 text-[15px] font-black text-[#0f172a]">AI Summary</h5>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsSummaryModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#f0fdfa] px-4 py-2 text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-teal-100 hover:-translate-y-0.5"
-                      >
-                        View Summary
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveSummaryAsPdf}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50 hover:-translate-y-0.5"
-                      >
-                        Export PDF
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleGenerateQuestionsFromSummary}
-                        disabled={isQuestionsLoading}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#fef08a] px-4 py-2 text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-yellow-200 disabled:opacity-60 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0"
-                      >
-                        {isQuestionsLoading ? "Thinking..." : "Get Questions"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {questionsResult ? (
-                <div className="mt-5 rounded-2xl border-2 border-slate-900 bg-white p-5 text-left shadow-[4px_4px_0_#0f172a] animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl border-[1.5px] border-slate-900 bg-yellow-50 text-amber-500 shadow-[2px_2px_0_#0f172a]">
-                        <HelpCircle size={20} />
-                      </div>
-                      <div>
-                        <p className="m-0 text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">Assessment ready</p>
-                        <h5 className="m-0 text-[15px] font-black text-[#0f172a]">AI Generated Quiz</h5>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsQuestionsModalOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#f0fdfa] px-4 py-2 text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-teal-100 hover:-translate-y-0.5"
-                    >
-                      View Quiz
-                    </button>
-                  </div>
-                </div>
               ) : null}
             </div>
           </article>
@@ -377,7 +353,7 @@ export default function TeacherGeneratePage() {
                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent mx-auto" />
                     </div>
                   ) : summaries.length > 0 ? (
-                    summaries.slice(0, 8).map((s) => (
+                    summaries.slice(0, 8).map((s, index) => (
                       <button
                         key={s.id}
                         onClick={() => {
@@ -385,7 +361,11 @@ export default function TeacherGeneratePage() {
                           setSummaryPrompt(s.topic);
                           setIsSummaryModalOpen(true);
                         }}
-                        className="flex items-center gap-3 w-full rounded-xl border-[1.5px] border-slate-900 bg-white p-3 text-left transition hover:bg-indigo-50 hover:translate-x-1 group"
+                        className={`flex items-center gap-3 w-full rounded-xl border-[1.5px] border-slate-900 bg-white p-3 text-left transition hover:bg-white hover:translate-x-1 hover:shadow-[4px_4px_0_#4f46e5] group ${
+                          index === 0 && s.id === lastAddedId 
+                            ? "animate-in fade-in zoom-in-95 slide-in-from-right-8 duration-700 ring-[3px] ring-indigo-500/20 bg-indigo-50/30 border-indigo-600 scale-[1.02]" 
+                            : ""
+                        }`}
                       >
                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-[1.5px] border-slate-900 bg-white text-indigo-500 transition group-hover:bg-indigo-500 group-hover:text-white">
                            <BookOpen size={18} />
@@ -427,16 +407,41 @@ export default function TeacherGeneratePage() {
         onClose={() => setIsSummaryModalOpen(false)}
         title="AI Generation Summary"
         footer={
-          <button
-            onClick={() => handleCopyToClipboard(summaryResult)}
-            className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
-          >
-            {isCopied ? <Check size={16} /> : <Copy size={16} />}
-            {isCopied ? "Copied!" : "Copy Content"}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => handleCopyToClipboard(summaryResult)}
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+            >
+              {isCopied ? <Check size={16} /> : <Copy size={16} />}
+              {isCopied ? "Copied!" : "Copy Content"}
+            </button>
+            <button
+               onClick={() => handleSaveSummaryAsPdf()}
+               className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#fef08a] px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-yellow-200"
+            >
+              <Download size={16} />
+              Export PDF
+            </button>
+          </div>
         }
       >
-        {summaryResult}
+        <div className="leading-normal text-slate-700 font-medium [&>h1]:mb-0 [&>h2]:mb-0 [&>h3]:mb-0 [&>h1+p]:mt-[-20px] [&>h2+p]:mt-[-20px] [&>h3+p]:mt-[-20px]">
+          <ReactMarkdown
+             components={{
+               h1: ({node, ...props}: any) => <h1 className="text-[20px] font-black text-slate-900 mt-4 mb-[-20px] underline decoration-[#fef08a] decoration-4 underline-offset-4" {...props}/>,
+               h2: ({node, ...props}: any) => <h2 className="text-[18px] font-black text-slate-900 mt-4 mb-[-20px]" {...props}/>,
+               h3: ({node, ...props}: any) => <h3 className="text-[16px] font-black text-slate-900 mt-4 mb-[-20px]" {...props}/>,
+               strong: ({node, ...props}: any) => <strong className="font-black text-slate-900" {...props}/>,
+               ul: ({node, ...props}: any) => <ul className="list-disc pl-5 mb-3" {...props}/>,
+               p: ({node, children, ...props}: any) => {
+                 if (!children || (Array.isArray(children) && children.length === 0)) return null;
+                 return <p className="mb-3 mt-0" {...props}>{children}</p>;
+               },
+             }}
+          >
+            {summaryResult}
+          </ReactMarkdown>
+        </div>
       </Modal>
 
       {/* Questions Modal */}

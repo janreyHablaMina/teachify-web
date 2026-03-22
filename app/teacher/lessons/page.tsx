@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { Modal } from "@/components/ui/modal";
 import { apiGetSummaries, apiMe } from "@/lib/api/client";
@@ -195,8 +196,22 @@ export default function TeacherLessonsPage() {
           </div>
         }
       >
-        <div className="whitespace-pre-wrap">
-          {selectedSummary?.content}
+        <div className="leading-normal text-slate-700 font-medium [&>h1]:mb-0 [&>h2]:mb-0 [&>h3]:mb-0 [&>h1+p]:mt-[-20px] [&>h2+p]:mt-[-20px] [&>h3+p]:mt-[-20px]">
+          <ReactMarkdown
+             components={{
+               h1: ({node, ...props}: any) => <h1 className="text-[20px] font-black text-slate-900 mt-4 mb-[-20px] underline decoration-[#fef08a] decoration-4 underline-offset-4" {...props}/>,
+               h2: ({node, ...props}: any) => <h2 className="text-[18px] font-black text-slate-900 mt-4 mb-[-20px]" {...props}/>,
+               h3: ({node, ...props}: any) => <h3 className="text-[16px] font-black text-slate-900 mt-4 mb-[-20px]" {...props}/>,
+               strong: ({node, ...props}: any) => <strong className="font-black text-slate-900" {...props}/>,
+               ul: ({node, ...props}: any) => <ul className="list-disc pl-5 mb-3" {...props}/>,
+               p: ({node, children, ...props}: any) => {
+                 if (!children || (Array.isArray(children) && children.length === 0)) return null;
+                 return <p className="mb-3 mt-0" {...props}>{children}</p>;
+               },
+             }}
+          >
+            {selectedSummary?.content?.replace(/\n{3,}/g, '\n\n').replace(/\n\n(?=#)/g, '\n').replace(/^(#+.*)\n\n/gm, '$1\n') ?? ""}
+          </ReactMarkdown>
         </div>
       </Modal>
     </section>
