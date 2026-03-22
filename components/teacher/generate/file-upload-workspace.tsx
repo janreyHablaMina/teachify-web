@@ -106,7 +106,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
   };
 
   // Plan-based total question limit
-  const planMax = planTier === "trial" ? 10 : 50;
+  const planMax = (planTier === "trial" || planTier === "free") ? 10 : 50;
 
   // typeCounts: key = type id, value = { enabled: boolean, count: number }
   const [typeCounts, setTypeCounts] = useState<Record<string, { enabled: boolean; count: number }>>(
@@ -118,7 +118,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
 
   const questionTypes = QUESTION_TYPES.map((t) => ({
     ...t,
-    locked: "lockedForTrial" in t && t.lockedForTrial && planTier === "trial",
+    locked: "lockedForTrial" in t && t.lockedForTrial && (planTier === "trial" || planTier === "free"),
   }));
 
   const toggleType = (id: string) => {
@@ -206,7 +206,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
                     )}
                   </div>
                 </div>
-                <span className={`text-[15px] font-black ${ totalItems >= planMax ? "text-red-500" : "text-slate-900" }`}>
+                <span className={`text-[15px] font-black ${ totalItems >= planMax ? "text-red-500" : "text-emerald-600" }`}>
                   {totalItems}
                   <span className="text-[11px] font-bold text-slate-400"> / {planMax}</span>
                   <span className="text-[11px] font-bold text-slate-500 ml-1">· {selectedEntries.length} type{selectedEntries.length !== 1 ? "s" : ""}</span>
@@ -225,7 +225,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
                 type="text"
                 required
                 placeholder="e.g. Life and Works of Rizal"
-                className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-bold outline-none ring-teal-500/20 transition-all focus:border-slate-900 focus:ring-4 placeholder:text-slate-300"
+                className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-bold outline-none ring-teal-500/20 transition-all focus:border-emerald-500 focus:ring-4 placeholder:text-slate-300"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
@@ -273,7 +273,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
                     onClick={() => setDifficulty(level)}
                     className={`rounded-xl border px-3 py-3 text-[12px] font-black uppercase tracking-[0.06em] transition-all ${
                       difficulty === level
-                        ? "border-slate-900 bg-[#fef08a] text-slate-900 shadow-[4px_4px_0_#0f172a] -translate-y-1"
+                        ? "border-emerald-500 bg-[#ccfbf1] text-emerald-900 shadow-[4px_4px_0_#10b981] -translate-y-1"
                         : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
                     }`}
                   >
@@ -290,7 +290,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
               Target Question Formats
               <span className="text-[9px] bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full lowercase tracking-normal">Select type · set item count</span>
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-2 pt-16 custom-scrollbar">
               {questionTypes.map((type) => {
                 const Icon = type.icon;
                 const state = typeCounts[type.id];
@@ -299,48 +299,65 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
                 return (
                   <div
                     key={type.id}
-                    className={`relative flex flex-col rounded-2xl border-2 transition-all ${
+                    className={`group relative flex flex-col rounded-2xl border-2 transition-all overflow-visible ${
                       type.locked
-                        ? "cursor-not-allowed border-slate-50 bg-slate-50/50 opacity-40 grayscale"
+                        ? "cursor-not-allowed border-slate-100 bg-slate-50/30 select-none"
                         : isSelected
-                          ? "border-slate-900 bg-emerald-50"
-                          : "border-slate-100 bg-white hover:border-slate-400"
+                          ? "border-emerald-500 bg-emerald-50 shadow-sm"
+                          : "border-slate-100 bg-white hover:border-emerald-200 hover:shadow-sm"
                     }`}
                   >
+                    {/* Original Floating Tooltip - Now Colorful as per user request */}
+                    {type.locked && (
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-in fade-in zoom-in duration-200 hidden group-hover:flex items-center justify-center whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-black text-white shadow-xl after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-8 after:border-transparent after:border-t-emerald-600 border border-emerald-500/50">
+                        Upgrade to Pro to unlock format! 🚀
+                      </div>
+                    )}
+
                     {/* Card header — clickable to toggle */}
                     <button
                       type="button"
                       disabled={type.locked}
                       onClick={() => { if (!type.locked) toggleType(type.id); }}
-                      className="flex items-start gap-3 p-4 text-left w-full"
+                      className={`flex items-start gap-3 p-4 text-left w-full transition-opacity ${type.locked ? "opacity-70" : "opacity-100"}`}
                     >
-                      <div className={`shrink-0 p-2.5 rounded-xl transition-colors ${isSelected ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-600"}`}>
+                      <div className={`shrink-0 p-2.5 rounded-xl transition-all ${
+                        isSelected ? "bg-emerald-500 text-white shadow-lg" : 
+                        type.id === "multiple_choice" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                        type.id === "true_false" ? "bg-amber-50 text-amber-600 border border-amber-100" :
+                        type.id === "enumeration" ? "bg-blue-50 text-blue-600 border border-blue-100" :
+                        type.id === "matching" ? "bg-indigo-50 text-indigo-600 border border-indigo-100" :
+                        type.id === "identification" ? "bg-rose-50 text-rose-600 border border-rose-100" :
+                        type.id === "fill_in_the_blanks" ? "bg-violet-50 text-violet-600 border border-violet-100" :
+                        type.id === "short_answer" ? "bg-orange-50 text-orange-600 border border-orange-100" :
+                        "bg-slate-50 text-slate-600 border border-slate-100"
+                      }`}>
                         <Icon size={18} strokeWidth={2.5} />
                       </div>
                       <div className="flex-1 min-w-0 mt-0.5">
-                        <span className="block text-[14px] font-black text-slate-900 leading-tight">{type.label}</span>
-                        <span className="block text-[10px] font-bold text-slate-500 leading-tight mt-1 opacity-80">{type.desc}</span>
+                        <span className="block text-[14px] font-black leading-tight text-slate-900">{type.label}</span>
+                        <span className="block text-[10px] font-bold leading-tight mt-1 opacity-80 text-slate-500">{type.desc}</span>
                       </div>
                       {/* Status badge */}
                       {type.locked ? (
-                        <div className="shrink-0 flex items-center gap-1 rounded-full bg-slate-900 px-2 py-0.5 text-[8px] font-black text-white">
-                          <Lock size={10} />
+                        <div className="shrink-0 flex items-center justify-center p-1.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-500 shadow-sm">
+                          <Lock size={12} strokeWidth={3} />
                         </div>
                       ) : isSelected ? (
-                        <div className="shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-slate-900 text-emerald-400 shadow-lg border-2 border-white">
+                        <div className="shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_4px_10px_-2px_rgba(16,185,129,0.3)] border-2 border-white">
                           <Check size={13} strokeWidth={4} />
                         </div>
                       ) : null}
                     </button>
                     {/* Count controls — only when selected */}
                     {isSelected && (
-                      <div className="mx-4 mb-4 flex items-center justify-between rounded-xl bg-slate-900 px-3 py-2.5">
+                      <div className="mx-4 mb-4 flex items-center justify-between rounded-xl bg-white border border-emerald-100 px-3 py-2.5 shadow-sm">
                         <span className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">Items</span>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => adjustCount(type.id, -1)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:bg-white/5"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-emerald-100 hover:text-emerald-700 active:bg-slate-200"
                           >
                             <Minus size={13} strokeWidth={3} />
                           </button>
@@ -356,13 +373,13 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
                                 (e.target as HTMLInputElement).blur();
                               }
                             }}
-                            className="w-10 bg-transparent text-center text-[16px] font-black text-white outline-none"
+                            className="w-10 bg-transparent text-center text-[16px] font-black text-slate-700 outline-none"
                           />
                           <button
                             type="button"
                             onClick={() => adjustCount(type.id, +1)}
                             disabled={totalItems >= planMax}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-emerald-100 hover:text-emerald-700 active:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             <Plus size={13} strokeWidth={3} />
                           </button>
@@ -380,7 +397,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
         <button
           type="submit"
           disabled={isLoading || !file || !anySelected || !title}
-          className="relative group mt-4 flex items-center justify-center gap-3 overflow-hidden rounded-[20px] border-2 border-slate-900 bg-[#99f6e4] py-5 text-[16px] font-black uppercase tracking-[0.1em] text-slate-900 shadow-[8px_8px_0_#0f172a] transition-all hover:-translate-y-1 hover:bg-[#5eead4] active:translate-y-1 active:shadow-none disabled:transform-none disabled:opacity-50 disabled:shadow-none"
+          className="relative group mt-4 flex items-center justify-center gap-3 overflow-hidden rounded-[20px] border-2 border-emerald-600 bg-[#99f6e4] py-5 text-[16px] font-black uppercase tracking-[0.1em] text-emerald-900 shadow-[8px_8px_0_#10b981] transition-all hover:-translate-y-1 hover:bg-[#5eead4] active:translate-y-1 active:shadow-none disabled:transform-none disabled:opacity-50 disabled:shadow-none"
         >
           {isLoading ? (
             <div className="flex items-center gap-3">
