@@ -15,8 +15,12 @@ import { getStoredToken } from "@/lib/auth/session";
 import { generateQuizFromFile, generateQuestionsFromSummary, generateSummary } from "@/lib/teacher/generate-service";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
+import { Modal } from "@/components/ui/modal";
+import { Check, Copy, FileText, HelpCircle } from "lucide-react";
+import { useToast } from "@/components/ui/toast/toast-provider";
 
 export default function TeacherGeneratePage() {
+  const { showToast } = useToast();
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
@@ -25,11 +29,12 @@ export default function TeacherGeneratePage() {
   const [summaryResult, setSummaryResult] = useState("");
   const [summaryError, setSummaryError] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [questionsResult, setQuestionsResult] = useState("");
   const [questionsError, setQuestionsError] = useState("");
   const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
-  const [isQuestionsExpanded, setIsQuestionsExpanded] = useState(false);
+  const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [planUser, setPlanUser] = useState<TeacherPlanUser>({
     plan: "trial",
     plan_tier: "trial",
@@ -113,10 +118,10 @@ export default function TeacherGeneratePage() {
     try {
       const generatedSummary = await generateSummary(summaryPrompt);
       setSummaryResult(generatedSummary);
-      setIsSummaryExpanded(false);
+      setIsSummaryModalOpen(true);
       setQuestionsResult("");
       setQuestionsError("");
-      setIsQuestionsExpanded(false);
+      setIsQuestionsModalOpen(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate summary.";
       setSummaryError(message);
@@ -137,12 +142,23 @@ export default function TeacherGeneratePage() {
     try {
       const generatedQuestions = await generateQuestionsFromSummary(summaryResult);
       setQuestionsResult(generatedQuestions);
-      setIsQuestionsExpanded(false);
+      setIsQuestionsModalOpen(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate questions.";
       setQuestionsError(message);
     } finally {
       setIsQuestionsLoading(false);
+    }
+  };
+
+  const handleCopyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setIsCopied(true);
+      showToast("Copied to clipboard!", "success");
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      showToast("Failed to copy.", "error");
     }
   };
 
@@ -244,39 +260,42 @@ export default function TeacherGeneratePage() {
             ) : null}
 
             {summaryResult ? (
-              <div className="mt-5 rounded-xl border-2 border-slate-900 bg-white p-5 text-left shadow-[4px_4px_0_#0f172a]">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-dashed border-slate-300 pb-3">
-                  <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Summary ready</p>
+              <div className="mt-5 rounded-2xl border-2 border-slate-900 bg-white p-5 text-left shadow-[4px_4px_0_#0f172a]">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border-[1.5px] border-slate-900 bg-blue-50 text-blue-500 shadow-[2px_2px_0_#0f172a]">
+                      <FileText size={20} />
+                    </div>
+                    <div>
+                      <p className="m-0 text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">Result ready</p>
+                      <h5 className="m-0 text-[15px] font-black text-[#0f172a]">AI Summary</h5>
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setIsSummaryExpanded((prev) => !prev)}
-                      className="rounded-md border-2 border-slate-900 bg-[#ecfeff] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 transition hover:bg-teal-100"
+                      onClick={() => setIsSummaryModalOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#f0fdfa] px-4 py-2 text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-teal-100 hover:-translate-y-0.5"
                     >
-                      {isSummaryExpanded ? "Hide Summary" : "View Summary"}
+                      View Summary
                     </button>
                     <button
                       type="button"
                       onClick={handleSaveSummaryAsPdf}
-                      className="rounded-md border-2 border-slate-900 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 transition hover:bg-slate-50"
+                      className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50 hover:-translate-y-0.5"
                     >
-                      Save as PDF
+                      Export PDF
                     </button>
                     <button
                       type="button"
                       onClick={handleGenerateQuestionsFromSummary}
                       disabled={isQuestionsLoading}
-                      className="rounded-md border-2 border-slate-900 bg-[#fef08a] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 transition hover:bg-yellow-200 disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#fef08a] px-4 py-2 text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-yellow-200 disabled:opacity-60 disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0"
                     >
-                      {isQuestionsLoading ? "Generating..." : "Generate Questions"}
+                      {isQuestionsLoading ? "Thinking..." : "Get Questions"}
                     </button>
                   </div>
                 </div>
-                {isSummaryExpanded ? (
-                  <p className="m-0 whitespace-pre-wrap text-[14px] font-semibold leading-[1.7] text-[#0f172a]">{summaryResult}</p>
-                ) : (
-                  <p className="m-0 text-[13px] font-semibold text-slate-600">Click <strong>View Summary</strong> to open the generated content.</p>
-                )}
               </div>
             ) : null}
 
@@ -287,22 +306,25 @@ export default function TeacherGeneratePage() {
             ) : null}
 
             {questionsResult ? (
-              <div className="mt-5 rounded-xl border-2 border-slate-900 bg-white p-5 text-left shadow-[4px_4px_0_#0f172a]">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-dashed border-slate-300 pb-3">
-                  <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Questions ready</p>
+              <div className="mt-5 rounded-2xl border-2 border-slate-900 bg-white p-5 text-left shadow-[4px_4px_0_#0f172a]">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border-[1.5px] border-slate-900 bg-yellow-50 text-amber-500 shadow-[2px_2px_0_#0f172a]">
+                      <HelpCircle size={20} />
+                    </div>
+                    <div>
+                      <p className="m-0 text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">Assessment ready</p>
+                      <h5 className="m-0 text-[15px] font-black text-[#0f172a]">AI Generated Quiz</h5>
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setIsQuestionsExpanded((prev) => !prev)}
-                    className="rounded-md border-2 border-slate-900 bg-[#ecfeff] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 transition hover:bg-teal-100"
+                    onClick={() => setIsQuestionsModalOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#f0fdfa] px-4 py-2 text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-teal-100 hover:-translate-y-0.5"
                   >
-                    {isQuestionsExpanded ? "Hide Questions" : "View Questions"}
+                    View Quiz
                   </button>
                 </div>
-                {isQuestionsExpanded ? (
-                  <p className="m-0 whitespace-pre-wrap text-[14px] font-semibold leading-[1.7] text-[#0f172a]">{questionsResult}</p>
-                ) : (
-                  <p className="m-0 text-[13px] font-semibold text-slate-600">Click <strong>View Questions</strong> to open the generated question set.</p>
-                )}
               </div>
             ) : null}
           </div>
@@ -310,6 +332,42 @@ export default function TeacherGeneratePage() {
       )}
 
       <LoadingOverlay isLoading={isLoading} />
+
+      {/* Summary Modal */}
+      <Modal
+        isOpen={isSummaryModalOpen}
+        onClose={() => setIsSummaryModalOpen(false)}
+        title="AI Generation Summary"
+        footer={
+          <button
+            onClick={() => handleCopyToClipboard(summaryResult)}
+            className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+          >
+            {isCopied ? <Check size={16} /> : <Copy size={16} />}
+            {isCopied ? "Copied!" : "Copy Content"}
+          </button>
+        }
+      >
+        {summaryResult}
+      </Modal>
+
+      {/* Questions Modal */}
+      <Modal
+        isOpen={isQuestionsModalOpen}
+        onClose={() => setIsQuestionsModalOpen(false)}
+        title="Generated Questions"
+        footer={
+          <button
+            onClick={() => handleCopyToClipboard(questionsResult)}
+            className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+          >
+            {isCopied ? <Check size={16} /> : <Copy size={16} />}
+            {isCopied ? "Copied!" : "Copy Questions"}
+          </button>
+        }
+      >
+        {questionsResult}
+      </Modal>
     </section>
   );
 }
