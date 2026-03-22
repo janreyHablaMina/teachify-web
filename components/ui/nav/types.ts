@@ -9,7 +9,8 @@ export type NavIconType =
   | "system"
   | "settings"
   | "generate"
-  | "classes";
+  | "classes"
+  | "lessons";
 
 export type NavItem = {
   group: string;

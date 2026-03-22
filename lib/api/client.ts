@@ -70,6 +70,33 @@ export async function apiLogout(token?: string): Promise<Response> {
   });
 }
 
+export async function apiGetSummaries(token?: string): Promise<{ response: Response; data: any }> {
+  const response = await fetch(`${API_BASE_URL}/api/summaries`, {
+    method: "GET",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiStoreSummary(
+  token: string | undefined,
+  payload: { topic: string; content: any }
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/summaries`, {
+    method: "POST",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiGenerateSummary(payload: {
   prompt: string;
   task?: "summary" | "questions";

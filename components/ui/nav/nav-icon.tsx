@@ -81,6 +81,13 @@ export function NavIcon({ icon }: { icon: NavIconType }) {
           <path d="m11.5 15-2 5M15 11.5l5-2M15 15l5 5M8.5 8.5 3 3M12 2l-2 3M2 12l3-2" />
         </svg>
       );
+    case "lessons":
+      return (
+        <svg {...common}>
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+      );
     case "classes":
       return (
         <svg {...common}>

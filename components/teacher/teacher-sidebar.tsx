@@ -47,6 +47,7 @@ export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSideb
                       const themes: Record<string, { bg: string; indicator: string; hoverBg: string }> = {
                         overview: { bg: "bg-blue-500", indicator: "bg-blue-500", hoverBg: "group-hover:bg-blue-500" },
                         generate: { bg: "bg-emerald-500", indicator: "bg-emerald-500", hoverBg: "group-hover:bg-emerald-500" },
+                        lessons: { bg: "bg-indigo-500", indicator: "bg-indigo-500", hoverBg: "group-hover:bg-indigo-500" },
                         quizzes: { bg: "bg-amber-500", indicator: "bg-amber-500", hoverBg: "group-hover:bg-amber-500" },
                         classes: { bg: "bg-rose-500", indicator: "bg-rose-500", hoverBg: "group-hover:bg-rose-500" },
                         default: { bg: "bg-slate-900", indicator: "bg-slate-900", hoverBg: "group-hover:bg-slate-900" }
@@ -55,6 +56,7 @@ export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSideb
                       const label = item.label.toLowerCase();
                       const themeKey = label.includes("overview") ? "overview" :
                                       label.includes("generate") ? "generate" :
+                                      label.includes("lessons") ? "lessons" :
                                       label.includes("quizzes") ? "quizzes" :
                                       label.includes("classes") ? "classes" : "default";
                       const theme = themes[themeKey];
