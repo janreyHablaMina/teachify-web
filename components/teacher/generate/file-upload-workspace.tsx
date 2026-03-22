@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { GeneratePayload } from "./types";
+import { useToast } from "@/components/ui/toast/toast-provider";
 import { 
   CheckSquare, 
   CircleHelp, 
@@ -15,7 +16,9 @@ import {
   ShieldCheck,
   MousePointerClick,
   Lock,
-  Check
+  Check,
+  Minus,
+  Plus
 } from "lucide-react";
 
 interface FileUploadWorkspaceProps {
@@ -24,82 +27,156 @@ interface FileUploadWorkspaceProps {
   planTier: string;
 }
 
+const DEFAULT_COUNT = 5;
+
+const QUESTION_TYPES = [
+  { 
+    id: "multiple_choice", 
+    label: "Multiple Choice", 
+    icon: CheckSquare, 
+    desc: "Standard 4-option questions",
+    locked: false 
+  },
+  { 
+    id: "true_false", 
+    label: "True / False", 
+    icon: CircleHelp, 
+    desc: "Binary choice assessments",
+    lockedForTrial: true 
+  },
+  { 
+    id: "enumeration", 
+    label: "Enumeration", 
+    icon: ListOrdered, 
+    desc: "Listing items for a topic",
+    lockedForTrial: true 
+  },
+  { 
+    id: "matching", 
+    label: "Matching", 
+    icon: Layers, 
+    desc: "Column A to Column B",
+    lockedForTrial: true 
+  },
+  { 
+    id: "identification", 
+    label: "Identification", 
+    icon: Type, 
+    desc: "Specific term answers",
+    lockedForTrial: true 
+  },
+  { 
+    id: "fill_in_the_blanks", 
+    label: "Fill in Blanks", 
+    icon: PencilLine, 
+    desc: "Completion type questions",
+    lockedForTrial: true 
+  },
+  { 
+    id: "short_answer", 
+    label: "Short Answer", 
+    icon: AlignLeft, 
+    desc: "Pointed explanations",
+    lockedForTrial: true 
+  },
+  { 
+    id: "essay", 
+    label: "Essay", 
+    icon: FileText, 
+    desc: "Comprehensive reasoning",
+    lockedForTrial: true 
+  },
+];
+
 export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUploadWorkspaceProps) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(["multiple_choice"]);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
-  const [enumerationCount, setEnumerationCount] = useState(5);
+  // Holds raw string while user is actively typing in a count input
+  const [inputDraft, setInputDraft] = useState<Record<string, string>>({});
+  const { showToast } = useToast();
 
-  const questionTypes = [
-    { 
-      id: "multiple_choice", 
-      label: "Multiple Choice", 
-      icon: CheckSquare, 
-      desc: "Standard 4-option questions",
-      locked: false 
-    },
-    { 
-      id: "true_false", 
-      label: "True / False", 
-      icon: CircleHelp, 
-      desc: "Binary choice assessments",
-      locked: planTier === "trial" 
-    },
-    { 
-      id: "enumeration", 
-      label: "Enumeration", 
-      icon: ListOrdered, 
-      desc: "Listing items for a topic",
-      locked: planTier === "trial" 
-    },
-    { 
-      id: "matching", 
-      label: "Matching", 
-      icon: Layers, 
-      desc: "Column A to Column B",
-      locked: planTier === "trial" 
-    },
-    { 
-      id: "identification", 
-      label: "Identification", 
-      icon: Type, 
-      desc: "Specific term answers",
-      locked: planTier === "trial" 
-    },
-    { 
-      id: "fill_in_the_blanks", 
-      label: "Fill in Blanks", 
-      icon: PencilLine, 
-      desc: "Completion type questions",
-      locked: planTier === "trial" 
-    },
-    { 
-      id: "short_answer", 
-      label: "Short Answer", 
-      icon: AlignLeft, 
-      desc: "Pointed explanations",
-      locked: planTier === "trial" 
-    },
-    { 
-      id: "essay", 
-      label: "Essay", 
-      icon: FileText, 
-      desc: "Comprehensive reasoning",
-      locked: planTier === "trial" 
-    },
-  ];
+  const showLimitToast = () => {
+    showToast(
+      planTier === "trial"
+        ? `You've reached the free plan limit of ${planMax} questions. Upgrade to Pro to generate up to 50 questions.`
+        : `You've reached the maximum of ${planMax} questions for your plan. Remove some items to continue.`,
+      "error"
+    );
+  };
+
+  // Plan-based total question limit
+  const planMax = planTier === "trial" ? 10 : 50;
+
+  // typeCounts: key = type id, value = { enabled: boolean, count: number }
+  const [typeCounts, setTypeCounts] = useState<Record<string, { enabled: boolean; count: number }>>(
+    () =>
+      Object.fromEntries(
+        QUESTION_TYPES.map((t) => [t.id, { enabled: t.id === "multiple_choice", count: Math.min(DEFAULT_COUNT, planTier === "trial" ? 10 : 50) }])
+      )
+  );
+
+  const questionTypes = QUESTION_TYPES.map((t) => ({
+    ...t,
+    locked: "lockedForTrial" in t && t.lockedForTrial && planTier === "trial",
+  }));
+
+  const toggleType = (id: string) => {
+    setTypeCounts((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], enabled: !prev[id].enabled },
+    }));
+  };
+
+  const adjustCount = (id: string, delta: number) => {
+    const otherTotal = Object.entries(typeCounts)
+      .filter(([k, v]) => k !== id && v.enabled)
+      .reduce((sum, [, v]) => sum + v.count, 0);
+    const maxForThis = planMax - otherTotal;
+
+    if (delta > 0 && typeCounts[id].count >= maxForThis) {
+      showLimitToast();
+      return;
+    }
+
+    setTypeCounts((prev) => {
+      const next = Math.max(1, Math.min(maxForThis, prev[id].count + delta));
+      return { ...prev, [id]: { ...prev[id], count: next } };
+    });
+  };
+
+  const commitCount = (id: string) => {
+    const raw = inputDraft[id];
+    if (raw !== undefined) {
+      const parsed = parseInt(raw, 10);
+      const otherTotal = Object.entries(typeCounts)
+        .filter(([k, v]) => k !== id && v.enabled)
+        .reduce((sum, [, v]) => sum + v.count, 0);
+      const maxForThis = planMax - otherTotal;
+
+      if (!isNaN(parsed) && parsed > maxForThis) {
+        showLimitToast();
+      }
+
+      const clamped = Math.max(1, Math.min(maxForThis, isNaN(parsed) ? 1 : parsed));
+      setTypeCounts((prev) => ({ ...prev, [id]: { ...prev[id], count: clamped } }));
+      setInputDraft((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
+  };
+
+  const selectedEntries = Object.entries(typeCounts).filter(([, v]) => v.enabled);
+  const totalItems = selectedEntries.reduce((sum, [, v]) => sum + v.count, 0);
+  const anySelected = selectedEntries.length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title) return;
-    onGenerate({ 
-      title, 
-      file, 
-      types: selectedTypes, 
-      difficulty,
-      enumerationCount: selectedTypes.includes("enumeration") ? enumerationCount : undefined
-    });
+    if (!file || !title || !anySelected) return;
+    const types = selectedEntries.map(([id, v]) => ({ id, count: v.count }));
+    onGenerate({ title, file, types, difficulty });
   };
 
   return (
@@ -110,11 +187,38 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
           Transform your classroom materials into professional assessments using Teachify's specialized AI models.
         </p>
       </div>
-
       <form onSubmit={handleSubmit} className="flex flex-col gap-8 p-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Left Column: Config */}
           <div className="lg:col-span-5 flex flex-col gap-6">
+            {/* Summary pill at the top of the left column */}
+            {anySelected ? (
+              <div className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
+                totalItems >= planMax
+                  ? "border-red-200 bg-red-50"
+                  : "border-slate-200 bg-slate-50"
+              }`}>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Total Questions</span>
+                    {totalItems >= planMax && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-red-500">Limit reached</span>
+                    )}
+                  </div>
+                </div>
+                <span className={`text-[15px] font-black ${ totalItems >= planMax ? "text-red-500" : "text-slate-900" }`}>
+                  {totalItems}
+                  <span className="text-[11px] font-bold text-slate-400"> / {planMax}</span>
+                  <span className="text-[11px] font-bold text-slate-500 ml-1">· {selectedEntries.length} type{selectedEntries.length !== 1 ? "s" : ""}</span>
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Plan Limit</span>
+                <span className="text-[13px] font-black text-slate-500">{planMax} questions max</span>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
               <label className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">Lesson Details</label>
               <input
@@ -184,92 +288,98 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
           <div className="lg:col-span-7 flex flex-col gap-4">
             <label className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400 flex justify-between items-center">
               Target Question Formats
-              <span className="text-[9px] bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full lowercase tracking-normal">Multiple selection enabled</span>
+              <span className="text-[9px] bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full lowercase tracking-normal">Select type · set item count</span>
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-2 custom-scrollbar">
               {questionTypes.map((type) => {
                 const Icon = type.icon;
-                const isSelected = selectedTypes.includes(type.id);
+                const state = typeCounts[type.id];
+                const isSelected = state.enabled && !type.locked;
+
                 return (
-                  <button
+                  <div
                     key={type.id}
-                    type="button"
-                    disabled={type.locked}
-                    onClick={() => {
-                      if (type.locked) return;
-                      setSelectedTypes((prev) =>
-                        prev.includes(type.id)
-                          ? (prev.length > 1 ? prev.filter((t) => t !== type.id) : prev)
-                          : [...prev, type.id]
-                      );
-                    }}
-                    className={`relative flex flex-col items-start gap-1 rounded-2xl border-2 p-4 text-left transition-all ${
+                    className={`relative flex flex-col rounded-2xl border-2 transition-all ${
                       type.locked
                         ? "cursor-not-allowed border-slate-50 bg-slate-50/50 opacity-40 grayscale"
                         : isSelected
-                          ? "border-slate-900 bg-emerald-50 ring-4 ring-emerald-500/5"
-                          : "border-slate-100 bg-white hover:border-slate-400 group/card"
+                          ? "border-slate-900 bg-emerald-50"
+                          : "border-slate-100 bg-white hover:border-slate-400"
                     }`}
                   >
-                    <div className={`p-2.5 rounded-xl transition-colors ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 group-hover/card:bg-slate-900 group-hover/card:text-white'}`}>
-                      <Icon size={18} strokeWidth={2.5} />
-                    </div>
-                    <div className="mt-2 text-wrap">
-                      <span className="block text-[14px] font-black text-slate-900 leading-tight">
-                        {type.label}
-                      </span>
-                      <span className="block text-[10px] font-bold text-slate-500 leading-tight mt-1.5 opacity-80">
-                        {type.desc}
-                      </span>
-                    </div>
-                    {type.locked && (
-                      <div className="absolute top-4 right-4 flex items-center gap-1 rounded-full bg-slate-900 px-2 py-0.5 text-[8px] font-black text-white">
-                        <Lock size={10} />
+                    {/* Card header — clickable to toggle */}
+                    <button
+                      type="button"
+                      disabled={type.locked}
+                      onClick={() => { if (!type.locked) toggleType(type.id); }}
+                      className="flex items-start gap-3 p-4 text-left w-full"
+                    >
+                      <div className={`shrink-0 p-2.5 rounded-xl transition-colors ${isSelected ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-600"}`}>
+                        <Icon size={18} strokeWidth={2.5} />
+                      </div>
+                      <div className="flex-1 min-w-0 mt-0.5">
+                        <span className="block text-[14px] font-black text-slate-900 leading-tight">{type.label}</span>
+                        <span className="block text-[10px] font-bold text-slate-500 leading-tight mt-1 opacity-80">{type.desc}</span>
+                      </div>
+                      {/* Status badge */}
+                      {type.locked ? (
+                        <div className="shrink-0 flex items-center gap-1 rounded-full bg-slate-900 px-2 py-0.5 text-[8px] font-black text-white">
+                          <Lock size={10} />
+                        </div>
+                      ) : isSelected ? (
+                        <div className="shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-slate-900 text-emerald-400 shadow-lg border-2 border-white">
+                          <Check size={13} strokeWidth={4} />
+                        </div>
+                      ) : null}
+                    </button>
+                    {/* Count controls — only when selected */}
+                    {isSelected && (
+                      <div className="mx-4 mb-4 flex items-center justify-between rounded-xl bg-slate-900 px-3 py-2.5">
+                        <span className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">Items</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => adjustCount(type.id, -1)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:bg-white/5"
+                          >
+                            <Minus size={13} strokeWidth={3} />
+                          </button>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={inputDraft[type.id] !== undefined ? inputDraft[type.id] : state.count}
+                            onChange={(e) => setInputDraft((prev) => ({ ...prev, [type.id]: e.target.value }))}
+                            onBlur={() => commitCount(type.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            className="w-10 bg-transparent text-center text-[16px] font-black text-white outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => adjustCount(type.id, +1)}
+                            disabled={totalItems >= planMax}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <Plus size={13} strokeWidth={3} />
+                          </button>
+                        </div>
                       </div>
                     )}
-                    {isSelected && !type.locked && (
-                      <div className="absolute top-4 right-4 h-6 w-6 flex items-center justify-center rounded-full bg-slate-900 text-emerald-400 shadow-lg border-2 border-white scale-110">
-                        <Check size={14} strokeWidth={4} />
-                      </div>
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
-            
-            {selectedTypes.includes("enumeration") && (
-              <div className="mt-auto pt-4 flex flex-col gap-3 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white p-5 shadow-xl animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <ListOrdered size={16} className="text-[#fef08a]" />
-                    <label className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-300">
-                      Enumeration Depth
-                    </label>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500 text-white text-[15px] font-black shadow-inner">
-                    {enumerationCount} <span className="text-[10px] uppercase opacity-70">items</span>
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="2"
-                  max="15"
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-white/10 accent-[#fef08a] hover:accent-white transition-all"
-                  value={enumerationCount}
-                  onChange={(e) => setEnumerationCount(Number(e.target.value))}
-                />
-                <div className="flex justify-between items-center text-[10px] font-black text-slate-500 px-1 capitalize">
-                  <span>Concise (2)</span>
-                  <span>Extensive (15)</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
+
         <button
           type="submit"
-          disabled={isLoading || !file || selectedTypes.length === 0}
+          disabled={isLoading || !file || !anySelected || !title}
           className="relative group mt-4 flex items-center justify-center gap-3 overflow-hidden rounded-[20px] border-2 border-slate-900 bg-[#99f6e4] py-5 text-[16px] font-black uppercase tracking-[0.1em] text-slate-900 shadow-[8px_8px_0_#0f172a] transition-all hover:-translate-y-1 hover:bg-[#5eead4] active:translate-y-1 active:shadow-none disabled:transform-none disabled:opacity-50 disabled:shadow-none"
         >
           {isLoading ? (
@@ -279,7 +389,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
             </div>
           ) : (
             <>
-              <span className="z-10">Generate Assesment Now</span>
+              <span className="z-10">Generate Assessment Now</span>
               <ChevronRight size={22} strokeWidth={3} className="z-10 transition-transform group-hover:translate-x-2" />
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             </>

@@ -1,9 +1,8 @@
 export type GeneratePayload = {
   title: string;
   file: File;
-  types: string[];
+  types: { id: string; count: number }[];
   difficulty: "easy" | "medium" | "hard";
-  enumerationCount?: number;
 };
 
 export type GeneratedQuestion = {
