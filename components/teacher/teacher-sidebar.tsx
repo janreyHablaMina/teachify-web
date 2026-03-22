@@ -41,38 +41,56 @@ export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSideb
           <section key={group} className="grid gap-2">
             <p className="pl-1 text-[11px] font-normal uppercase tracking-[0.15em] text-slate-600">{group}</p>
             <div className="grid gap-2">
-              {items.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={(event) => {
-                      const isLockedClasses = item.href === "/teacher/classes" && classesLocked;
-                      if (!isLockedClasses) return;
+                    {items.map((item) => {
+                      const isActive = pathname === item.href;
+                      
+                      const themes: Record<string, { bg: string; indicator: string; hoverBg: string }> = {
+                        overview: { bg: "bg-blue-500", indicator: "bg-blue-500", hoverBg: "group-hover:bg-blue-500" },
+                        generate: { bg: "bg-emerald-500", indicator: "bg-emerald-500", hoverBg: "group-hover:bg-emerald-500" },
+                        quizzes: { bg: "bg-amber-500", indicator: "bg-amber-500", hoverBg: "group-hover:bg-amber-500" },
+                        classes: { bg: "bg-rose-500", indicator: "bg-rose-500", hoverBg: "group-hover:bg-rose-500" },
+                        default: { bg: "bg-slate-900", indicator: "bg-slate-900", hoverBg: "group-hover:bg-slate-900" }
+                      };
 
-                      event.preventDefault();
-                      showToast("Classes is available on Pro and School plans.", "error");
-                    }}
-                    className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-[10px] text-left text-[15px] font-normal text-[#0f172a] transition ${
-                      isActive
-                        ? "border-2 border-[#0f172a] bg-white shadow-[4px_4px_0_#99f6e4] [transform:rotate(-1deg)]"
-                        : "border-2 border-transparent hover:[transform:translateX(4px)_rotate(1deg)] hover:border-[#0f172a] hover:bg-white hover:shadow-[4px_4px_0_#fef08a]"
-                    }`}
-                  >
-                    {isActive ? (
-                      <span className="absolute -left-2 top-2 bottom-2 w-[3px] rounded-full bg-teal-500" />
-                    ) : null}
-                    <span
-                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-[#0f172a] bg-white text-[#0f172a] shadow-[2px_2px_0_#0f172a] ${
-                        isActive ? "bg-[#99f6e4]" : ""
-                      }`}
-                    >
-                      <span className="h-[18px] w-[18px]">
-                        <NavIcon icon={item.icon} />
-                      </span>
-                    </span>
-                    <span>{item.label}</span>
+                      const label = item.label.toLowerCase();
+                      const themeKey = label.includes("overview") ? "overview" :
+                                      label.includes("generate") ? "generate" :
+                                      label.includes("quizzes") ? "quizzes" :
+                                      label.includes("classes") ? "classes" : "default";
+                      const theme = themes[themeKey];
+
+                      return (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          onClick={(event) => {
+                            const isLockedClasses = item.href === "/teacher/classes" && classesLocked;
+                            if (!isLockedClasses) return;
+
+                            event.preventDefault();
+                            showToast("Classes is available on Pro and School plans.", "error");
+                          }}
+                          className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-[10px] text-left text-[15px] font-bold text-[#0f172a] transition-all duration-200 ${
+                            isActive
+                              ? "border-2 border-[#0f172a] bg-white shadow-[4px_4px_0_#99f6e4] [transform:rotate(-1deg)]"
+                              : "border-2 border-transparent hover:[transform:translateX(4px)_rotate(1deg)] hover:border-[#0f172a] hover:bg-white hover:shadow-[4px_4px_0_#fef08a]"
+                          }`}
+                        >
+                          {isActive ? (
+                            <span className={`absolute -left-2 top-2 bottom-2 w-[4px] rounded-full ${theme.indicator}`} />
+                          ) : null}
+                          <span
+                            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-[#0f172a] transition-all duration-300 ${
+                              isActive 
+                                ? `${theme.bg} text-white shadow-[3px_3px_0_#0f172a]` 
+                                : `bg-white text-[#0f172a] ${theme.hoverBg} group-hover:text-white group-hover:shadow-[3px_3px_0_#0f172a]`
+                            }`}
+                          >
+                            <span className="h-[20px] w-[20px]">
+                              <NavIcon icon={item.icon} />
+                            </span>
+                          </span>
+                          <span className={isActive ? "font-black" : "font-semibold"}>{item.label}</span>
                     {item.href === "/teacher/classes" && classesLocked ? (
                       <span
                         className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-[6px] border-[1.5px] border-[#0f172a] bg-white text-[#0f172a] shadow-[1.5px_1.5px_0_#fef08a] transition group-hover:-translate-y-0.5 group-hover:shadow-[2.5px_2.5px_0_#99f6e4]"

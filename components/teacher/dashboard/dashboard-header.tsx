@@ -17,14 +17,6 @@ export function DashboardHeader({ planTier, planMeta, userName, userEmail }: Das
         <h2 className="mt-1 text-[32px] font-black tracking-[-0.03em] text-slate-900">
           {userName ? `Welcome back, ${userName}` : "Dashboard Overview"}
         </h2>
-        {userEmail ? (
-          <p className="mt-1 text-[12px] font-extrabold uppercase tracking-[0.08em] text-slate-500">
-            {userEmail}
-          </p>
-        ) : null}
-        <p className="mt-2 max-w-[760px] text-[14px] font-bold leading-[1.5] text-slate-700">
-          {planTierLabel} - {planMeta.priceLabel}: access your current plan features and usage in one place.
-        </p>
       </div>
     </header>
   );
