@@ -8,8 +8,8 @@ export function TeacherClassesHeader({ onCreateClick }: TeacherClassesHeaderProp
   return (
     <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p className="m-0 text-[13px] font-bold uppercase tracking-[0.1em] text-slate-500">Dashboard / Classes</p>
-        <h2 className="text-[32px] font-black leading-none tracking-[-0.03em] text-[#0f172a]">My Classrooms</h2>
+        <p className="text-[12px] font-black uppercase tracking-[0.09em] text-slate-500 mb-1">Dashboard / Classes</p>
+        <h2 className="text-[32px] font-black leading-none tracking-[-0.03em] text-slate-900">My Classrooms</h2>
       </div>
       <button 
         onClick={onCreateClick}

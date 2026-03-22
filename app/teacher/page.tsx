@@ -106,7 +106,7 @@ export default function TeacherDashboardPage() {
   const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
 
   return (
-    <section className="flex min-h-full w-full flex-col gap-[22px] py-2">
+    <section className="flex min-h-full w-full flex-col gap-[22px]">
       <DashboardHeader planTier={planTier} planMeta={planMeta} userName={userName} userEmail={userEmail} />
 
       {(planTier === "trial" || planTier === "basic") && (

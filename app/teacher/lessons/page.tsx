@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { useEffect, useMemo, useState } from "react";
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { Modal } from "@/components/ui/modal";
 import { apiGetSummaries, apiMe } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { parseTeacherProfile } from "@/lib/auth/profile";
 import { normalizePlanTier, PLAN_CATALOG } from "@/components/teacher/dashboard/plan";
-import { FileText, Download, Calendar, Search, BookOpen, Trash2, ArrowRight } from "lucide-react";
+import { Calendar, Search, BookOpen, Download } from "lucide-react";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { useToast } from "@/components/ui/toast/toast-provider";
+import { useTeacherSession } from "@/components/teacher/teacher-session-context";
+import { LessonCard } from "@/components/teacher/lessons/lesson-card";
+import { LessonSkeleton } from "@/components/teacher/lessons/lesson-skeleton";
+import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
 
 type Summary = {
   id: number;
@@ -21,27 +24,23 @@ type Summary = {
 
 export default function TeacherLessonsPage() {
   const { showToast } = useToast();
+  const session = useTeacherSession();
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [planMeta, setPlanMeta] = useState(PLAN_CATALOG.trial);
-  const [planTierLabel, setPlanTierLabel] = useState("FREE");
+  // Derive plan from global session to avoid "Free Plan" flash
+  const tier = normalizePlanTier(session?.planTier ?? "trial");
+  const planMeta = PLAN_CATALOG[tier];
+  const planTierLabel = tier === "trial" ? "FREE" : tier.toUpperCase();
 
   useEffect(() => {
     async function loadData() {
       try {
         const token = getStoredToken();
         if (!token) return;
-
-        // Load Plan
-        const { data: profileData } = await apiMe(token);
-        const profile = parseTeacherProfile(profileData);
-        const tier = normalizePlanTier(profile.planTier);
-        setPlanMeta(PLAN_CATALOG[tier]);
-        setPlanTierLabel(tier === "trial" ? "FREE" : tier.toUpperCase());
 
         // Load Summaries
         const { response, data } = await apiGetSummaries(token);
@@ -74,17 +73,12 @@ export default function TeacherLessonsPage() {
 
   return (
     <section className="w-full pb-10">
-      <TeacherHeader
-        planLabel={planMeta.label}
-        planTier={planTierLabel}
-        priceLabel={planMeta.priceLabel}
-      />
-
-      <div className="mt-8 flex flex-col gap-6">
+      <div className="flex flex-col gap-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-[28px] font-black text-[#0f172a]">My AI Lessons</h2>
-            <p className="text-[15px] font-bold text-slate-500">Review and manage your generated AI summaries.</p>
+            <p className="text-[12px] font-black uppercase tracking-[0.09em] text-slate-500 mb-1">Dashboard / Overview</p>
+            <h2 className="text-[32px] font-black leading-none tracking-[-0.03em] text-slate-900">My AI Lessons</h2>
+            <p className="mt-2 text-[15px] font-bold text-slate-500">Review and manage your generated AI summaries.</p>
           </div>
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -99,61 +93,16 @@ export default function TeacherLessonsPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-4">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
-            <p className="text-[14px] font-bold text-slate-500">Loading your lessons...</p>
-          </div>
+          <LessonSkeleton />
         ) : filteredSummaries.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filteredSummaries.map((summary) => (
-              <article
+              <LessonCard
                 key={summary.id}
-                className="group relative flex flex-col rounded-[22px] border-2 border-slate-900 bg-white p-6 shadow-[5px_5px_0_#0f172a] transition hover:-translate-y-1 hover:translate-x-[-1px] hover:shadow-[7px_7px_0_#4f46e5]"
-              >
-                <div className="mb-4 flex items-start justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-slate-900 bg-indigo-50 text-indigo-500 shadow-[2px_2px_0_#0f172a]">
-                    <BookOpen size={24} />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleDownload(summary)}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-slate-900 bg-white transition hover:bg-slate-50"
-                      title="Download PDF"
-                    >
-                      <Download size={18} />
-                    </button>
-                    <button
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-slate-900 bg-white transition hover:bg-rose-50 hover:text-rose-500"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                <h4 className="line-clamp-2 min-h-[3rem] text-[18px] font-black leading-tight text-[#0f172a]">
-                  {summary.topic}
-                </h4>
-
-                <div className="mt-4 flex items-center gap-2 text-[12px] font-bold text-slate-500">
-                  <Calendar size={14} />
-                  {new Date(summary.created_at).toLocaleDateString(undefined, {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </div>
-
-                <div className="mt-6">
-                  <button
-                    onClick={() => handleView(summary)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-900 bg-[#edf2ff] py-3 text-[13px] font-black uppercase tracking-wide text-indigo-700 transition hover:bg-indigo-100"
-                  >
-                    Review Lesson
-                    <ArrowRight size={16} />
-                  </button>
-                </div>
-              </article>
+                summary={summary}
+                onView={handleView}
+                onDownload={handleDownload}
+              />
             ))}
           </div>
         ) : (
@@ -196,23 +145,7 @@ export default function TeacherLessonsPage() {
           </div>
         }
       >
-        <div className="leading-normal text-slate-700 font-medium [&>h1]:mb-0 [&>h2]:mb-0 [&>h3]:mb-0 [&>h1+p]:mt-[-20px] [&>h2+p]:mt-[-20px] [&>h3+p]:mt-[-20px]">
-          <ReactMarkdown
-             components={{
-               h1: ({node, ...props}: any) => <h1 className="text-[20px] font-black text-slate-900 mt-4 mb-[-20px] underline decoration-[#fef08a] decoration-4 underline-offset-4" {...props}/>,
-               h2: ({node, ...props}: any) => <h2 className="text-[18px] font-black text-slate-900 mt-4 mb-[-20px]" {...props}/>,
-               h3: ({node, ...props}: any) => <h3 className="text-[16px] font-black text-slate-900 mt-4 mb-[-20px]" {...props}/>,
-               strong: ({node, ...props}: any) => <strong className="font-black text-slate-900" {...props}/>,
-               ul: ({node, ...props}: any) => <ul className="list-disc pl-5 mb-3" {...props}/>,
-               p: ({node, children, ...props}: any) => {
-                 if (!children || (Array.isArray(children) && children.length === 0)) return null;
-                 return <p className="mb-3 mt-0" {...props}>{children}</p>;
-               },
-             }}
-          >
-            {selectedSummary?.content?.replace(/\n{3,}/g, '\n\n').replace(/\n\n(?=#)/g, '\n').replace(/^(#+.*)\n\n/gm, '$1\n') ?? ""}
-          </ReactMarkdown>
-        </div>
+        <GeneratedDocumentViewer content={selectedSummary?.content ?? ""} />
       </Modal>
     </section>
   );

@@ -13,8 +13,8 @@ export function DashboardHeader({ planTier, planMeta, userName, userEmail }: Das
   return (
     <header className="flex items-start justify-between">
       <div>
-        <p className="m-0 text-[12px] font-extrabold uppercase tracking-[0.09em] text-slate-500">Dashboard / Overview</p>
-        <h2 className="mt-1 text-[32px] font-black tracking-[-0.03em] text-slate-900">
+        <p className="text-[12px] font-black uppercase tracking-[0.09em] text-slate-500 mb-1">Dashboard / Overview</p>
+        <h2 className="text-[32px] font-black leading-none tracking-[-0.03em] text-slate-900">
           {userName ? `Welcome back, ${userName}` : "Dashboard Overview"}
         </h2>
       </div>

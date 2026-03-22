@@ -115,17 +115,8 @@ function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
               <div className="h-10 w-10 rounded-full bg-slate-200" />
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:px-8 lg:py-10">
-            <div className="animate-pulse space-y-4">
-              <div className="h-10 w-72 rounded bg-slate-200" />
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="h-28 rounded bg-slate-200" />
-                <div className="h-28 rounded bg-slate-200" />
-                <div className="h-28 rounded bg-slate-200" />
-                <div className="h-28 rounded bg-slate-200" />
-              </div>
-              <div className="h-48 rounded bg-slate-200" />
-            </div>
+          <main className="flex-1 bg-white p-4 sm:p-6 lg:px-8 lg:py-10">
+             {/* Content is handled by page-level skeletons */}
           </main>
         </div>
       </div>

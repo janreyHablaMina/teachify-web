@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { PLAN_CATALOG, normalizePlanTier } from "@/components/teacher/dashboard/plan";
 import { UsageStats } from "@/components/teacher/generate/usage-stats";
@@ -10,6 +9,7 @@ import { FileUploadWorkspace } from "@/components/teacher/generate/file-upload-w
 import { LoadingOverlay } from "@/components/teacher/generate/loading-overlay";
 import type { GeneratePayload, GeneratedQuiz } from "@/components/teacher/generate/types";
 import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
+import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import { apiMe, apiStoreSummary, apiGetSummaries } from "@/lib/api/client";
 import { parseTeacherProfile } from "@/lib/auth/profile";
 import { getStoredToken } from "@/lib/auth/session";
@@ -17,11 +17,15 @@ import { generateQuizFromFile, generateQuestionsFromSummary, generateSummary } f
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
 import { Modal } from "@/components/ui/modal";
-import { Check, Copy, FileText, HelpCircle, BookOpen, ArrowRight, Clock, Download, Sparkles } from "lucide-react";
+import { Check, Copy, FileText, HelpCircle, BookOpen, ArrowRight, Clock, Download } from "lucide-react";
 import { useToast } from "@/components/ui/toast/toast-provider";
+import { AIEngineHeader } from "@/components/teacher/generate/ai-engine-header";
+import { HistorySidebar } from "@/components/teacher/generate/history-sidebar";
+import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
 
 export default function TeacherGeneratePage() {
   const { showToast } = useToast();
+  const session = useTeacherSession();
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
@@ -40,13 +44,15 @@ export default function TeacherGeneratePage() {
   const [lastAddedId, setLastAddedId] = useState<number | null>(null);
   const [summaries, setSummaries] = useState<any[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [planUser, setPlanUser] = useState<TeacherPlanUser>({
-    plan: "trial",
-    plan_tier: "trial",
-    quiz_generation_limit: 3,
-    quizzes_used: 0,
-    max_questions_per_quiz: 10,
-  });
+
+  // Derive plan from global session to avoid "Free Plan" flash
+  const planUser: TeacherPlanUser = useMemo(() => ({
+    plan: session?.plan ?? "trial",
+    plan_tier: session?.planTier ?? "trial",
+    quiz_generation_limit: session?.quizGenerationLimit ?? 3,
+    quizzes_used: session?.quizzesUsed ?? 0,
+    max_questions_per_quiz: session?.maxQuestionsPerQuiz ?? 10,
+  }), [session]);
 
   const loadHistory = async () => {
     try {
@@ -57,7 +63,7 @@ export default function TeacherGeneratePage() {
       if (response.ok) {
         if (data.length > 0 && summaries.length > 0 && data[0].id !== summaries[0].id) {
            setLastAddedId(data[0].id);
-           setTimeout(() => setLastAddedId(null), 3000); // Remove highlight after 3s
+           setTimeout(() => setLastAddedId(null), 3000);
         }
         setSummaries(data);
       }
@@ -69,40 +75,7 @@ export default function TeacherGeneratePage() {
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    async function loadPlan() {
-      try {
-        const token = getStoredToken();
-        const { response, data } = await apiMe(token ?? undefined);
-        if (!response.ok || !mounted) return;
-
-        const parsedProfile = parseTeacherProfile(data);
-        setPlanUser((prev) => ({
-          ...prev,
-          plan: parsedProfile.plan,
-          plan_tier: parsedProfile.planTier,
-          ...(typeof parsedProfile.quizGenerationLimit === "number"
-            ? { quiz_generation_limit: parsedProfile.quizGenerationLimit }
-            : {}),
-          ...(typeof parsedProfile.quizzesUsed === "number"
-            ? { quizzes_used: parsedProfile.quizzesUsed }
-            : {}),
-          ...(typeof parsedProfile.maxQuestionsPerQuiz === "number"
-            ? { max_questions_per_quiz: parsedProfile.maxQuestionsPerQuiz }
-            : {}),
-        }));
-      } catch {
-        // Keep default UI values if profile fetch fails.
-      }
-    }
-
-    loadPlan();
     loadHistory();
-
-    return () => {
-      mounted = false;
-    };
   }, []);
 
   const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);
@@ -277,18 +250,7 @@ export default function TeacherGeneratePage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
           <article className="rounded-[18px] border-2 border-slate-900 bg-white shadow-[6px_6px_0_#94a3b8] overflow-hidden">
-             {/* Redesigned AI Header */}
-             <div className="border-b-2 border-slate-900 bg-indigo-50/50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-               <div className="flex items-center gap-4 text-left">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-slate-900 bg-white text-indigo-500 shadow-[3px_3px_0_#0f172a]">
-                    <Sparkles size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-[20px] font-black text-[#0f172a]">Teachify AI</h3>
-                    <p className="text-[13px] font-bold text-slate-500">Enhanced synthesis & curriculum design assistant.</p>
-                  </div>
-               </div>
-             </div>
+             <AIEngineHeader />
 
              <div className="p-8 text-left space-y-6">
               <div>
@@ -335,67 +297,16 @@ export default function TeacherGeneratePage() {
           </article>
 
           {/* Right Column: Recent Summaries */}
-          <aside className="flex flex-col gap-6">
-            <div className="rounded-[18px] border-2 border-slate-900 bg-slate-50 p-6 shadow-[6px_6px_0_#94a3b8]">
-                <div className="flex items-center justify-between mb-4">
-                   <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-slate-900 bg-indigo-50 text-indigo-500 shadow-[2px_2px_0_#0f172a]">
-                        <Clock size={18} />
-                      </div>
-                      <h4 className="m-0 text-[16px] font-black text-[#0f172a]">Recent History</h4>
-                   </div>
-                   <span className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">{summaries.length} total</span>
-                </div>
-
-                <div className="grid gap-3 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
-                  {isHistoryLoading ? (
-                    <div className="py-10 text-center">
-                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent mx-auto" />
-                    </div>
-                  ) : summaries.length > 0 ? (
-                    summaries.slice(0, 8).map((s, index) => (
-                      <button
-                        key={s.id}
-                        onClick={() => {
-                          setSummaryResult(s.content);
-                          setSummaryPrompt(s.topic);
-                          setIsSummaryModalOpen(true);
-                        }}
-                        className={`flex items-center gap-3 w-full rounded-xl border-[1.5px] border-slate-900 bg-white p-3 text-left transition hover:bg-white hover:translate-x-1 hover:shadow-[4px_4px_0_#4f46e5] group ${
-                          index === 0 && s.id === lastAddedId 
-                            ? "animate-in fade-in zoom-in-95 slide-in-from-right-8 duration-700 ring-[3px] ring-indigo-500/20 bg-indigo-50/30 border-indigo-600 scale-[1.02]" 
-                            : ""
-                        }`}
-                      >
-                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-[1.5px] border-slate-900 bg-white text-indigo-500 transition group-hover:bg-indigo-500 group-hover:text-white">
-                           <BookOpen size={18} />
-                         </div>
-                         <div className="flex-1 min-w-0">
-                            <h5 className="truncate text-[13px] font-black text-[#0f172a]">{s.topic}</h5>
-                            <p className="text-[11px] font-bold text-slate-400">
-                               {new Date(s.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric'})}
-                            </p>
-                         </div>
-                         <ArrowRight size={14} className="text-slate-300 transition group-hover:text-indigo-500 group-hover:translate-x-1" />
-                      </button>
-                    ))
-                  ) : (
-                    <div className="py-10 text-center border-2 border-dashed border-slate-200 rounded-xl bg-white/50">
-                       <p className="text-[12px] font-bold text-slate-400">No history yet.</p>
-                    </div>
-                  )}
-                </div>
-
-                {summaries.length > 8 && (
-                   <a
-                    href="/teacher/lessons"
-                    className="mt-4 block w-full text-center py-3 rounded-xl border-2 border-slate-900 bg-white text-[12px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
-                   >
-                     Show All Lessons
-                   </a>
-                )}
-            </div>
-          </aside>
+          <HistorySidebar
+            summaries={summaries}
+            lastAddedId={lastAddedId}
+            isHistoryLoading={isHistoryLoading}
+            onSummaryClick={(s) => {
+              setSummaryResult(s.content);
+              setSummaryPrompt(s.topic);
+              setIsSummaryModalOpen(true);
+            }}
+          />
         </div>
       )}
 
@@ -425,23 +336,7 @@ export default function TeacherGeneratePage() {
           </div>
         }
       >
-        <div className="leading-normal text-slate-700 font-medium [&>h1]:mb-0 [&>h2]:mb-0 [&>h3]:mb-0 [&>h1+p]:mt-[-20px] [&>h2+p]:mt-[-20px] [&>h3+p]:mt-[-20px]">
-          <ReactMarkdown
-             components={{
-               h1: ({node, ...props}: any) => <h1 className="text-[20px] font-black text-slate-900 mt-4 mb-[-20px] underline decoration-[#fef08a] decoration-4 underline-offset-4" {...props}/>,
-               h2: ({node, ...props}: any) => <h2 className="text-[18px] font-black text-slate-900 mt-4 mb-[-20px]" {...props}/>,
-               h3: ({node, ...props}: any) => <h3 className="text-[16px] font-black text-slate-900 mt-4 mb-[-20px]" {...props}/>,
-               strong: ({node, ...props}: any) => <strong className="font-black text-slate-900" {...props}/>,
-               ul: ({node, ...props}: any) => <ul className="list-disc pl-5 mb-3" {...props}/>,
-               p: ({node, children, ...props}: any) => {
-                 if (!children || (Array.isArray(children) && children.length === 0)) return null;
-                 return <p className="mb-3 mt-0" {...props}>{children}</p>;
-               },
-             }}
-          >
-            {summaryResult}
-          </ReactMarkdown>
-        </div>
+        <GeneratedDocumentViewer content={summaryResult} />
       </Modal>
 
       {/* Questions Modal */}
@@ -459,7 +354,7 @@ export default function TeacherGeneratePage() {
           </button>
         }
       >
-        {questionsResult}
+        <GeneratedDocumentViewer content={questionsResult} />
       </Modal>
     </section>
   );
