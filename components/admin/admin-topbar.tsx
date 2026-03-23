@@ -12,6 +12,9 @@ type AdminTopbarProps = {
   day: number;
   headerDate: string;
   headerTime: string;
+  userFullname: string;
+  userEmail: string;
+  userRole: string;
 };
 
 const gochiHand = Gochi_Hand({
@@ -19,7 +22,7 @@ const gochiHand = Gochi_Hand({
   weight: "400",
 });
 
-export function AdminTopbar({ monthLabel, day, headerDate, headerTime }: AdminTopbarProps) {
+export function AdminTopbar({ monthLabel, day, headerDate, headerTime, userFullname, userEmail, userRole }: AdminTopbarProps) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -55,6 +58,9 @@ export function AdminTopbar({ monthLabel, day, headerDate, headerTime }: AdminTo
     }
   };
 
+  const userInitial = userFullname.charAt(0).toUpperCase() || "A";
+  const formattedRole = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+
   return (
     <>
       <header className="sticky top-0 z-40 mb-2 border-b-[3.5px] border-[#0f172a] bg-white px-4 py-4 shadow-[0_8px_0_#fef08a] sm:px-6 lg:px-10">
@@ -63,7 +69,7 @@ export function AdminTopbar({ monthLabel, day, headerDate, headerTime }: AdminTo
             <div className="h-12 w-[3.5px] rounded-full bg-[#0f172a] [transform:rotate(-1.5deg)]" />
             <div>
               <p className="m-0 text-[11px] font-normal uppercase tracking-[0.1em] text-slate-600">Platform Administrator</p>
-              <h3 className="m-0 text-2xl font-black uppercase leading-none tracking-[-0.05em] text-[#0f172a]">AMELIA CRUZ</h3>
+              <h3 className="m-0 text-2xl font-black uppercase leading-none tracking-[-0.05em] text-[#0f172a]">{userFullname}</h3>
               <small className={`${gochiHand.className} mt-2 inline-block rounded bg-[#fef08a] px-2 py-0.5 text-sm font-normal text-slate-600 [transform:rotate(1deg)]`}>
                 Overseeing growth, schools, and metrics.
               </small>
@@ -101,7 +107,7 @@ export function AdminTopbar({ monthLabel, day, headerDate, headerTime }: AdminTo
                 className="rounded-full border-2 border-[#0f172a] bg-white p-1 shadow-[4px_4px_0_#fda4af] transition hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fda4af] text-base font-black text-[#0f172a]">
-                  A
+                  {userInitial}
                 </span>
               </button>
 
@@ -109,10 +115,10 @@ export function AdminTopbar({ monthLabel, day, headerDate, headerTime }: AdminTo
                 <div className="absolute right-0 top-full mt-4 w-[260px] overflow-hidden rounded-xl border-[3px] border-[#0f172a] bg-white p-2 shadow-[8px_8px_0_#0f172a] transition-all [transform:rotate(1deg)] z-[1000]">
                   {/* Dropdown Head */}
                   <div className="mb-2 border-b-[2px] border-[#0f172a] pb-4 pt-4 px-3">
-                    <p className="m-0 text-[18px] font-[950] tracking-tight text-[#0f172a]">Amelia Cruz</p>
-                    <p className="m-0 mt-1 text-[13px] font-bold text-slate-500">amelia.cruz@teachify.ai</p>
+                    <p className="m-0 text-[18px] font-[950] tracking-tight text-[#0f172a]">{userFullname}</p>
+                    <p className="m-0 mt-1 text-[13px] font-bold text-slate-500">{userEmail}</p>
                     <span className="mt-3 inline-block rounded-full border-[1.5px] border-[#0f172a] bg-[#fef08a] px-3 py-1 text-[11px] font-black text-[#0f172a] leading-tight">
-                      System Administrator
+                      {formattedRole}
                     </span>
                   </div>
                   

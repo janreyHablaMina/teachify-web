@@ -16,6 +16,7 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const [now, setNow] = useState(() => new Date());
+  const [user, setUser] = useState<{ fullname: string; email: string; role: string } | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -33,7 +34,9 @@ export default function AdminLayout({
         const { response, data } = await apiMe(token ?? undefined);
 
         if (!response.ok) throw new Error("Unauthorized");
-        const role = String(data?.user?.role ?? "");
+        
+        const userData = (data as any)?.user;
+        const role = String(userData?.role ?? "");
 
         if (role !== "admin") {
           router.replace(role ? getRouteForRole(role) : "/login");
@@ -42,6 +45,11 @@ export default function AdminLayout({
 
         if (mounted) {
           setIsAuthorized(true);
+          setUser({
+            fullname: String(userData?.fullname ?? "Admin User"),
+            email: String(userData?.email ?? ""),
+            role: role,
+          });
         }
       } catch {
         router.replace("/login");
@@ -115,6 +123,9 @@ export default function AdminLayout({
             day={now.getDate()}
             headerDate={headerDate}
             headerTime={headerTime}
+            userFullname={user?.fullname ?? "Admin User"}
+            userEmail={user?.email ?? ""}
+            userRole={user?.role ?? "admin"}
           />
           {children}
         </section>
