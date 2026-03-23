@@ -49,8 +49,10 @@ export function AdminSidebar({ groupedNav }: AdminSidebarProps) {
                       <span className="absolute -left-2 top-2 bottom-2 w-[3px] rounded-full bg-teal-500" />
                     ) : null}
                     <span
-                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-[#0f172a] bg-white text-[#0f172a] shadow-[2px_2px_0_#0f172a] ${
-                        isActive ? "bg-[#99f6e4]" : ""
+                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-[#0f172a] bg-white text-[#0f172a] shadow-[2px_2px_0_#0f172a] transition-colors ${
+                        isActive
+                          ? "border-teal-600 bg-[#99f6e4] text-teal-700"
+                          : "group-hover:border-amber-400 group-hover:bg-[#fef08a] group-hover:text-amber-700"
                       }`}
                     >
                       <span className="h-[18px] w-[18px]">
