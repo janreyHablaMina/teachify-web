@@ -41,7 +41,13 @@ export default function StudentDashboard() {
       if (!token) return;
 
       const { response, data } = await apiGetClassrooms<EnrolledClassroom[]>(token);
-      if (response.ok) setClassrooms(data);
+      if (response.ok) {
+        const normalized = data.map((classroom) => ({
+          ...classroom,
+          enrollment_status: classroom.enrollment_status ?? classroom.pivot?.status ?? "approved",
+        }));
+        setClassrooms(normalized);
+      }
     } catch {
       // Silent error, empty state shown
     } finally {
@@ -86,7 +92,9 @@ export default function StudentDashboard() {
     setCurrentStreakDays(streak);
   }, [session?.id]);
 
-  const focusLabel = buildFocusLabel(isDataLoading, classrooms.length, currentStreakDays);
+  const approvedClasses = classrooms.filter((cls) => cls.enrollment_status === "approved");
+  const pendingClasses = classrooms.filter((cls) => cls.enrollment_status === "pending");
+  const focusLabel = buildFocusLabel(isDataLoading, approvedClasses.length, currentStreakDays);
   const streakLabel = `${currentStreakDays} ${currentStreakDays === 1 ? "Day" : "Days"}`;
 
   return (
@@ -122,7 +130,10 @@ export default function StudentDashboard() {
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <article className="rounded-2xl border-2 border-[#0f172a]/10 border-t-[5px] border-t-teal-500 bg-white p-5">
           <p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">Classes Joined</p>
-          <p className="mt-2 text-[30px] font-black leading-none text-[#0f172a]">{classrooms.length}</p>
+          <p className="mt-2 text-[30px] font-black leading-none text-[#0f172a]">{approvedClasses.length}</p>
+          {pendingClasses.length > 0 ? (
+            <p className="mt-1 text-[12px] font-bold text-amber-600">{pendingClasses.length} pending approval</p>
+          ) : null}
         </article>
         <article className="rounded-2xl border-2 border-[#0f172a]/10 border-t-[5px] border-t-amber-500 bg-white p-5">
           <p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">Today&apos;s Focus</p>
@@ -138,7 +149,7 @@ export default function StudentDashboard() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h3 className="flex items-center gap-2 text-[26px] font-black leading-none text-[#0f172a]">
             <Target className="h-6 w-6 text-indigo-500" />
-            Your Enrolled Classes
+            Your Classes
           </h3>
           <button
             onClick={() => setIsJoinModalOpen(true)}

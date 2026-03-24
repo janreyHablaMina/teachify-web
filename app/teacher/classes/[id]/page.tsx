@@ -6,7 +6,7 @@ import { Users, GraduationCap, ClipboardList, TrendingUp, UserPlus, Activity } f
 import Link from "next/link";
 import React, { useState, use, useEffect, useMemo } from "react";
 import { InviteStudentsModal } from "@/components/teacher/classes/invite-students-modal";
-import { apiApproveClassroomStudent, apiGetClassroom, apiRejectClassroomStudent, getApiErrorMessage } from "@/lib/api/client";
+import { apiGetClassroom, apiUpdateClassroomStudentStatus, getApiErrorMessage } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { useToast } from "@/components/ui/toast/toast-provider";
 
@@ -21,7 +21,7 @@ type ClassroomDetailsApi = {
     id: number;
     fullname: string;
     email: string;
-    pivot?: { created_at?: string; status?: "pending" | "approved" | "rejected" };
+    pivot?: { created_at?: string; status?: "pending" | "approved" | "suspended" | "rejected" };
     created_at?: string;
   }>;
   assignments?: Array<{ id: number; quiz?: { id: number } | null }>;
@@ -70,18 +70,18 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
       fullname: student.fullname,
       email: student.email,
       enrolled_at: student.pivot?.created_at || student.created_at || new Date().toISOString(),
-      enrollment_status: (student.pivot?.status as "pending" | "approved" | "rejected" | undefined) ?? "approved",
+      enrollment_status: (student.pivot?.status as "pending" | "approved" | "suspended" | "rejected" | undefined) ?? "approved",
     }));
   }, [classroom?.students]);
 
   const approvedStudents = students.filter((student) => student.enrollment_status === "approved");
   const pendingStudents = students.filter((student) => student.enrollment_status === "pending");
+  const suspendedStudents = students.filter((student) => student.enrollment_status === "suspended");
   const totalStudents = approvedStudents.length;
   const activeQuizzes = (classroom?.assignments ?? []).filter((assignment) => assignment.quiz).length;
-  const avgPerformanceLabel = totalStudents > 0 ? "Awaiting quiz results" : "No student data";
   const classStatus = classroom?.is_active === false ? "Inactive" : "Active";
 
-  const applyStudentStatus = (studentId: number, status: "approved" | "rejected") => {
+  const applyStudentStatus = (studentId: number, status: "pending" | "approved" | "suspended" | "rejected") => {
     setClassroom((prev) => {
       if (!prev?.students) return prev;
       return {
@@ -101,7 +101,10 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
     });
   };
 
-  const handleApproveStudent = async (studentId: number) => {
+  const handleChangeStudentStatus = async (
+    studentId: number,
+    status: "pending" | "approved" | "suspended" | "rejected"
+  ) => {
     const token = getStoredToken();
     if (!token) {
       showToast("Session expired. Please log in again.", "error");
@@ -110,38 +113,15 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
 
     setUpdatingStudentId(studentId);
     try {
-      const { response, data } = await apiApproveClassroomStudent(token, params.id, studentId);
+      const { response, data } = await apiUpdateClassroomStudentStatus(token, params.id, studentId, status);
       if (!response.ok) {
-        showToast(getApiErrorMessage(response, data, "Failed to approve student."), "error");
+        showToast(getApiErrorMessage(response, data, "Failed to update student status."), "error");
         return;
       }
-      applyStudentStatus(studentId, "approved");
-      showToast("Student approved and enrolled.", "success");
+      applyStudentStatus(studentId, status);
+      showToast(`Student status set to ${status}.`, "success");
     } catch {
-      showToast("Failed to approve student.", "error");
-    } finally {
-      setUpdatingStudentId(null);
-    }
-  };
-
-  const handleRejectStudent = async (studentId: number) => {
-    const token = getStoredToken();
-    if (!token) {
-      showToast("Session expired. Please log in again.", "error");
-      return;
-    }
-
-    setUpdatingStudentId(studentId);
-    try {
-      const { response, data } = await apiRejectClassroomStudent(token, params.id, studentId);
-      if (!response.ok) {
-        showToast(getApiErrorMessage(response, data, "Failed to reject student."), "error");
-        return;
-      }
-      applyStudentStatus(studentId, "rejected");
-      showToast("Student request rejected.", "success");
-    } catch {
-      showToast("Failed to reject student.", "error");
+      showToast("Failed to update student status.", "error");
     } finally {
       setUpdatingStudentId(null);
     }
@@ -226,10 +206,10 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
             accent: "border-t-rose-500",
           },
           {
-            label: "Class Status",
-            value: classStatus,
+            label: "Suspended",
+            value: String(suspendedStudents.length),
             icon: Activity,
-            sub: classroom?.is_active === false ? "Not accepting joins" : "Accepting joins",
+            sub: suspendedStudents.length > 0 ? "Temporarily blocked" : classStatus,
             accent: "border-t-violet-500",
           },
         ].map((stat, i) => (
@@ -262,8 +242,7 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
         <section>
           <StudentList
             students={students}
-            onApproveStudent={handleApproveStudent}
-            onRejectStudent={handleRejectStudent}
+            onChangeStudentStatus={handleChangeStudentStatus}
             isUpdatingStudentId={updatingStudentId}
           />
         </section>

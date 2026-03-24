@@ -277,6 +277,25 @@ export async function apiRejectClassroomStudent(
   return { response, data };
 }
 
+export async function apiUpdateClassroomStudentStatus(
+  token: string | undefined,
+  classId: string | number,
+  studentId: string | number,
+  status: "pending" | "approved" | "suspended" | "rejected"
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}/students/${studentId}/status`, {
+    method: "PATCH",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export function getApiErrorMessage(
   response: Response,
   data: JsonObject,

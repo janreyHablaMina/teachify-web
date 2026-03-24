@@ -12,4 +12,9 @@ export interface EnrolledClassroom extends Classroom {
     id: number;
     fullname: string;
   };
+  pivot?: {
+    status?: "pending" | "approved" | "suspended" | "rejected";
+    created_at?: string;
+  };
+  enrollment_status?: "pending" | "approved" | "suspended" | "rejected";
 }

@@ -6,12 +6,15 @@ import { User, Search, Trash2, Edit3, UserPlus } from "lucide-react";
 
 interface StudentListProps {
   students: Student[];
-  onApproveStudent?: (studentId: number) => void;
-  onRejectStudent?: (studentId: number) => void;
+  onChangeStudentStatus?: (
+    studentId: number,
+    status: "pending" | "approved" | "suspended" | "rejected"
+  ) => void;
   isUpdatingStudentId?: number | null;
 }
 
 const avatars = ["bg-[#99f6e4]", "bg-[#fef08a]", "bg-[#fda4af]", "bg-[#e9d5ff]"];
+type StatusFilter = "all" | "pending" | "approved" | "suspended" | "rejected";
 
 function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -21,18 +24,27 @@ function formatDate(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
-export function StudentList({ students, onApproveStudent, onRejectStudent, isUpdatingStudentId }: StudentListProps) {
+export function StudentList({ students, onChangeStudentStatus, isUpdatingStudentId }: StudentListProps) {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const filterOptions: Array<{ key: StatusFilter; label: string }> = [
+    { key: "all", label: "All" },
+    { key: "pending", label: "Pending" },
+    { key: "approved", label: "Approved" },
+    { key: "suspended", label: "Suspended" },
+    { key: "rejected", label: "Rejected" },
+  ];
 
   const filteredStudents = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return students;
-    return students.filter(
-      (s) => s.fullname.toLowerCase().includes(term) || s.email.toLowerCase().includes(term)
-    );
-  }, [search, students]);
+    return students.filter((s) => {
+      const bySearch = !term || s.fullname.toLowerCase().includes(term) || s.email.toLowerCase().includes(term);
+      const byStatus = statusFilter === "all" || (s.enrollment_status ?? "approved") === statusFilter;
+      return bySearch && byStatus;
+    });
+  }, [search, statusFilter, students]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = useMemo(() => {
@@ -74,18 +86,36 @@ export function StudentList({ students, onApproveStudent, onRejectStudent, isUpd
             Add Student
           </button>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {filterOptions.map((option) => (
+            <button
+              key={option.key}
+              onClick={() => {
+                setStatusFilter(option.key);
+                setCurrentPage(1);
+              }}
+              className={`rounded-lg border px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition ${
+                statusFilter === option.key
+                  ? "border-[#0f172a] bg-[#0f172a] text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
         <p className="m-0 text-[13px] font-bold text-slate-400">{filteredStudents.length} records found</p>
       </div>
 
       {/* Grid Table */}
       <div className="flex flex-col gap-2.5">
         {/* Header */}
-        <div className="grid grid-cols-[2fr_2fr_1.2fr_1.2fr_0.8fr_1fr] items-center px-6 py-3 bg-[#0f172a] rounded-xl text-white text-[10px] font-black uppercase tracking-[0.1em]">
+        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,2fr)_120px_140px_140px_140px] items-center px-6 py-3 bg-[#0f172a] rounded-xl text-white text-[10px] font-black uppercase tracking-[0.1em]">
           <div>Student Profile</div>
           <div>Email</div>
-          <div>Joined</div>
-          <div>Performance</div>
-          <div>Status</div>
+          <div className="text-center">Joined</div>
+          <div className="text-center">Performance</div>
+          <div className="text-center">Status</div>
           <div className="text-right">Actions</div>
         </div>
 
@@ -95,28 +125,30 @@ export function StudentList({ students, onApproveStudent, onRejectStudent, isUpd
             paginatedStudents.map((student, idx) => (
               <div 
                 key={student.id} 
-                className="group grid grid-cols-[2fr_2fr_1.2fr_1.2fr_0.8fr_1fr] items-center rounded-xl border border-slate-900/5 bg-white px-6 py-4 transition-all hover:border-[#99f6e4] hover:bg-slate-50/50 hover:shadow-sm"
+                className="group grid grid-cols-[minmax(0,2fr)_minmax(0,2fr)_120px_140px_140px_140px] items-center rounded-xl border border-slate-900/5 bg-white px-6 py-4 transition-all hover:border-[#99f6e4] hover:bg-slate-50/50 hover:shadow-sm"
               >
                 {/* Profile */}
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-slate-900/10 text-[13px] font-black ${avatars[idx % avatars.length]}`}>
                     {student.fullname.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-[14px] font-extrabold text-[#0f172a] truncate">{student.fullname}</span>
+                  <span className="block truncate text-[14px] font-extrabold text-[#0f172a]">{student.fullname}</span>
                 </div>
 
                 {/* Email */}
-                <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500 truncate pr-4">
-                  {student.email}
+                <div className="min-w-0 pr-4">
+                  <span className="block truncate text-[13px] font-medium text-slate-500">
+                    {student.email}
+                  </span>
                 </div>
 
                 {/* Joined */}
-                <div className="text-[12px] font-bold text-slate-500">
+                <div className="text-center text-[12px] font-bold text-slate-500">
                   {formatDate(student.enrolled_at)}
                 </div>
 
                 {/* Performance */}
-                <div className="flex flex-col gap-1 pr-4">
+                <div className="flex flex-col items-center gap-1">
                   <div className="h-1 w-full max-w-[60px] overflow-hidden rounded-full bg-slate-100">
                     <div 
                       className="h-full bg-[#99f6e4]" 
@@ -127,10 +159,12 @@ export function StudentList({ students, onApproveStudent, onRejectStudent, isUpd
                 </div>
 
                 {/* Status */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${
                     student.enrollment_status === "pending"
                       ? "bg-amber-500"
+                      : student.enrollment_status === "suspended"
+                        ? "bg-violet-500"
                       : student.enrollment_status === "rejected"
                         ? "bg-rose-500"
                         : "bg-emerald-500"
@@ -138,6 +172,8 @@ export function StudentList({ students, onApproveStudent, onRejectStudent, isUpd
                   <span className="text-[12px] font-bold text-[#0f172a]">
                     {student.enrollment_status === "pending"
                       ? "Pending"
+                      : student.enrollment_status === "suspended"
+                        ? "Suspended"
                       : student.enrollment_status === "rejected"
                         ? "Rejected"
                         : "Approved"}
@@ -146,23 +182,23 @@ export function StudentList({ students, onApproveStudent, onRejectStudent, isUpd
 
                 {/* Operations */}
                 <div className="flex justify-end gap-2">
-                  {student.enrollment_status === "pending" && onApproveStudent && onRejectStudent ? (
-                    <>
-                      <button
-                        disabled={isUpdatingStudentId === student.id}
-                        onClick={() => onApproveStudent(student.id)}
-                        className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        disabled={isUpdatingStudentId === student.id}
-                        onClick={() => onRejectStudent(student.id)}
-                        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
-                      >
-                        Reject
-                      </button>
-                    </>
+                  {onChangeStudentStatus ? (
+                    <select
+                      value={student.enrollment_status ?? "approved"}
+                      disabled={isUpdatingStudentId === student.id}
+                      onChange={(e) =>
+                        onChangeStudentStatus(
+                          student.id,
+                          e.target.value as "pending" | "approved" | "suspended" | "rejected"
+                        )
+                      }
+                      className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-bold uppercase tracking-wider text-slate-700 outline-none transition focus:border-[#0f172a] disabled:opacity-50"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="suspended">Suspended</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
                   ) : (
                     <>
                       <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:border-[#0f172a] hover:text-[#0f172a] hover:bg-white shadow-sm">

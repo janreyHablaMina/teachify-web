@@ -32,7 +32,8 @@ export function JoinClassModal({ isOpen, onClose, onSuccess }: JoinClassModalPro
       const { response, data } = await apiJoinClassByCode(token ?? undefined, code.toUpperCase());
       
       if (response.ok) {
-        showToast("Successfully joined the classroom!", "success");
+        const message = typeof data.message === "string" ? data.message : "Join request submitted successfully.";
+        showToast(message, "success");
         onSuccess();
         onClose();
         setCode("");
