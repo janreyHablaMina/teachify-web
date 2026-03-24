@@ -58,7 +58,7 @@ export default function TeacherGeneratePage() {
       const token = getStoredToken();
       if (!token) return;
       setIsHistoryLoading(true);
-      const { response, data } = await apiGetSummaries(token);
+      const { response, data } = await apiGetSummaries<HistorySummaryItem[]>(token);
       if (response.ok) {
         if (data.length > 0 && summaries.length > 0 && data[0].id !== summaries[0].id) {
            setLastAddedId(data[0].id);

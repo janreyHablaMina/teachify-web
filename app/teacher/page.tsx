@@ -40,7 +40,7 @@ export default function TeacherDashboardPage() {
     const fetchClassrooms = async () => {
       try {
         const token = getStoredToken();
-        const { response, data } = await apiGetClassrooms(token ?? undefined);
+        const { response, data } = await apiGetClassrooms<ClassroomSummary[]>(token ?? undefined);
         if (response.ok) {
           setClassrooms(data);
         }

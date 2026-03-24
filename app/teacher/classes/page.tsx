@@ -19,7 +19,7 @@ export default function TeacherClassesPage() {
   const fetchClassrooms = async () => {
     try {
       const token = getStoredToken();
-      const { response, data } = await apiGetClassrooms(token ?? undefined);
+      const { response, data } = await apiGetClassrooms<Classroom[]>(token ?? undefined);
       if (response.ok) {
         setClassrooms(data);
       }

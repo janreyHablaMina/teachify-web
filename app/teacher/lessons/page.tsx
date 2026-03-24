@@ -1,32 +1,29 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
-import { apiGetSummaries } from "@/lib/api/client";
+import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
+import { apiDeleteSummary, apiGetSummaries, getApiErrorMessage } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { Search, BookOpen } from "lucide-react";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { useToast } from "@/components/ui/toast/toast-provider";
-import { LessonCard } from "@/components/teacher/lessons/lesson-card";
+import { LessonCard, type LessonSummary } from "@/components/teacher/lessons/lesson-card";
 import { LessonSkeleton } from "@/components/teacher/lessons/lesson-skeleton";
 import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
 import { DocumentModalActions } from "@/components/teacher/shared/document-modal-actions";
 
-type Summary = {
-  id: number;
-  topic: string;
-  content: string;
-  created_at: string;
-};
-
 export default function TeacherLessonsPage() {
   const { showToast } = useToast();
-  const [summaries, setSummaries] = useState<Summary[]>([]);
+  const [summaries, setSummaries] = useState<LessonSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null);
+  const [selectedSummary, setSelectedSummary] = useState<LessonSummary | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [summaryToDelete, setSummaryToDelete] = useState<LessonSummary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -35,7 +32,7 @@ export default function TeacherLessonsPage() {
         if (!token) return;
 
         // Load Summaries
-        const { response, data } = await apiGetSummaries(token);
+        const { response, data } = await apiGetSummaries<LessonSummary[]>(token);
         if (response.ok) {
           setSummaries(data);
         }
@@ -53,15 +50,49 @@ export default function TeacherLessonsPage() {
     s.topic.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleView = (summary: Summary) => {
+  const handleView = (summary: LessonSummary) => {
     setIsCopied(false);
     setSelectedSummary(summary);
     setIsModalOpen(true);
   };
 
-  const handleDownload = (summary: Summary) => {
+  const handleDownload = (summary: LessonSummary) => {
     downloadSummaryPdf(summary.content);
     showToast("Downloading PDF...", "success");
+  };
+
+  const handleDeleteRequest = (summary: LessonSummary) => {
+    setSummaryToDelete(summary);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!summaryToDelete) return;
+    const token = getStoredToken();
+    if (!token) {
+      showToast("Session expired. Please log in again.", "error");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { response, data } = await apiDeleteSummary(token, summaryToDelete.id);
+      if (!response.ok) {
+        showToast(getApiErrorMessage(response, data, "Failed to delete lesson."), "error");
+        return;
+      }
+
+      setSummaries((prev) => prev.filter((item) => item.id !== summaryToDelete.id));
+      if (selectedSummary?.id === summaryToDelete.id) {
+        setIsModalOpen(false);
+        setSelectedSummary(null);
+      }
+      showToast("Lesson deleted.", "success");
+      setSummaryToDelete(null);
+    } catch {
+      showToast("Failed to delete lesson.", "error");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleCopyToClipboard = async (text: string) => {
@@ -106,8 +137,23 @@ export default function TeacherLessonsPage() {
                 summary={summary}
                 onView={handleView}
                 onDownload={handleDownload}
+                onDelete={handleDeleteRequest}
               />
             ))}
+
+            <Link
+              href="/teacher/generate"
+              className="group flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#0f172a]/20 bg-slate-50/50 p-7 transition-all hover:border-indigo-300 hover:bg-white hover:shadow-lg"
+            >
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#0f172a] bg-white shadow-[4px_4px_0_#c7d2fe] transition-transform group-hover:scale-110">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+              <p className="m-0 text-[15px] font-black text-[#0f172a]">Create New Lesson</p>
+              <p className="mt-1 text-[13px] font-bold text-slate-400">Generate another lesson</p>
+            </Link>
           </div>
         ) : (
           <div className="flex min-h-[400px] flex-col items-center justify-center rounded-[32px] border-4 border-dashed border-slate-200 bg-slate-50/50 p-10 text-center">
@@ -147,6 +193,17 @@ export default function TeacherLessonsPage() {
       >
         <GeneratedDocumentViewer content={selectedSummary?.content ?? ""} />
       </Modal>
+
+      <ConfirmationModal
+        isOpen={summaryToDelete !== null}
+        onClose={() => setSummaryToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete this lesson?"
+        message={`This action cannot be undone. "${summaryToDelete?.topic ?? "This lesson"}" will be permanently removed.`}
+        confirmLabel="Yes, Delete Lesson"
+        isLoading={isDeleting}
+        variant="danger"
+      />
     </section>
   );
 }

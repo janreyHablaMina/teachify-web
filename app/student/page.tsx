@@ -24,9 +24,9 @@ export default function StudentDashboard() {
       const token = getStoredToken();
       if (!token) return;
 
-      const { response, data } = await apiGetClassrooms(token);
+      const { response, data } = await apiGetClassrooms<EnrolledClassroom[]>(token);
       if (response.ok) {
-        setClassrooms(data as EnrolledClassroom[]);
+        setClassrooms(data);
       }
     } catch {
       // Silent error, empty state shown
