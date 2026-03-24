@@ -249,6 +249,34 @@ export async function apiJoinClassByCode(token: string | undefined, joinCode: st
   return { response, data };
 }
 
+export async function apiApproveClassroomStudent(
+  token: string | undefined,
+  classId: string | number,
+  studentId: string | number
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}/students/${studentId}/approve`, {
+    method: "POST",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiRejectClassroomStudent(
+  token: string | undefined,
+  classId: string | number,
+  studentId: string | number
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}/students/${studentId}/reject`, {
+    method: "POST",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export function getApiErrorMessage(
   response: Response,
   data: JsonObject,

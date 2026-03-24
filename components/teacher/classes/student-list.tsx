@@ -2,10 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { Student } from "./types";
-import { User, Mail, Calendar, Search, Trash2, Edit3, UserPlus } from "lucide-react";
+import { User, Search, Trash2, Edit3, UserPlus } from "lucide-react";
 
 interface StudentListProps {
   students: Student[];
+  onApproveStudent?: (studentId: number) => void;
+  onRejectStudent?: (studentId: number) => void;
+  isUpdatingStudentId?: number | null;
 }
 
 const avatars = ["bg-[#99f6e4]", "bg-[#fef08a]", "bg-[#fda4af]", "bg-[#e9d5ff]"];
@@ -18,7 +21,7 @@ function formatDate(dateStr: string) {
   }).format(new Date(dateStr));
 }
 
-export function StudentList({ students }: StudentListProps) {
+export function StudentList({ students, onApproveStudent, onRejectStudent, isUpdatingStudentId }: StudentListProps) {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -125,18 +128,51 @@ export function StudentList({ students }: StudentListProps) {
 
                 {/* Status */}
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span className="text-[12px] font-bold text-[#0f172a]">Active</span>
+                  <span className={`h-2 w-2 rounded-full ${
+                    student.enrollment_status === "pending"
+                      ? "bg-amber-500"
+                      : student.enrollment_status === "rejected"
+                        ? "bg-rose-500"
+                        : "bg-emerald-500"
+                  }`} />
+                  <span className="text-[12px] font-bold text-[#0f172a]">
+                    {student.enrollment_status === "pending"
+                      ? "Pending"
+                      : student.enrollment_status === "rejected"
+                        ? "Rejected"
+                        : "Approved"}
+                  </span>
                 </div>
 
                 {/* Operations */}
                 <div className="flex justify-end gap-2">
-                  <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:border-[#0f172a] hover:text-[#0f172a] hover:bg-white shadow-sm">
-                    <Edit3 className="h-4 w-4" />
-                  </button>
-                  <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:border-red-200 hover:text-red-500 hover:bg-red-50 shadow-sm">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {student.enrollment_status === "pending" && onApproveStudent && onRejectStudent ? (
+                    <>
+                      <button
+                        disabled={isUpdatingStudentId === student.id}
+                        onClick={() => onApproveStudent(student.id)}
+                        className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        disabled={isUpdatingStudentId === student.id}
+                        onClick={() => onRejectStudent(student.id)}
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:border-[#0f172a] hover:text-[#0f172a] hover:bg-white shadow-sm">
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:border-red-200 hover:text-red-500 hover:bg-red-50 shadow-sm">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))

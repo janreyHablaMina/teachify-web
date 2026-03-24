@@ -4,6 +4,7 @@ export type Student = {
   email: string;
   enrolled_at: string;
   avatar_url?: string;
+  enrollment_status?: "pending" | "approved" | "rejected";
 };
 
 export type Classroom = {

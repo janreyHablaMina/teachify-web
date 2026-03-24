@@ -2,59 +2,153 @@
 
 import { StudentList } from "@/components/teacher/classes/student-list";
 import { Student } from "@/components/teacher/classes/types";
-import { Users, GraduationCap, ClipboardList, TrendingUp, UserPlus } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, TrendingUp, UserPlus, Activity } from "lucide-react";
 import Link from "next/link";
-import React, { useState, use, useEffect } from "react";
+import React, { useState, use, useEffect, useMemo } from "react";
 import { InviteStudentsModal } from "@/components/teacher/classes/invite-students-modal";
-import { apiGetClassroom } from "@/lib/api/client";
+import { apiApproveClassroomStudent, apiGetClassroom, apiRejectClassroomStudent, getApiErrorMessage } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
+import { useToast } from "@/components/ui/toast/toast-provider";
 
-const MOCK_STUDENTS: Student[] = [
-  { id: 1, fullname: "Marcus Aurelius", email: "marcus@rome.edu", enrolled_at: "2024-02-01T10:00:00Z" },
-  { id: 2, fullname: "Seneca the Younger", email: "seneca@stoic.org", enrolled_at: "2024-02-05T14:30:00Z" },
-  { id: 3, fullname: "Epictetus Slave", email: "epictetus@freedom.com", enrolled_at: "2024-02-10T09:15:00Z" },
-  { id: 4, fullname: "Hypatia of Alexandria", email: "hypatia@library.gov", enrolled_at: "2024-02-12T11:45:00Z" },
-  { id: 5, fullname: "Thomas Aquinas", email: "summa@theology.va", enrolled_at: "2024-02-15T16:00:00Z" },
-  { id: 6, fullname: "Marie Curie", email: "pierre@radium.fr", enrolled_at: "2024-02-18T10:00:00Z" },
-  { id: 7, fullname: "Isaac Newton", email: "gravity@apple.uk", enrolled_at: "2024-02-20T14:30:00Z" },
-  { id: 8, fullname: "Albert Einstein", email: "relativity@emc2.de", enrolled_at: "2024-02-22T09:15:00Z" },
-];
+type ClassroomDetailsApi = {
+  id: number;
+  name: string;
+  join_code: string;
+  room?: string | null;
+  schedule?: string | null;
+  is_active?: boolean;
+  students?: Array<{
+    id: number;
+    fullname: string;
+    email: string;
+    pivot?: { created_at?: string; status?: "pending" | "approved" | "rejected" };
+    created_at?: string;
+  }>;
+  assignments?: Array<{ id: number; quiz?: { id: number } | null }>;
+};
 
 export default function TeacherClassDetails({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = use(paramsPromise);
+  const { showToast } = useToast();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [classMeta, setClassMeta] = useState<{ name: string; join_code: string } | null>(null);
+  const [classroom, setClassroom] = useState<ClassroomDetailsApi | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [updatingStudentId, setUpdatingStudentId] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadClassMeta() {
+    async function loadClassroom() {
+      setIsLoading(true);
       try {
         const token = getStoredToken();
         if (!token) return;
-        const { response, data } = await apiGetClassroom<{ name?: string; join_code?: string }>(token, params.id);
+
+        const { response, data } = await apiGetClassroom<ClassroomDetailsApi>(token, params.id);
         if (!response.ok || !mounted) return;
-        setClassMeta({
-          name: String(data?.name ?? "Classroom"),
-          join_code: String(data?.join_code ?? ""),
-        });
+        setClassroom(data);
       } catch {
-        // Keep fallback UI
+        // keep fallback UI
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     }
 
-    loadClassMeta();
+    loadClassroom();
+
     return () => {
       mounted = false;
     };
   }, [params.id]);
 
-  const className = classMeta?.name || "Classroom";
-  const joinCode = classMeta?.join_code || "------";
-  
+  const className = classroom?.name || "Classroom";
+  const joinCode = classroom?.join_code || "------";
+
+  const students: Student[] = useMemo(() => {
+    return (classroom?.students ?? []).map((student) => ({
+      id: student.id,
+      fullname: student.fullname,
+      email: student.email,
+      enrolled_at: student.pivot?.created_at || student.created_at || new Date().toISOString(),
+      enrollment_status: (student.pivot?.status as "pending" | "approved" | "rejected" | undefined) ?? "approved",
+    }));
+  }, [classroom?.students]);
+
+  const approvedStudents = students.filter((student) => student.enrollment_status === "approved");
+  const pendingStudents = students.filter((student) => student.enrollment_status === "pending");
+  const totalStudents = approvedStudents.length;
+  const activeQuizzes = (classroom?.assignments ?? []).filter((assignment) => assignment.quiz).length;
+  const avgPerformanceLabel = totalStudents > 0 ? "Awaiting quiz results" : "No student data";
+  const classStatus = classroom?.is_active === false ? "Inactive" : "Active";
+
+  const applyStudentStatus = (studentId: number, status: "approved" | "rejected") => {
+    setClassroom((prev) => {
+      if (!prev?.students) return prev;
+      return {
+        ...prev,
+        students: prev.students.map((student) =>
+          student.id === studentId
+            ? {
+                ...student,
+                pivot: {
+                  ...(student.pivot ?? {}),
+                  status,
+                },
+              }
+            : student
+        ),
+      };
+    });
+  };
+
+  const handleApproveStudent = async (studentId: number) => {
+    const token = getStoredToken();
+    if (!token) {
+      showToast("Session expired. Please log in again.", "error");
+      return;
+    }
+
+    setUpdatingStudentId(studentId);
+    try {
+      const { response, data } = await apiApproveClassroomStudent(token, params.id, studentId);
+      if (!response.ok) {
+        showToast(getApiErrorMessage(response, data, "Failed to approve student."), "error");
+        return;
+      }
+      applyStudentStatus(studentId, "approved");
+      showToast("Student approved and enrolled.", "success");
+    } catch {
+      showToast("Failed to approve student.", "error");
+    } finally {
+      setUpdatingStudentId(null);
+    }
+  };
+
+  const handleRejectStudent = async (studentId: number) => {
+    const token = getStoredToken();
+    if (!token) {
+      showToast("Session expired. Please log in again.", "error");
+      return;
+    }
+
+    setUpdatingStudentId(studentId);
+    try {
+      const { response, data } = await apiRejectClassroomStudent(token, params.id, studentId);
+      if (!response.ok) {
+        showToast(getApiErrorMessage(response, data, "Failed to reject student."), "error");
+        return;
+      }
+      applyStudentStatus(studentId, "rejected");
+      showToast("Student request rejected.", "success");
+    } catch {
+      showToast("Failed to reject student.", "error");
+    } finally {
+      setUpdatingStudentId(null);
+    }
+  };
+
   return (
     <div className="w-full">
-      {/* Breadcrumbs & Simple Back */}
       <div className="mb-8 flex items-center justify-between">
         <nav className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.05em] text-slate-400">
           <Link href="/teacher" className="hover:text-teal-600 transition-colors no-underline">Dashboard</Link>
@@ -63,8 +157,8 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
           <span className="opacity-30">/</span>
           <span className="text-slate-900">Details</span>
         </nav>
-        <Link 
-          href="/teacher/classes" 
+        <Link
+          href="/teacher/classes"
           className="group flex items-center gap-2 text-[13px] font-bold text-slate-500 hover:text-teal-600 transition-colors no-underline"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm transition-all group-hover:border-teal-200 group-hover:bg-teal-50">&larr;</span>
@@ -72,7 +166,6 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
         </Link>
       </div>
 
-      {/* Clean Header */}
       <header className="mb-10 flex flex-wrap items-start justify-between gap-8 border-b border-slate-100 pb-10">
         <div className="flex items-center gap-6">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-teal-600 ring-1 ring-teal-200/50">
@@ -86,17 +179,16 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
               </div>
             </div>
             <p className="mt-1.5 text-[15px] font-medium text-slate-500 max-w-xl">
-              Class Overview and student performance tracking. Managing <span className="font-bold text-slate-900">{MOCK_STUDENTS.length} students</span> currently enrolled.
+              Class overview and student tracking. Managing <span className="font-bold text-slate-900">{totalStudents}</span> enrolled students.
             </p>
           </div>
         </div>
 
-        {/* Compact Actions */}
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setIsInviteModalOpen(true)}
-            disabled={!classMeta?.join_code}
-            className="flex h-11 items-center gap-2 rounded-xl bg-white border-2 border-[#0f172a] px-5 text-[13px] font-black text-[#0f172a] shadow-[4px_4px_0_#99f6e4] transition-all hover:-translate-y-0.5 active:translate-y-0"
+            disabled={!classroom?.join_code}
+            className="flex h-11 items-center gap-2 rounded-xl bg-white border-2 border-[#0f172a] px-5 text-[13px] font-black text-[#0f172a] shadow-[4px_4px_0_#99f6e4] transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <UserPlus className="h-4 w-4" />
             Invite Students
@@ -110,16 +202,42 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
         </div>
       </header>
 
-      {/* Flat Metrics Row */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-12">
+      <div className="grid grid-cols-1 gap-6 mb-12 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Total Students", value: MOCK_STUDENTS.length, icon: Users, sub: "8 active now" },
-          { label: "Active Quizzes", value: "12", icon: ClipboardList, sub: "3 pending review" },
-          { label: "Avg. Performance", value: "88%", icon: TrendingUp, sub: "+4% this month" },
-          { label: "Class Rank", value: "#04", icon: GraduationCap, sub: "Top 10% in school" },
+          {
+            label: "Total Students",
+            value: String(totalStudents),
+            icon: Users,
+            sub: totalStudents > 0 ? "Approved enrollments" : "No approved students",
+            accent: "border-t-teal-500",
+          },
+          {
+            label: "Active Quizzes",
+            value: String(activeQuizzes),
+            icon: ClipboardList,
+            sub: activeQuizzes > 0 ? "Assigned" : "No active quizzes",
+            accent: "border-t-amber-500",
+          },
+          {
+            label: "Pending Requests",
+            value: String(pendingStudents.length),
+            icon: TrendingUp,
+            sub: pendingStudents.length > 0 ? "Needs teacher approval" : "No pending requests",
+            accent: "border-t-rose-500",
+          },
+          {
+            label: "Class Status",
+            value: classStatus,
+            icon: Activity,
+            sub: classroom?.is_active === false ? "Not accepting joins" : "Accepting joins",
+            accent: "border-t-violet-500",
+          },
         ].map((stat, i) => (
-          <div key={i} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:border-teal-200 hover:shadow-md hover:shadow-teal-500/5">
-            <div className="flex items-center justify-between mb-4">
+          <div
+            key={i}
+            className={`group relative overflow-hidden rounded-2xl border border-slate-200 border-t-[5px] bg-white p-6 transition-all hover:border-teal-200 hover:shadow-md hover:shadow-teal-500/5 ${stat.accent}`}
+          >
+            <div className="mb-4 flex items-center justify-between">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
                 <stat.icon className="h-5 w-5" />
               </div>
@@ -134,14 +252,26 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
         ))}
       </div>
 
-      {/* Main Content Area */}
-      <section>
-        <StudentList students={MOCK_STUDENTS} />
-      </section>
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 rounded-xl bg-slate-100 animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <section>
+          <StudentList
+            students={students}
+            onApproveStudent={handleApproveStudent}
+            onRejectStudent={handleRejectStudent}
+            isUpdatingStudentId={updatingStudentId}
+          />
+        </section>
+      )}
 
-      <InviteStudentsModal 
-        isOpen={isInviteModalOpen} 
-        onClose={() => setIsInviteModalOpen(false)} 
+      <InviteStudentsModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
         joinCode={joinCode}
         classId={params.id}
       />
