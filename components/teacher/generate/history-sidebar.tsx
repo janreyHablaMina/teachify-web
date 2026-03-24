@@ -2,11 +2,18 @@
 
 import { Clock, BookOpen, ArrowRight } from "lucide-react";
 
+export type HistorySummaryItem = {
+  id: number;
+  topic: string;
+  content: string;
+  created_at: string;
+};
+
 interface HistorySidebarProps {
-  summaries: any[];
+  summaries: HistorySummaryItem[];
   lastAddedId: number | null;
   isHistoryLoading: boolean;
-  onSummaryClick: (summary: any) => void;
+  onSummaryClick: (summary: HistorySummaryItem) => void;
 }
 
 export function HistorySidebar({

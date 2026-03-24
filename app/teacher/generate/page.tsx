@@ -10,18 +10,17 @@ import { LoadingOverlay } from "@/components/teacher/generate/loading-overlay";
 import type { GeneratePayload, GeneratedQuiz } from "@/components/teacher/generate/types";
 import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
-import { apiMe, apiStoreSummary, apiGetSummaries } from "@/lib/api/client";
-import { parseTeacherProfile } from "@/lib/auth/profile";
+import { apiStoreSummary, apiGetSummaries } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { generateQuizFromFile, generateQuestionsFromSummary, generateSummary } from "@/lib/teacher/generate-service";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
 import { Modal } from "@/components/ui/modal";
-import { Check, Copy, FileText, HelpCircle, BookOpen, ArrowRight, Clock, Download } from "lucide-react";
 import { useToast } from "@/components/ui/toast/toast-provider";
 import { AIEngineHeader } from "@/components/teacher/generate/ai-engine-header";
-import { HistorySidebar } from "@/components/teacher/generate/history-sidebar";
+import { HistorySidebar, type HistorySummaryItem } from "@/components/teacher/generate/history-sidebar";
 import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
+import { DocumentModalActions } from "@/components/teacher/shared/document-modal-actions";
 
 export default function TeacherGeneratePage() {
   const { showToast } = useToast();
@@ -42,7 +41,7 @@ export default function TeacherGeneratePage() {
   const [isCopied, setIsCopied] = useState(false);
   const [summaryTopic, setSummaryTopic] = useState("");
   const [lastAddedId, setLastAddedId] = useState<number | null>(null);
-  const [summaries, setSummaries] = useState<any[]>([]);
+  const [summaries, setSummaries] = useState<HistorySummaryItem[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   // Derive plan from global session to avoid "Free Plan" flash
@@ -318,22 +317,11 @@ export default function TeacherGeneratePage() {
         onClose={() => setIsSummaryModalOpen(false)}
         title="AI Generation Summary"
         footer={
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => handleCopyToClipboard(summaryResult)}
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
-            >
-              {isCopied ? <Check size={16} /> : <Copy size={16} />}
-              {isCopied ? "Copied!" : "Copy Content"}
-            </button>
-            <button
-               onClick={() => handleSaveSummaryAsPdf()}
-               className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#fef08a] px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-yellow-200"
-            >
-              <Download size={16} />
-              Export PDF
-            </button>
-          </div>
+          <DocumentModalActions
+            isCopied={isCopied}
+            onCopy={() => handleCopyToClipboard(summaryResult)}
+            onExportPdf={handleSaveSummaryAsPdf}
+          />
         }
       >
         <GeneratedDocumentViewer content={summaryResult} />
@@ -345,13 +333,11 @@ export default function TeacherGeneratePage() {
         onClose={() => setIsQuestionsModalOpen(false)}
         title="Generated Questions"
         footer={
-          <button
-            onClick={() => handleCopyToClipboard(questionsResult)}
-            className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
-          >
-            {isCopied ? <Check size={16} /> : <Copy size={16} />}
-            {isCopied ? "Copied!" : "Copy Questions"}
-          </button>
+          <DocumentModalActions
+            isCopied={isCopied}
+            onCopy={() => handleCopyToClipboard(questionsResult)}
+            copyLabel="Copy Questions"
+          />
         }
       >
         <GeneratedDocumentViewer content={questionsResult} />

@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { TeacherHeader } from "@/components/teacher/teacher-header";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
-import { apiGetSummaries, apiMe } from "@/lib/api/client";
+import { apiGetSummaries } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
-import { parseTeacherProfile } from "@/lib/auth/profile";
-import { normalizePlanTier, PLAN_CATALOG } from "@/components/teacher/dashboard/plan";
-import { Calendar, Search, BookOpen, Download } from "lucide-react";
+import { Search, BookOpen } from "lucide-react";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { useToast } from "@/components/ui/toast/toast-provider";
-import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import { LessonCard } from "@/components/teacher/lessons/lesson-card";
 import { LessonSkeleton } from "@/components/teacher/lessons/lesson-skeleton";
 import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
+import { DocumentModalActions } from "@/components/teacher/shared/document-modal-actions";
 
 type Summary = {
   id: number;
@@ -24,17 +21,12 @@ type Summary = {
 
 export default function TeacherLessonsPage() {
   const { showToast } = useToast();
-  const session = useTeacherSession();
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Derive plan from global session to avoid "Free Plan" flash
-  const tier = normalizePlanTier(session?.planTier ?? "trial");
-  const planMeta = PLAN_CATALOG[tier];
-  const planTierLabel = tier === "trial" ? "FREE" : tier.toUpperCase();
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -62,6 +54,7 @@ export default function TeacherLessonsPage() {
   );
 
   const handleView = (summary: Summary) => {
+    setIsCopied(false);
     setSelectedSummary(summary);
     setIsModalOpen(true);
   };
@@ -69,6 +62,17 @@ export default function TeacherLessonsPage() {
   const handleDownload = (summary: Summary) => {
     downloadSummaryPdf(summary.content);
     showToast("Downloading PDF...", "success");
+  };
+
+  const handleCopyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setIsCopied(true);
+      showToast("Copied to clipboard!", "success");
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      showToast("Failed to copy.", "error");
+    }
   };
 
   return (
@@ -134,15 +138,11 @@ export default function TeacherLessonsPage() {
         onClose={() => setIsModalOpen(false)}
         title={selectedSummary?.topic ?? "AI Lesson"}
         footer={
-          <div className="flex gap-3">
-            <button
-               onClick={() => selectedSummary && handleDownload(selectedSummary)}
-               className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-[#edf2ff] px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-indigo-700 transition hover:bg-indigo-100"
-            >
-              <Download size={18} />
-              Export as PDF
-            </button>
-          </div>
+          <DocumentModalActions
+            isCopied={isCopied}
+            onCopy={() => handleCopyToClipboard(selectedSummary?.content ?? "")}
+            onExportPdf={() => selectedSummary && handleDownload(selectedSummary)}
+          />
         }
       >
         <GeneratedDocumentViewer content={selectedSummary?.content ?? ""} />
