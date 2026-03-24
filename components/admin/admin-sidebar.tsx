@@ -35,6 +35,20 @@ export function AdminSidebar({ groupedNav }: AdminSidebarProps) {
             <div className="grid gap-2">
               {items.map((item) => {
                 const isActive = pathname === item.href;
+                const themes: Record<string, { bg: string; indicator: string; hoverBg: string }> = {
+                  overview: { bg: "bg-blue-500", indicator: "bg-blue-500", hoverBg: "group-hover:bg-blue-500" },
+                  users: { bg: "bg-emerald-500", indicator: "bg-emerald-500", hoverBg: "group-hover:bg-emerald-500" },
+                  schools: { bg: "bg-indigo-500", indicator: "bg-indigo-500", hoverBg: "group-hover:bg-indigo-500" },
+                  subscriptions: { bg: "bg-amber-500", indicator: "bg-amber-500", hoverBg: "group-hover:bg-amber-500" },
+                  quizzes: { bg: "bg-rose-500", indicator: "bg-rose-500", hoverBg: "group-hover:bg-rose-500" },
+                  ai: { bg: "bg-violet-500", indicator: "bg-violet-500", hoverBg: "group-hover:bg-violet-500" },
+                  revenue: { bg: "bg-orange-500", indicator: "bg-orange-500", hoverBg: "group-hover:bg-orange-500" },
+                  system: { bg: "bg-cyan-500", indicator: "bg-cyan-500", hoverBg: "group-hover:bg-cyan-500" },
+                  settings: { bg: "bg-slate-700", indicator: "bg-slate-700", hoverBg: "group-hover:bg-slate-700" },
+                  default: { bg: "bg-slate-900", indicator: "bg-slate-900", hoverBg: "group-hover:bg-slate-900" },
+                };
+                const theme = themes[item.icon] ?? themes.default;
+
                 return (
                   <Link
                     key={item.label}
@@ -46,13 +60,13 @@ export function AdminSidebar({ groupedNav }: AdminSidebarProps) {
                     }`}
                   >
                     {isActive ? (
-                      <span className="absolute -left-2 top-2 bottom-2 w-[3px] rounded-full bg-teal-500" />
+                      <span className={`absolute -left-2 top-2 bottom-2 w-[3px] rounded-full ${theme.indicator}`} />
                     ) : null}
                     <span
-                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-[#0f172a] bg-white text-[#0f172a] shadow-[2px_2px_0_#0f172a] transition-colors ${
+                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-[1.5px] border-[#0f172a] transition-all duration-300 ${
                         isActive
-                          ? "border-teal-600 bg-[#99f6e4] text-teal-700"
-                          : "group-hover:border-amber-400 group-hover:bg-[#fef08a] group-hover:text-amber-700"
+                          ? `${theme.bg} text-white shadow-[3px_3px_0_#0f172a]`
+                          : `bg-white text-[#0f172a] ${theme.hoverBg} group-hover:text-white group-hover:shadow-[3px_3px_0_#0f172a]`
                       }`}
                     >
                       <span className="h-[18px] w-[18px]">
