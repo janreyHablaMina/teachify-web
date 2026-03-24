@@ -10,11 +10,27 @@ import { EnrolledClassroom } from "@/components/student/types";
 import { JoinClassModal } from "@/components/student/join-class-modal";
 import { useStudent } from "@/components/student/student-context";
 
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function buildFocusLabel(isLoading: boolean, classCount: number, streakDays: number): string {
+  if (isLoading) return "Syncing your dashboard...";
+  if (classCount === 0) return "Join Your First Class";
+  if (streakDays <= 1) return "Start A Study Streak";
+  if (streakDays < 5) return `Keep Your ${streakDays}-Day Streak`;
+  return "Review + Quiz Practice";
+}
+
 export default function StudentDashboard() {
   const { session } = useStudent();
   const [classrooms, setClassrooms] = useState<EnrolledClassroom[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [currentStreakDays, setCurrentStreakDays] = useState(0);
 
   const firstName = session?.fullname?.split(" ")[0] || "Student";
 
@@ -36,6 +52,42 @@ export default function StudentDashboard() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  useEffect(() => {
+    if (!session?.id) return;
+
+    const storageKey = `student_streak_days_${session.id}`;
+    const todayKey = toLocalDateKey(new Date());
+
+    let recordedDays: string[] = [];
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) {
+        recordedDays = parsed.filter((value): value is string => typeof value === "string");
+      }
+    } catch {
+      recordedDays = [];
+    }
+
+    const daySet = new Set(recordedDays);
+    daySet.add(todayKey);
+
+    const normalizedDays = Array.from(daySet).sort();
+    window.localStorage.setItem(storageKey, JSON.stringify(normalizedDays));
+
+    let streak = 0;
+    const checkDate = new Date();
+    while (daySet.has(toLocalDateKey(checkDate))) {
+      streak += 1;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    setCurrentStreakDays(streak);
+  }, [session?.id]);
+
+  const focusLabel = buildFocusLabel(isDataLoading, classrooms.length, currentStreakDays);
+  const streakLabel = `${currentStreakDays} ${currentStreakDays === 1 ? "Day" : "Days"}`;
 
   return (
     <div className="w-full space-y-8">
@@ -74,11 +126,11 @@ export default function StudentDashboard() {
         </article>
         <article className="rounded-2xl border-2 border-[#0f172a]/10 border-t-[5px] border-t-amber-500 bg-white p-5">
           <p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">Today&apos;s Focus</p>
-          <p className="mt-2 text-[20px] font-black leading-none text-[#0f172a]">Review + Quiz Practice</p>
+          <p className="mt-2 text-[20px] font-black leading-none text-[#0f172a]">{focusLabel}</p>
         </article>
         <article className="rounded-2xl border-2 border-[#0f172a]/10 border-t-[5px] border-t-violet-500 bg-white p-5">
           <p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">Current Streak</p>
-          <p className="mt-2 text-[30px] font-black leading-none text-[#0f172a]">5 Days</p>
+          <p className="mt-2 text-[30px] font-black leading-none text-[#0f172a]">{streakLabel}</p>
         </article>
       </section>
 

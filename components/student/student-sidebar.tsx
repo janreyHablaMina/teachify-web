@@ -11,6 +11,28 @@ interface StudentSidebarProps {
   userName?: string;
 }
 
+function toTitleCase(value: string): string {
+  return value
+    .split(" ")
+    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : ""))
+    .join(" ")
+    .trim();
+}
+
+function getCompactDisplayName(name?: string): string {
+  const raw = (name ?? "").trim();
+  if (!raw) return "ENROLLED";
+
+  const firstToken = raw.split(/\s+/)[0] ?? "";
+  if (firstToken.includes("@")) {
+    const local = firstToken.split("@")[0] ?? "";
+    const cleaned = local.replace(/[._-]+/g, " ").trim();
+    return cleaned ? toTitleCase(cleaned) : "ENROLLED";
+  }
+
+  return toTitleCase(firstToken);
+}
+
 export function StudentSidebar({ groupedNav, userName }: StudentSidebarProps) {
   const pathname = usePathname();
 
@@ -85,7 +107,7 @@ export function StudentSidebar({ groupedNav, userName }: StudentSidebarProps) {
       <div className="mt-auto mb-3 rounded-lg border-2 border-[#0f172a] bg-white p-3 shadow-[4px_4px_0_rgba(0,0,0,0.1)] [transform:rotate(1deg)]">
         <p className="text-[11px] font-normal uppercase tracking-[0.1em] text-slate-600">Student Account</p>
         <span className="mt-1 inline-flex rounded-full border-[1.5px] border-[#0f172a] bg-indigo-100 px-2.5 py-1 text-xs font-normal text-[#0f172a]">
-          {userName?.trim() ? userName : "ENROLLED"}
+          {getCompactDisplayName(userName)}
         </span>
       </div>
     </aside>

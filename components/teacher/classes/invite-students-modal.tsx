@@ -29,7 +29,7 @@ export function InviteStudentsModal({ isOpen, onClose, joinCode, classId }: Invi
 
   if (!isOpen) return null;
 
-  const inviteUrl = `${window.location.origin}/student/register?code=${joinCode}`;
+  const inviteUrl = `${window.location.origin}/student/register?code=${encodeURIComponent(joinCode)}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteUrl);

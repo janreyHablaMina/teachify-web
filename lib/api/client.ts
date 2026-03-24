@@ -93,7 +93,7 @@ export async function apiStoreSummary(
     body: JSON.stringify(payload),
   });
 
-  const data = (await parseJson(response)) as T;
+  const data = await parseJson(response);
   return { response, data };
 }
 
@@ -104,6 +104,28 @@ export async function apiDeleteSummary(
   const response = await fetch(`${API_BASE_URL}/api/summaries/${summaryId}`, {
     method: "DELETE",
     headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiRegisterStudent(payload: {
+  firstname: string;
+  middlename?: string;
+  lastname: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+  join_code: string;
+}): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/register-student`, {
+    method: "POST",
+    headers: {
+      ...buildHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
   });
 
   const data = await parseJson(response);
@@ -157,6 +179,19 @@ export async function apiGenerateQuizFromFile(payload: {
 
 export async function apiGetClassrooms<T = unknown>(token?: string): Promise<{ response: Response; data: T }> {
   const response = await fetch(`${API_BASE_URL}/api/classrooms`, {
+    method: "GET",
+    headers: buildHeaders(token),
+  });
+
+  const data = (await parseJson(response)) as T;
+  return { response, data };
+}
+
+export async function apiGetClassroom<T = unknown>(
+  token: string | undefined,
+  classId: string | number
+): Promise<{ response: Response; data: T }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}`, {
     method: "GET",
     headers: buildHeaders(token),
   });

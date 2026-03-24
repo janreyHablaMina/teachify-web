@@ -29,6 +29,47 @@ function getInitial(name?: string): string {
   return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
 }
 
+function toTitleCase(value: string): string {
+  return value
+    .split(" ")
+    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : ""))
+    .join(" ")
+    .trim();
+}
+
+function getDisplayName(name?: string, email?: string): string {
+  const raw = (name ?? "").trim();
+  const rawEmail = (email ?? "").trim().toLowerCase();
+
+  const normalizeFromEmail = (value: string): string => {
+    const local = value.split("@")[0] ?? "";
+    const cleaned = local.replace(/[._-]+/g, " ").trim();
+    return cleaned ? toTitleCase(cleaned) : "Student";
+  };
+
+  if (!raw) {
+    return rawEmail ? normalizeFromEmail(rawEmail) : "Student";
+  }
+
+  const tokens = raw.split(/\s+/).filter(Boolean);
+  const unique = Array.from(new Set(tokens.map((token) => token.toLowerCase())));
+  const firstToken = tokens[0] ?? "";
+
+  if (firstToken.includes("@")) {
+    return normalizeFromEmail(firstToken);
+  }
+
+  if (unique.length === 1 && firstToken.includes("@")) {
+    return normalizeFromEmail(firstToken);
+  }
+
+  if (unique.length === 1 && tokens.length > 1) {
+    return toTitleCase(tokens[0]);
+  }
+
+  return toTitleCase(raw);
+}
+
 export function StudentTopbar({
   monthLabel,
   day,
@@ -43,7 +84,7 @@ export function StudentTopbar({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  const displayName = userName?.trim() ? userName.trim() : "Student";
+  const displayName = getDisplayName(userName, userEmail);
   const displayEmail = userEmail?.trim() ? userEmail.trim() : "";
   const displayInitial = getInitial(displayName);
 

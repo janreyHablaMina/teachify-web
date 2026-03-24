@@ -3,7 +3,7 @@
 import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiRegister, apiJoinClassByCode, getApiErrorMessage } from "@/lib/api/client";
+import { apiRegister, apiRegisterStudent, getApiErrorMessage } from "@/lib/api/client";
 import { storeToken } from "@/lib/auth/session";
 import { GraduationCap, User, Mail, Lock, ShieldCheck, ArrowRight } from "lucide-react";
 import { useToast } from "@/components/ui/toast/toast-provider";
@@ -13,6 +13,7 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const joinCode = searchParams.get("code") || "";
+  const normalizedJoinCode = joinCode.trim().toUpperCase();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,35 +38,47 @@ function RegisterForm() {
     const fullname = `${firstName} ${middleName ? middleName + " " : ""}${lastName}`;
 
     try {
-      // 1. Register Student
-      const { response: regRes, data: regData } = await apiRegister({
-        fullname,
-        email,
-        password,
-        password_confirmation: confirmPassword,
-        role: "student",
-      });
+      const registrationRequest = normalizedJoinCode
+        ? apiRegisterStudent({
+            firstname: firstName,
+            middlename: middleName || undefined,
+            lastname: lastName,
+            email,
+            password,
+            password_confirmation: confirmPassword,
+            join_code: normalizedJoinCode,
+          })
+        : apiRegister({
+            fullname,
+            email,
+            password,
+            password_confirmation: confirmPassword,
+            role: "student",
+          });
+
+      const { response: regRes, data: regData } = await registrationRequest;
 
       if (!regRes.ok) {
         throw new Error(getApiErrorMessage(regRes, regData, "Registration failed"));
       }
 
-      const token = regData.token as string;
+      const token =
+        typeof regData.token === "string"
+          ? regData.token
+          : typeof regData.access_token === "string"
+            ? regData.access_token
+            : "";
+
       if (token) {
         storeToken(token);
       }
 
-      // 2. Automatically join class if code is present
-      if (joinCode) {
-        const { response: joinRes } = await apiJoinClassByCode(token, joinCode);
-        if (joinRes.ok) {
-          showToast(`Successfully joined the class!`, "success");
-        } else {
-          showToast("Registered, but failed to join class automatically.", "error");
-        }
-      }
-
-      showToast("Student account created successfully!", "success");
+      showToast(
+        normalizedJoinCode
+          ? "Student account created and class joined successfully!"
+          : "Student account created successfully!",
+        "success"
+      );
       // Redirect to student dashboard
       router.replace("/student");
     } catch (error) {

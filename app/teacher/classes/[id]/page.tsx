@@ -4,8 +4,10 @@ import { StudentList } from "@/components/teacher/classes/student-list";
 import { Student } from "@/components/teacher/classes/types";
 import { Users, GraduationCap, ClipboardList, TrendingUp, UserPlus } from "lucide-react";
 import Link from "next/link";
-import React, { useState, use } from "react";
+import React, { useState, use, useEffect } from "react";
 import { InviteStudentsModal } from "@/components/teacher/classes/invite-students-modal";
+import { apiGetClassroom } from "@/lib/api/client";
+import { getStoredToken } from "@/lib/auth/session";
 
 const MOCK_STUDENTS: Student[] = [
   { id: 1, fullname: "Marcus Aurelius", email: "marcus@rome.edu", enrolled_at: "2024-02-01T10:00:00Z" },
@@ -21,8 +23,34 @@ const MOCK_STUDENTS: Student[] = [
 export default function TeacherClassDetails({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = use(paramsPromise);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const className = "Section 10A - Physics"; // This would come from API
-  const joinCode = "PH-9921"; // This would come from API
+  const [classMeta, setClassMeta] = useState<{ name: string; join_code: string } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadClassMeta() {
+      try {
+        const token = getStoredToken();
+        if (!token) return;
+        const { response, data } = await apiGetClassroom<{ name?: string; join_code?: string }>(token, params.id);
+        if (!response.ok || !mounted) return;
+        setClassMeta({
+          name: String(data?.name ?? "Classroom"),
+          join_code: String(data?.join_code ?? ""),
+        });
+      } catch {
+        // Keep fallback UI
+      }
+    }
+
+    loadClassMeta();
+    return () => {
+      mounted = false;
+    };
+  }, [params.id]);
+
+  const className = classMeta?.name || "Classroom";
+  const joinCode = classMeta?.join_code || "------";
   
   return (
     <div className="w-full">
@@ -67,6 +95,7 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsInviteModalOpen(true)}
+            disabled={!classMeta?.join_code}
             className="flex h-11 items-center gap-2 rounded-xl bg-white border-2 border-[#0f172a] px-5 text-[13px] font-black text-[#0f172a] shadow-[4px_4px_0_#99f6e4] transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <UserPlus className="h-4 w-4" />
