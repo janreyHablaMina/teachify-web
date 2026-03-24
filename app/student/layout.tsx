@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { apiMe } from "@/lib/api/client";
 import { getRouteForRole, getStoredToken } from "@/lib/auth/session";
 import { StudentSidebar } from "@/components/student/student-sidebar";
@@ -13,6 +13,8 @@ import { StudentProvider } from "@/components/student/student-context";
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isInviteRegistrationRoute = pathname === "/student/register";
   const [now, setNow] = useState(new Date());
   const [authReady, setAuthReady] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -24,6 +26,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   }, []);
 
   useEffect(() => {
+    if (isInviteRegistrationRoute) {
+      setAuthReady(true);
+      setIsAuthorized(true);
+      return;
+    }
+
     let mounted = true;
 
     async function verifyAuth() {
@@ -33,7 +41,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
         if (!response.ok) throw new Error("Unauthorized");
         
-        const apiData = data as any;
+        const apiData = data as { user?: StudentSession & { role?: string } };
         const role = String(apiData?.user?.role ?? "");
 
         if (role !== "student") {
@@ -59,7 +67,11 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     return () => {
       mounted = false;
     };
-  }, [router]);
+  }, [isInviteRegistrationRoute, router]);
+
+  if (isInviteRegistrationRoute) {
+    return <>{children}</>;
+  }
 
   if (!authReady || !isAuthorized) {
     return (

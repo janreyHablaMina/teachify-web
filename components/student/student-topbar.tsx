@@ -76,14 +76,14 @@ export function StudentTopbar({
 
   return (
     <>
-      <header className="sticky top-0 z-40 mb-2 border-b-[3.5px] border-[#0f172a] bg-white px-4 py-4 shadow-[0_8px_0_#818cf8] sm:px-6 lg:px-10">
+      <header className="sticky top-0 z-40 mb-2 border-b-[3.5px] border-[#0f172a] bg-white px-4 py-4 shadow-[0_8px_0_#c7d2fe] sm:px-6 lg:px-10">
         <div className="flex flex-wrap items-center justify-between gap-4 lg:gap-10">
           <div className="flex items-center gap-5">
             <div className="h-12 w-[3.5px] rounded-full bg-[#0f172a] [transform:rotate(-1.5deg)]" />
             <div>
-              <p className="m-0 text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">Student Account <span className="ml-[6px] inline-block rounded-[3px] border border-[#0f172a] bg-indigo-500 px-[6px] py-[1px] text-[8px] font-black text-white shadow-[1.5px_1.5px_0_#0f172a]">ACTIVE</span></p>
+              <p className="m-0 text-[11px] font-normal uppercase tracking-[0.1em] text-slate-600">Student Account <span className="ml-[6px] inline-block rounded-[3px] border border-[#0f172a] bg-[#ddd6fe] px-[6px] py-[1px] text-[8px] font-black text-[#0f172a] shadow-[1.5px_1.5px_0_#a78bfa]">ENROLLED</span></p>
               <h3 className="m-0 text-2xl font-black uppercase leading-none tracking-[-0.05em] text-[#0f172a]">{displayName}</h3>
-              <small className={`${gochiHand.className} mt-2 inline-block rounded bg-indigo-50 px-2 py-0.5 text-sm font-normal text-indigo-700 [transform:rotate(1deg)] shadow-[2px_2px_0_rgba(15,23,42,0.05)]`}>
+              <small className={`${gochiHand.className} mt-2 inline-block rounded bg-[#e0e7ff] px-2 py-0.5 text-sm font-normal text-slate-600 [transform:rotate(1deg)]`}>
                 Learning, growing, and mastering every quiz.
               </small>
             </div>
@@ -100,11 +100,15 @@ export function StudentTopbar({
                 </span>
               </div>
 
-              <div className="relative flex flex-col rounded border-2 border-[#0f172a] bg-white px-3 py-1.5 shadow-[4px_4px_0_#818cf8] [transform:rotate(1deg)]">
-                 <div className="mb-0.5 flex items-center gap-1.5 text-[9px] font-normal tracking-[0.05em] text-slate-600">
-                    <span className="h-1.5 w-1.5 rounded-full border border-[#0f172a] bg-green-500" />
-                    LIVE CLOCK {headerDate}
-                  </div>
+              <div className="relative flex flex-col rounded border-2 border-[#0f172a] bg-white px-3 py-1.5 shadow-[4px_4px_0_#99f6e4] [transform:rotate(1deg)]">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -top-2 left-[30%] -z-10 h-4 w-10 bg-[#c7d2fe] opacity-50 [transform:rotate(-4deg)]"
+                />
+                <div className="mb-0.5 flex items-center gap-1.5 text-[9px] font-normal tracking-[0.05em] text-slate-600">
+                  <span className="h-1.5 w-1.5 rounded-full border border-[#0f172a] bg-green-500" />
+                  LIVE CLOCK {headerDate}
+                </div>
                 <strong className="text-[18px] font-normal leading-tight tracking-[-0.02em] text-[#0f172a]">{headerTime}</strong>
               </div>
             </div>
@@ -113,11 +117,11 @@ export function StudentTopbar({
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="rounded-full border-2 border-[#0f172a] bg-white p-1 shadow-[4px_4px_0_#0f172a] transition hover:-translate-x-0.5 hover:-translate-y-0.5"
+                className="rounded-full border-2 border-[#0f172a] bg-white p-1 shadow-[4px_4px_0_#a78bfa] transition hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-300 text-base font-black text-[#0f172a] border-[1.5px] border-[#0f172a]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c4b5fd] text-base font-black text-[#0f172a]">
                   {displayInitial}
-                </div>
+                </span>
               </button>
 
               {isDropdownOpen && (
@@ -125,14 +129,24 @@ export function StudentTopbar({
                   <div className="mb-2 border-b-[2px] border-[#0f172a] pb-4 pt-4 px-3">
                     <p className="m-0 text-[18px] font-[950] tracking-tight text-[#0f172a]">{displayName}</p>
                     {displayEmail ? <p className="m-0 mt-1 text-[13px] font-bold text-slate-500">{displayEmail}</p> : null}
-                    <span className="mt-3 inline-block rounded-full border-[1.5px] border-[#0f172a] bg-indigo-400 px-3 py-1 text-[11px] font-black text-[#0f172a] leading-tight shadow-[2px_2px_0_#0f172a]">
+                    <span className="mt-3 inline-block rounded-full border-[1.5px] border-[#0f172a] bg-[#c7d2fe] px-3 py-1 text-[11px] font-black text-[#0f172a] leading-tight">
                       Enrolled Student
                     </span>
                   </div>
                   
                   <div className="flex flex-col gap-1">
-                    <button type="button" className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] font-extrabold text-[#0f172a] transition hover:bg-slate-50 hover:translate-x-1">My Dashboard</button>
-                    <button type="button" className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] font-extrabold text-[#0f172a] transition hover:bg-slate-50 hover:translate-x-1">Certificates</button>
+                    <button 
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] font-extrabold text-[#0f172a] transition hover:bg-[#99f6e4] hover:translate-x-1"
+                    >
+                      My Dashboard
+                    </button>
+                    <button 
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] font-extrabold text-[#0f172a] transition hover:bg-[#99f6e4] hover:translate-x-1"
+                    >
+                      Certificates
+                    </button>
                     <button 
                       className="mt-2 border-t-[2px] border-[#0f172a] pt-3 flex w-full items-center px-3 py-2.5 text-left text-[14px] font-black text-red-500 transition hover:bg-red-50"
                       onClick={() => {
@@ -155,7 +169,7 @@ export function StudentTopbar({
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
         title="Sign out now?"
-        message="Take a break! You can always come back to master more quizzes."
+        message="You will need to log in again to access your dashboard."
         confirmLabel="Yes, sign out"
         isLoading={isSigningOut}
         variant="danger"

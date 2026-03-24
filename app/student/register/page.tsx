@@ -57,7 +57,7 @@ function RegisterForm() {
 
       // 2. Automatically join class if code is present
       if (joinCode) {
-        const { response: joinRes, data: joinData } = await apiJoinClassByCode(token, joinCode);
+        const { response: joinRes } = await apiJoinClassByCode(token, joinCode);
         if (joinRes.ok) {
           showToast(`Successfully joined the class!`, "success");
         } else {
