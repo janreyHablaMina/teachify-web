@@ -286,7 +286,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
             <button
               type="submit"
               disabled={isLoading || !file || !anySelected || !title}
-              className="relative group mt-2 flex items-center justify-center gap-3 overflow-hidden rounded-[20px] border-2 border-emerald-600 bg-[#99f6e4] py-5 text-[16px] font-black uppercase tracking-[0.1em] text-emerald-900 shadow-[8px_8px_0_#10b981] transition-all hover:-translate-y-1 hover:bg-[#5eead4] active:translate-y-1 active:shadow-none disabled:transform-none disabled:opacity-50 disabled:shadow-none"
+              className="relative group mt-2 flex items-center justify-center gap-2 overflow-hidden rounded-xl border border-emerald-300 bg-emerald-100 py-4 text-[14px] font-black uppercase tracking-[0.08em] text-emerald-900 shadow-sm transition hover:bg-emerald-200 disabled:opacity-50"
             >
               {isLoading ? (
                 <div className="flex items-center gap-3">
@@ -296,7 +296,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
               ) : (
                 <>
                   <span className="z-10">Generate Assessment Now</span>
-                  <ChevronRight size={22} strokeWidth={3} className="z-10 transition-transform group-hover:translate-x-2" />
+                  <ChevronRight size={18} strokeWidth={3} className="z-10 transition-transform group-hover:translate-x-1" />
                   <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </>
               )}

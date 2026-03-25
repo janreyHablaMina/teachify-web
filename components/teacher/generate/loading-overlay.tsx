@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 interface LoadingOverlayProps {
   isLoading: boolean;
+  onCancel?: () => void;
 }
 
 const LOADING_MESSAGES = [
@@ -15,7 +16,7 @@ const LOADING_MESSAGES = [
   "Almost there, finalizing your quiz...",
 ];
 
-export function LoadingOverlay({ isLoading }: LoadingOverlayProps) {
+export function LoadingOverlay({ isLoading, onCancel }: LoadingOverlayProps) {
   const [msgIdx, setMsgIdx] = useState(0);
 
   useEffect(() => {
@@ -47,6 +48,15 @@ export function LoadingOverlay({ isLoading }: LoadingOverlayProps) {
           </div>
 
           <p className="m-0 text-[11px] font-black uppercase tracking-widest text-slate-400">This usually takes 10-15 seconds</p>
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+            >
+              Cancel Generation
+            </button>
+          ) : null}
         </div>
       </div>
 

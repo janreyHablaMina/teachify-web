@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { PLAN_CATALOG, normalizePlanTier } from "@/components/teacher/dashboard/plan";
 import { UsageStats } from "@/components/teacher/generate/usage-stats";
@@ -84,6 +85,7 @@ function orderQuestions(quiz: GeneratedQuiz): GeneratedQuiz["questions"] {
 export default function TeacherGeneratePage() {
   const { showToast } = useToast();
   const session = useTeacherSession();
+  const activeGenerationAbortControllerRef = useRef<AbortController | null>(null);
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
@@ -186,6 +188,7 @@ export default function TeacherGeneratePage() {
     if (questionTypeFilter === "all") return orderedQuizPreviewQuestions;
     return orderedQuizPreviewQuestions.filter((question) => question.type === questionTypeFilter);
   }, [orderedQuizPreviewQuestions, questionTypeFilter]);
+  const recentGeneratedPreview = useMemo(() => recentGeneratedQuizzes.slice(0, 3), [recentGeneratedQuizzes]);
 
   const openQuizPreview = (quiz: GeneratedQuiz) => {
     setQuizToPreview(quiz);
@@ -193,18 +196,26 @@ export default function TeacherGeneratePage() {
     setIsQuizModalOpen(true);
   };
 
+  const handleCancelGeneration = () => {
+    activeGenerationAbortControllerRef.current?.abort();
+  };
+
   const handleGenerate = async (data: GeneratePayload) => {
     setIsLoading(true);
     setFileGenerateError("");
     setIsQuizModalOpen(false);
+    const abortController = new AbortController();
+    activeGenerationAbortControllerRef.current = abortController;
 
     try {
-      const quiz = await generateQuizFromFile(data, maxQuestions);
+      const quiz = await generateQuizFromFile(data, maxQuestions, abortController.signal);
       setGeneratedQuiz(quiz);
       setQuizToPreview(quiz);
-      addGeneratedQuizToStore(quiz);
+      const storedQuiz = addGeneratedQuizToStore(quiz);
       setRecentGeneratedQuizzes((prev) => {
-        const next = [{ id: Date.now(), createdAt: new Date().toISOString(), quiz }, ...prev].slice(0, 6);
+        const next = [{ id: storedQuiz.id, createdAt: storedQuiz.created_at, quiz }, ...prev]
+          .filter((entry, index, list) => list.findIndex((candidate) => candidate.id === entry.id) === index)
+          .slice(0, 6);
         if (typeof window !== "undefined") {
           window.localStorage.setItem(RECENT_GENERATED_QUIZZES_KEY, JSON.stringify(next));
         }
@@ -212,11 +223,21 @@ export default function TeacherGeneratePage() {
       });
       showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");
     } catch (error) {
+      const isAbortError =
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (error instanceof Error && error.name === "AbortError");
+      if (isAbortError) {
+        showToast("Generation canceled.", "success");
+        return;
+      }
       const message = error instanceof Error ? error.message : "Failed to generate quiz from file.";
       setFileGenerateError(message);
       setGeneratedQuiz(null);
       setIsQuizModalOpen(false);
     } finally {
+      if (activeGenerationAbortControllerRef.current === abortController) {
+        activeGenerationAbortControllerRef.current = null;
+      }
       setIsLoading(false);
     }
   };
@@ -342,6 +363,12 @@ export default function TeacherGeneratePage() {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      activeGenerationAbortControllerRef.current?.abort();
+    };
+  }, []);
+
   return (
     <section className="w-full">
       <TeacherHeader
@@ -375,34 +402,42 @@ export default function TeacherGeneratePage() {
           ) : null}
 
           {generatedQuiz ? (
-            <article className="mt-8 rounded-[18px] border-2 border-dashed border-slate-900/35 bg-teal-50 p-6">
+            <article className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h4 className="m-0 text-[22px] font-black text-[#0f172a]">{generatedQuiz.title}</h4>
-                  <p className="mt-1 text-[13px] font-bold uppercase tracking-[0.08em] text-slate-600">
+                  <h4 className="m-0 text-[20px] font-black text-[#0f172a]">{generatedQuiz.title}</h4>
+                  <p className="mt-1 text-[12px] font-bold uppercase tracking-[0.08em] text-slate-500">
                     Difficulty: {generatedQuiz.difficulty} | {generatedQuiz.questions.length} Questions
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => openQuizPreview(generatedQuiz)}
-                  className="rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[12px] font-black uppercase tracking-[0.08em] text-slate-900 shadow-[3px_3px_0_#0f172a] transition hover:-translate-y-0.5 hover:bg-slate-50 active:translate-y-0 active:shadow-[2px_2px_0_#0f172a]"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
                 >
                   View Questions
                 </button>
               </div>
-              <p className="m-0 text-[13px] font-semibold text-slate-700">
+              <p className="m-0 text-[13px] font-semibold text-slate-600">
                 Questions are ready. Click <span className="font-black">View Questions</span> to open the full set.
               </p>
             </article>
           ) : null}
 
           {recentGeneratedQuizzes.length > 0 ? (
-            <article className="mt-5 rounded-[16px] border border-slate-200 bg-white p-4">
-              <h5 className="m-0 text-[13px] font-black uppercase tracking-[0.08em] text-slate-500">Recent Generated</h5>
+            <article className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <h5 className="m-0 text-[13px] font-black uppercase tracking-[0.08em] text-slate-500">Recent Generated</h5>
+                <Link
+                  href="/teacher/quizzes"
+                  className="text-[11px] font-black uppercase tracking-[0.08em] text-emerald-700 hover:text-emerald-800"
+                >
+                  See all
+                </Link>
+              </div>
               <div className="mt-3 grid gap-2">
-                {recentGeneratedQuizzes.map((entry) => (
-                  <div key={entry.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                {recentGeneratedPreview.map((entry) => (
+                  <div key={entry.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2.5">
                     <div>
                       <p className="m-0 text-[14px] font-black text-slate-900">{entry.quiz.title}</p>
                       <p className="m-0 text-[11px] font-bold uppercase tracking-[0.06em] text-slate-500">
@@ -412,7 +447,7 @@ export default function TeacherGeneratePage() {
                     <button
                       type="button"
                       onClick={() => openQuizPreview(entry.quiz)}
-                      className="rounded-lg border-2 border-slate-900 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 shadow-[2px_2px_0_#0f172a] transition hover:-translate-y-0.5 hover:bg-slate-50 active:translate-y-0 active:shadow-[1px_1px_0_#0f172a]"
+                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.06em] text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
                     >
                       View
                     </button>
@@ -485,7 +520,7 @@ export default function TeacherGeneratePage() {
         </div>
       )}
 
-      <LoadingOverlay isLoading={isLoading} />
+      <LoadingOverlay isLoading={isLoading} onCancel={handleCancelGeneration} />
 
       {/* Generated Quiz Modal */}
       <Modal

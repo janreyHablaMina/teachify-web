@@ -156,6 +156,7 @@ export async function apiGenerateQuizFromFile(payload: {
   difficulty: "easy" | "medium" | "hard";
   questionCount: number;
   enumerationCount?: number;
+  signal?: AbortSignal;
 }): Promise<{ response: Response; data: JsonObject }> {
   const formData = new FormData();
   formData.append("title", payload.title);
@@ -171,6 +172,7 @@ export async function apiGenerateQuizFromFile(payload: {
     method: "POST",
     headers: buildHeaders(),
     body: formData,
+    signal: payload.signal,
   });
 
   const data = await parseJson(response);

@@ -41,7 +41,8 @@ export async function generateQuestionsFromSummary(summary: string): Promise<str
 
 export async function generateQuizFromFile(
   payload: GeneratePayload,
-  maxQuestions: number
+  maxQuestions: number,
+  signal?: AbortSignal
 ): Promise<GeneratedQuiz> {
   const selectedCount = payload.types.reduce((sum, typeEntry) => sum + typeEntry.count, 0);
   const clampedQuestionCount = Math.max(1, Math.min(selectedCount || 1, maxQuestions));
@@ -53,6 +54,7 @@ export async function generateQuizFromFile(
     difficulty: payload.difficulty,
     questionCount: clampedQuestionCount,
     enumerationCount: payload.enumerationCount,
+    signal,
   });
 
   if (!response.ok) {
