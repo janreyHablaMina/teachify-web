@@ -199,6 +199,39 @@ export async function apiGetAssignments<T = unknown>(token?: string): Promise<{ 
   return { response, data };
 }
 
+export async function apiCreateAssignment(
+  token: string | undefined,
+  payload: {
+    classroom_id: number;
+    quiz_id?: number;
+    deadline_at?: string | null;
+    quiz_payload?: {
+      title: string;
+      topic?: string;
+      type?: string;
+      questions: Array<{
+        type: string;
+        question: string;
+        choices?: string[];
+        answer?: string;
+        explanation?: string;
+      }>;
+    };
+  }
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/assignments`, {
+    method: "POST",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiGetClassroom<T = unknown>(
   token: string | undefined,
   classId: string | number

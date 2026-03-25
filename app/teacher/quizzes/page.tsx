@@ -4,15 +4,28 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { QuizCard } from "@/components/teacher/quizzes/quiz-card";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
+import { Modal } from "@/components/ui/modal";
 import {
   deleteTeacherQuizFromStore,
+  getStoredTeacherQuizDetailById,
   getStoredTeacherQuizzes,
   subscribeTeacherQuizzes,
 } from "@/lib/teacher/quiz-store";
 import type { Quiz } from "@/components/teacher/quizzes/types";
+import { apiCreateAssignment, apiGetClassrooms, getApiErrorMessage } from "@/lib/api/client";
+import { getStoredToken } from "@/lib/auth/session";
+import { useToast } from "@/components/ui/toast/toast-provider";
+
+type ClassroomOption = {
+  id: number;
+  name: string;
+};
 
 export default function TeacherQuizzesPage() {
+  const { showToast } = useToast();
   const [quizzes, setQuizzes] = useState<Quiz[]>(() => getStoredTeacherQuizzes());
+  const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
+  const [isClassroomsLoading, setIsClassroomsLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeTeacherQuizzes(() => {
@@ -21,8 +34,33 @@ export default function TeacherQuizzesPage() {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    async function loadClassrooms() {
+      setIsClassroomsLoading(true);
+      try {
+        const token = getStoredToken();
+        const { response, data } = await apiGetClassrooms<ClassroomOption[]>(token ?? undefined);
+        if (!mounted || !response.ok) return;
+        setClassrooms((data ?? []).map((item) => ({ id: item.id, name: item.name })));
+      } catch {
+        // noop
+      } finally {
+        if (mounted) setIsClassroomsLoading(false);
+      }
+    }
+    loadClassrooms();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState<number | null>(null);
+  const [quizToAssign, setQuizToAssign] = useState<Quiz | null>(null);
+  const [selectedClassroomId, setSelectedClassroomId] = useState<number | null>(null);
+  const [deadlineInput, setDeadlineInput] = useState("");
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const handleDelete = () => {
     if (!quizToDelete) return;
@@ -30,6 +68,61 @@ export default function TeacherQuizzesPage() {
     deleteTeacherQuizFromStore(quizToDelete);
     setIsDeleting(false);
     setQuizToDelete(null);
+  };
+
+  const openAssignModal = (quiz: Quiz) => {
+    setQuizToAssign(quiz);
+    setSelectedClassroomId(classrooms[0]?.id ?? null);
+    setDeadlineInput("");
+  };
+
+  const handleAssignQuiz = async () => {
+    if (!quizToAssign || !selectedClassroomId) {
+      showToast("Please select a classroom first.", "error");
+      return;
+    }
+    const token = getStoredToken();
+    if (!token) {
+      showToast("Session expired. Please log in again.", "error");
+      return;
+    }
+
+    setIsAssigning(true);
+    try {
+      const quizDetail = getStoredTeacherQuizDetailById(quizToAssign.id);
+      const payload = {
+        classroom_id: selectedClassroomId,
+        quiz_id: quizToAssign.id,
+        deadline_at: deadlineInput ? new Date(deadlineInput).toISOString() : null,
+        ...(quizDetail
+          ? {
+              quiz_payload: {
+                title: quizDetail.title,
+                topic: quizDetail.topic,
+                type: quizDetail.type,
+                questions: quizDetail.questions.map((question) => ({
+                  type: question.type,
+                  question: question.question,
+                  choices: question.choices,
+                  answer: question.answer,
+                  explanation: question.explanation,
+                })),
+              },
+            }
+          : {}),
+      };
+      const { response, data } = await apiCreateAssignment(token, payload);
+      if (!response.ok) {
+        showToast(getApiErrorMessage(response, data, "Failed to assign quiz."), "error");
+        return;
+      }
+      showToast("Quiz assigned successfully.", "success");
+      setQuizToAssign(null);
+    } catch {
+      showToast("Failed to assign quiz.", "error");
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
   return (
@@ -53,6 +146,7 @@ export default function TeacherQuizzesPage() {
           <QuizCard 
             key={quiz.id} 
             quiz={quiz} 
+            onAssignClick={openAssignModal}
             onDeleteClick={(id) => setQuizToDelete(id)}
             isDeleting={isDeleting && quizToDelete === quiz.id}
           />
@@ -82,6 +176,63 @@ export default function TeacherQuizzesPage() {
         isLoading={isDeleting}
         variant="danger"
       />
+
+      <Modal
+        isOpen={quizToAssign !== null}
+        onClose={() => setQuizToAssign(null)}
+        title={quizToAssign ? `Assign: ${quizToAssign.title}` : "Assign Quiz"}
+        footer={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setQuizToAssign(null)}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleAssignQuiz}
+              disabled={isAssigning || !selectedClassroomId}
+              className="rounded-lg border border-emerald-300 bg-emerald-100 px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-emerald-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isAssigning ? "Assigning..." : "Assign Quiz"}
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Classroom</label>
+            <select
+              value={selectedClassroomId ?? ""}
+              disabled={isClassroomsLoading || classrooms.length === 0}
+              onChange={(e) => setSelectedClassroomId(Number(e.target.value))}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-emerald-500"
+            >
+              {classrooms.length === 0 ? (
+                <option value="">{isClassroomsLoading ? "Loading classrooms..." : "No classrooms available"}</option>
+              ) : (
+                classrooms.map((classroom) => (
+                  <option key={classroom.id} value={classroom.id}>
+                    {classroom.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Deadline (optional)</label>
+            <input
+              type="datetime-local"
+              value={deadlineInput}
+              onChange={(e) => setDeadlineInput(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-emerald-500"
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
