@@ -282,6 +282,25 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
                 ))}
               </div>
             </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || !file || !anySelected || !title}
+              className="relative group mt-2 flex items-center justify-center gap-3 overflow-hidden rounded-[20px] border-2 border-emerald-600 bg-[#99f6e4] py-5 text-[16px] font-black uppercase tracking-[0.1em] text-emerald-900 shadow-[8px_8px_0_#10b981] transition-all hover:-translate-y-1 hover:bg-[#5eead4] active:translate-y-1 active:shadow-none disabled:transform-none disabled:opacity-50 disabled:shadow-none"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-3">
+                  <div className="h-6 w-6 border-4 border-slate-900/10 border-t-slate-900 rounded-full animate-spin" />
+                  <span>Analyzing Lesson Context...</span>
+                </div>
+              ) : (
+                <>
+                  <span className="z-10">Generate Assessment Now</span>
+                  <ChevronRight size={22} strokeWidth={3} className="z-10 transition-transform group-hover:translate-x-2" />
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </>
+              )}
+            </button>
           </div>
 
           {/* Right Column: Question Types */}
@@ -394,24 +413,6 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
         </div>
 
 
-        <button
-          type="submit"
-          disabled={isLoading || !file || !anySelected || !title}
-          className="relative group mt-4 flex items-center justify-center gap-3 overflow-hidden rounded-[20px] border-2 border-emerald-600 bg-[#99f6e4] py-5 text-[16px] font-black uppercase tracking-[0.1em] text-emerald-900 shadow-[8px_8px_0_#10b981] transition-all hover:-translate-y-1 hover:bg-[#5eead4] active:translate-y-1 active:shadow-none disabled:transform-none disabled:opacity-50 disabled:shadow-none"
-        >
-          {isLoading ? (
-            <div className="flex items-center gap-3">
-              <div className="h-6 w-6 border-4 border-slate-900/10 border-t-slate-900 rounded-full animate-spin" />
-              <span>Analyzing Lesson Context...</span>
-            </div>
-          ) : (
-            <>
-              <span className="z-10">Generate Assessment Now</span>
-              <ChevronRight size={22} strokeWidth={3} className="z-10 transition-transform group-hover:translate-x-2" />
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </>
-          )}
-        </button>
       </form>
     </article>
   );

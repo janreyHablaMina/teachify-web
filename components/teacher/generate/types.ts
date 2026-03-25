@@ -3,6 +3,7 @@ export type GeneratePayload = {
   file: File;
   types: { id: string; count: number }[];
   difficulty: "easy" | "medium" | "hard";
+  enumerationCount?: number;
 };
 
 export type GeneratedQuestion = {

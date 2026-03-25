@@ -3,15 +3,15 @@
 import { Check, Copy, Download } from "lucide-react";
 
 type DocumentModalActionsProps = {
-  isCopied: boolean;
-  onCopy: () => void;
+  isCopied?: boolean;
+  onCopy?: () => void;
   copyLabel?: string;
   onExportPdf?: () => void;
   exportLabel?: string;
 };
 
 export function DocumentModalActions({
-  isCopied,
+  isCopied = false,
   onCopy,
   copyLabel = "Copy Content",
   onExportPdf,
@@ -19,13 +19,15 @@ export function DocumentModalActions({
 }: DocumentModalActionsProps) {
   return (
     <div className="flex flex-wrap gap-3">
-      <button
-        onClick={onCopy}
-        className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
-      >
-        {isCopied ? <Check size={16} /> : <Copy size={16} />}
-        {isCopied ? "Copied!" : copyLabel}
-      </button>
+      {onCopy ? (
+        <button
+          onClick={onCopy}
+          className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-slate-50"
+        >
+          {isCopied ? <Check size={16} /> : <Copy size={16} />}
+          {isCopied ? "Copied!" : copyLabel}
+        </button>
+      ) : null}
 
       {onExportPdf ? (
         <button

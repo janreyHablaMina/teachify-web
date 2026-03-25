@@ -1,4 +1,10 @@
-export function downloadSummaryPdf(summary: string) {
+type DownloadPdfOptions = {
+  fileNamePrefix?: string;
+  title?: string;
+  subtitle?: string;
+};
+
+export function downloadSummaryPdf(summary: string, options?: DownloadPdfOptions) {
   const trimmedSummary = summary.trim();
   if (!trimmedSummary) return;
 
@@ -25,19 +31,168 @@ export function downloadSummaryPdf(summary: string) {
     return lines;
   };
 
+  const PAGE_WIDTH = 612;
+  const PAGE_HEIGHT = 792;
+  const LEFT = 50;
+  const RIGHT = 562;
+  const CONTENT_TOP = 708;
+  const CONTENT_BOTTOM = 54;
+  const AVG_CHAR_FACTOR = 0.52;
+
+  type Style = {
+    font: "F1" | "F2";
+    size: number;
+    leading: number;
+    x: number;
+    color: string;
+    extraAfter?: number;
+  };
+
+  type RenderElement =
+    | { kind: "text"; text: string; style: Style }
+    | { kind: "rule" }
+    | { kind: "gap"; height: number };
+
+  const styleForLine = (line: string): Style => {
+    if (/^Q\d+\s*-/i.test(line)) {
+      return { font: "F2", size: 12, leading: 16, x: LEFT, color: "0 g", extraAfter: 2 };
+    }
+    if (/^(Difficulty:|Total Questions:)/i.test(line)) {
+      return { font: "F2", size: 10, leading: 14, x: LEFT, color: "0.15 g" };
+    }
+    if (/^Answer:/i.test(line)) {
+      return { font: "F2", size: 10.5, leading: 15, x: LEFT, color: "0.1 g" };
+    }
+    if (/^Explanation:/i.test(line)) {
+      return { font: "F1", size: 10.5, leading: 15, x: LEFT, color: "0.1 g", extraAfter: 2 };
+    }
+    if (/^[A-H][\.\)]\s+/i.test(line)) {
+      return { font: "F1", size: 10.5, leading: 14, x: LEFT + 14, color: "0 g" };
+    }
+    if (/^-\s+/.test(line)) {
+      return { font: "F1", size: 10.5, leading: 14, x: LEFT + 14, color: "0 g" };
+    }
+    return { font: "F1", size: 11, leading: 15, x: LEFT, color: "0 g" };
+  };
+
+  const maxCharsFor = (style: Style) => {
+    const width = RIGHT - style.x;
+    return Math.max(14, Math.floor(width / (style.size * AVG_CHAR_FACTOR)));
+  };
+
   const rawLines = trimmedSummary.split(/\r?\n/);
-  const bodyLines = rawLines.flatMap((line) => (line.trim() ? wrapLine(line, 88) : [""]));
-  const allLines = [`AI Summary - ${new Date().toLocaleString()}`, "", ...bodyLines];
-  const linesPerPage = 46;
-  const pages: string[][] = [];
-  for (let i = 0; i < allLines.length; i += linesPerPage) {
-    pages.push(allLines.slice(i, i + linesPerPage));
+  const elements: RenderElement[] = [];
+  for (const rawLine of rawLines) {
+    const line = sanitize(rawLine);
+    if (!line) {
+      elements.push({ kind: "gap", height: 8 });
+      continue;
+    }
+    if (/^-{6,}$/.test(line)) {
+      elements.push({ kind: "gap", height: 4 });
+      elements.push({ kind: "rule" });
+      elements.push({ kind: "gap", height: 6 });
+      continue;
+    }
+
+    const style = styleForLine(line);
+    const wrapped = wrapLine(line, maxCharsFor(style));
+    wrapped.forEach((segment, index) => {
+      elements.push({ kind: "text", text: segment, style });
+      if (index === wrapped.length - 1 && style.extraAfter) {
+        elements.push({ kind: "gap", height: style.extraAfter });
+      }
+    });
   }
+
+  const header = options?.title?.trim() || "AI Summary";
+  const subtitle = options?.subtitle?.trim() || `Generated ${new Date().toLocaleString()}`;
+  const pages: string[] = [];
+  let y = CONTENT_TOP;
+  let stream: string[] = [];
+  let hasBodyContentOnPage = false;
+
+  const startPage = () => {
+    const subtitleWidthEstimate = Math.max(40, subtitle.length * 10 * AVG_CHAR_FACTOR);
+    const subtitleX = Math.max(LEFT + 120, RIGHT - subtitleWidthEstimate - 12);
+    stream = [
+      "0 g",
+      "BT",
+      "/F2 17 Tf",
+      `${LEFT} 757 Td`,
+      `(${escapePdfText(header)}) Tj`,
+      "ET",
+      "BT",
+      "/F1 10 Tf",
+      `${subtitleX} 757 Td`,
+      `(${escapePdfText(subtitle)}) Tj`,
+      "ET",
+      "0.75 G",
+      "0.8 w",
+      `${LEFT} 734 m ${RIGHT} 734 l S`,
+      "0 g",
+    ];
+    y = CONTENT_TOP;
+    hasBodyContentOnPage = false;
+  };
+
+  const finishPage = () => {
+    pages.push(stream.join("\n"));
+  };
+
+  startPage();
+
+  for (const element of elements) {
+    if (element.kind === "gap") {
+      if (!hasBodyContentOnPage) {
+        continue;
+      }
+      y -= element.height;
+      if (y < CONTENT_BOTTOM) {
+        finishPage();
+        startPage();
+      }
+      continue;
+    }
+
+    if (element.kind === "rule") {
+      if (!hasBodyContentOnPage) {
+        continue;
+      }
+      if (y < CONTENT_BOTTOM + 12) {
+        finishPage();
+        startPage();
+      }
+      stream.push("0.85 G");
+      stream.push("0.5 w");
+      stream.push(`${LEFT} ${y} m ${RIGHT} ${y} l S`);
+      stream.push("0 g");
+      y -= 10;
+      continue;
+    }
+
+    const { text, style } = element;
+    if (y < CONTENT_BOTTOM + style.leading) {
+      finishPage();
+      startPage();
+    }
+    stream.push(style.color);
+    stream.push("BT");
+    stream.push(`/${style.font} ${style.size} Tf`);
+    stream.push(`${style.x} ${y} Td`);
+    stream.push(`(${escapePdfText(text)}) Tj`);
+    stream.push("ET");
+    stream.push("0 g");
+    y -= style.leading;
+    hasBodyContentOnPage = true;
+  }
+  finishPage();
 
   const pageCount = Math.max(1, pages.length);
   const pageObjectIds = Array.from({ length: pageCount }, (_, i) => 3 + i);
   const contentObjectIds = Array.from({ length: pageCount }, (_, i) => 3 + pageCount + i);
-  const fontObjectId = 3 + pageCount * 2;
+  const regularFontObjectId = 3 + pageCount * 2;
+  const boldFontObjectId = regularFontObjectId + 1;
 
   const objects = new Map<number, string>();
   objects.set(1, "<< /Type /Catalog /Pages 2 0 R >>");
@@ -49,24 +204,27 @@ export function downloadSummaryPdf(summary: string) {
   for (let i = 0; i < pageCount; i += 1) {
     const pageId = pageObjectIds[i];
     const contentId = contentObjectIds[i];
-    const pageLines = pages[i] ?? [""];
-    const textOps = ["BT", "/F1 12 Tf", "16 TL", "50 760 Td"];
-    for (const line of pageLines) {
-      textOps.push(`(${escapePdfText(line)}) Tj`);
-      textOps.push("T*");
-    }
-    textOps.push("ET");
-    const stream = textOps.join("\n");
-    const contentBody = `<< /Length ${byteLength(stream)} >>\nstream\n${stream}\nendstream`;
+    const footer = [
+      "0.45 g",
+      "BT",
+      "/F1 9 Tf",
+      `${PAGE_WIDTH / 2 - 30} 28 Td`,
+      `(Page ${i + 1} of ${pageCount}) Tj`,
+      "ET",
+      "0 g",
+    ].join("\n");
+    const pageStream = `${pages[i] ?? ""}\n${footer}`;
+    const contentBody = `<< /Length ${byteLength(pageStream)} >>\nstream\n${pageStream}\nendstream`;
     objects.set(contentId, contentBody);
 
-    const pageBody = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontObjectId} 0 R >> >> /Contents ${contentId} 0 R >>`;
+    const pageBody = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 ${regularFontObjectId} 0 R /F2 ${boldFontObjectId} 0 R >> >> /Contents ${contentId} 0 R >>`;
     objects.set(pageId, pageBody);
   }
 
-  objects.set(fontObjectId, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  objects.set(regularFontObjectId, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  objects.set(boldFontObjectId, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
 
-  const maxObjectId = fontObjectId;
+  const maxObjectId = boldFontObjectId;
   let pdf = "%PDF-1.4\n";
   const offsets: number[] = Array(maxObjectId + 1).fill(0);
 
@@ -88,7 +246,7 @@ export function downloadSummaryPdf(summary: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `teachify-summary-${Date.now()}.pdf`;
+  link.download = `${options?.fileNamePrefix ?? "teachify-summary"}-${Date.now()}.pdf`;
   document.body.appendChild(link);
   link.click();
   link.remove();

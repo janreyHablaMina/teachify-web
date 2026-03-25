@@ -22,12 +22,23 @@ import { HistorySidebar, type HistorySummaryItem } from "@/components/teacher/ge
 import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
 import { DocumentModalActions } from "@/components/teacher/shared/document-modal-actions";
 
+const RECENT_GENERATED_QUIZZES_KEY = "teachify_recent_generated_quizzes_v1";
+
+type RecentGeneratedQuiz = {
+  id: number;
+  createdAt: string;
+  quiz: GeneratedQuiz;
+};
+
 export default function TeacherGeneratePage() {
   const { showToast } = useToast();
   const session = useTeacherSession();
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
+  const [quizToPreview, setQuizToPreview] = useState<GeneratedQuiz | null>(null);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [recentGeneratedQuizzes, setRecentGeneratedQuizzes] = useState<RecentGeneratedQuiz[]>([]);
   const [fileGenerateError, setFileGenerateError] = useState("");
   const [summaryPrompt, setSummaryPrompt] = useState("");
   const [summaryResult, setSummaryResult] = useState("");
@@ -50,7 +61,7 @@ export default function TeacherGeneratePage() {
     plan_tier: session?.planTier ?? "trial",
     quiz_generation_limit: session?.quizGenerationLimit ?? 3,
     quizzes_used: session?.quizzesUsed ?? 0,
-    max_questions_per_quiz: session?.maxQuestionsPerQuiz ?? 10,
+    max_questions_per_quiz: session?.maxQuestionsPerQuiz,
   }), [session]);
 
   const loadHistory = async () => {
@@ -77,6 +88,28 @@ export default function TeacherGeneratePage() {
     loadHistory();
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(RECENT_GENERATED_QUIZZES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as RecentGeneratedQuiz[];
+      if (!Array.isArray(parsed)) return;
+      const sanitized = parsed
+        .filter(
+          (entry) =>
+            typeof entry?.id === "number" &&
+            typeof entry?.createdAt === "string" &&
+            typeof entry?.quiz?.title === "string" &&
+            Array.isArray(entry?.quiz?.questions)
+        )
+        .slice(0, 6);
+      setRecentGeneratedQuizzes(sanitized);
+    } catch {
+      setRecentGeneratedQuizzes([]);
+    }
+  }, []);
+
   const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);
   const planMeta = PLAN_CATALOG[planTier];
   const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
@@ -93,15 +126,26 @@ export default function TeacherGeneratePage() {
   const handleGenerate = async (data: GeneratePayload) => {
     setIsLoading(true);
     setFileGenerateError("");
+    setIsQuizModalOpen(false);
 
     try {
       const quiz = await generateQuizFromFile(data, maxQuestions);
       setGeneratedQuiz(quiz);
+      setQuizToPreview(quiz);
       addGeneratedQuizToStore(quiz);
+      setRecentGeneratedQuizzes((prev) => {
+        const next = [{ id: Date.now(), createdAt: new Date().toISOString(), quiz }, ...prev].slice(0, 6);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(RECENT_GENERATED_QUIZZES_KEY, JSON.stringify(next));
+        }
+        return next;
+      });
+      showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate quiz from file.";
       setFileGenerateError(message);
       setGeneratedQuiz(null);
+      setIsQuizModalOpen(false);
     } finally {
       setIsLoading(false);
     }
@@ -149,6 +193,57 @@ export default function TeacherGeneratePage() {
 
   const handleSaveSummaryAsPdf = () => {
     downloadSummaryPdf(summaryResult);
+  };
+
+  const serializeQuizContent = (quiz: GeneratedQuiz) => {
+    const normalizeChoiceText = (choice: string) => {
+      let value = choice.trim();
+      const choicePrefixPattern = /^[A-Za-z]\s*[\)\.\-:]\s*/;
+      while (choicePrefixPattern.test(value)) {
+        value = value.replace(choicePrefixPattern, "").trim();
+      }
+      return value;
+    };
+
+    const lines: string[] = [
+      `Difficulty: ${quiz.difficulty}`,
+      `Total Questions: ${quiz.questions.length}`,
+      "",
+    ];
+
+    quiz.questions.forEach((question, idx) => {
+      lines.push(`Q${idx + 1} - ${question.type.replace(/_/g, " ")}`);
+      lines.push(question.question);
+      if (Array.isArray(question.choices) && question.choices.length > 0) {
+        if (question.type === "true_false") {
+          question.choices.forEach((choice) => {
+            lines.push(`- ${normalizeChoiceText(choice)}`);
+          });
+        } else {
+          question.choices.forEach((choice, choiceIndex) => {
+            lines.push(`${String.fromCharCode(65 + choiceIndex)}. ${normalizeChoiceText(choice)}`);
+          });
+        }
+      }
+      lines.push(`Answer: ${question.answer}`);
+      if (question.explanation) {
+        lines.push(`Explanation: ${question.explanation}`);
+      }
+      lines.push("");
+      lines.push("------------------------------------------------------------");
+      lines.push("");
+    });
+
+    return lines.join("\n").trim();
+  };
+
+  const handleSaveQuizAsPdf = () => {
+    if (!quizToPreview) return;
+    downloadSummaryPdf(serializeQuizContent(quizToPreview), {
+      fileNamePrefix: "teachify-quiz",
+      title: quizToPreview.title,
+      subtitle: `Generated ${new Date().toLocaleString()}`,
+    });
   };
 
   const handleGenerateQuestionsFromSummary = async () => {
@@ -220,27 +315,46 @@ export default function TeacherGeneratePage() {
                     Difficulty: {generatedQuiz.difficulty} | {generatedQuiz.questions.length} Questions
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuizToPreview(generatedQuiz);
+                    setIsQuizModalOpen(true);
+                  }}
+                  className="rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[12px] font-black uppercase tracking-[0.08em] text-slate-900 shadow-[3px_3px_0_#0f172a] transition hover:-translate-y-0.5 hover:bg-slate-50 active:translate-y-0 active:shadow-[2px_2px_0_#0f172a]"
+                >
+                  View Questions
+                </button>
               </div>
+              <p className="m-0 text-[13px] font-semibold text-slate-700">
+                Questions are ready. Click <span className="font-black">View Questions</span> to open the full set.
+              </p>
+            </article>
+          ) : null}
 
-              <div className="grid gap-4">
-                {generatedQuiz.questions.map((question, idx) => (
-                  <article key={`${idx}-${question.question}`} className="rounded-xl border-2 border-slate-900 bg-white p-4 shadow-[3px_3px_0_#0f172a]">
-                    <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
-                      Q{idx + 1} - {question.type.replace("_", " ")}
-                    </p>
-                    <p className="mt-2 text-[15px] font-bold text-[#0f172a]">{question.question}</p>
-                    {Array.isArray(question.choices) && question.choices.length > 0 ? (
-                      <ul className="mt-3 list-disc pl-5 text-[14px] font-semibold text-slate-700">
-                        {question.choices.map((choice, choiceIndex) => (
-                          <li key={`${idx}-${choiceIndex}`}>{choice}</li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    <p className="mt-3 text-[13px] font-black text-teal-700">Answer: {question.answer}</p>
-                    {question.explanation ? (
-                      <p className="mt-1 text-[13px] font-semibold text-slate-600">{question.explanation}</p>
-                    ) : null}
-                  </article>
+          {recentGeneratedQuizzes.length > 0 ? (
+            <article className="mt-5 rounded-[16px] border border-slate-200 bg-white p-4">
+              <h5 className="m-0 text-[13px] font-black uppercase tracking-[0.08em] text-slate-500">Recent Generated</h5>
+              <div className="mt-3 grid gap-2">
+                {recentGeneratedQuizzes.map((entry) => (
+                  <div key={entry.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                    <div>
+                      <p className="m-0 text-[14px] font-black text-slate-900">{entry.quiz.title}</p>
+                      <p className="m-0 text-[11px] font-bold uppercase tracking-[0.06em] text-slate-500">
+                        {entry.quiz.questions.length} Questions
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuizToPreview(entry.quiz);
+                        setIsQuizModalOpen(true);
+                      }}
+                      className="rounded-lg border-2 border-slate-900 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 shadow-[2px_2px_0_#0f172a] transition hover:-translate-y-0.5 hover:bg-slate-50 active:translate-y-0 active:shadow-[1px_1px_0_#0f172a]"
+                    >
+                      View
+                    </button>
+                  </div>
                 ))}
               </div>
             </article>
@@ -310,6 +424,45 @@ export default function TeacherGeneratePage() {
       )}
 
       <LoadingOverlay isLoading={isLoading} />
+
+      {/* Generated Quiz Modal */}
+      <Modal
+        isOpen={isQuizModalOpen}
+        onClose={() => setIsQuizModalOpen(false)}
+        title={quizToPreview?.title ?? "Generated Quiz"}
+        footer={
+          <DocumentModalActions
+            onExportPdf={handleSaveQuizAsPdf}
+          />
+        }
+      >
+        {quizToPreview ? (
+          <div className="grid gap-4">
+            <p className="m-0 text-[12px] font-bold uppercase tracking-[0.08em] text-slate-500">
+              Difficulty: {quizToPreview.difficulty} | {quizToPreview.questions.length} Questions
+            </p>
+            {quizToPreview.questions.map((question, idx) => (
+              <article key={`${idx}-${question.question}`} className="rounded-xl border-2 border-slate-900 bg-white p-4 shadow-[3px_3px_0_#0f172a]">
+                <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
+                  Q{idx + 1} - {question.type.replace("_", " ")}
+                </p>
+                <p className="mt-2 text-[15px] font-bold text-[#0f172a]">{question.question}</p>
+                {Array.isArray(question.choices) && question.choices.length > 0 ? (
+                  <ul className="mt-3 list-disc pl-5 text-[14px] font-semibold text-slate-700">
+                    {question.choices.map((choice, choiceIndex) => (
+                      <li key={`${idx}-${choiceIndex}`}>{choice}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <p className="mt-3 text-[13px] font-black text-teal-700">Answer: {question.answer}</p>
+                {question.explanation ? (
+                  <p className="mt-1 text-[13px] font-semibold text-slate-600">{question.explanation}</p>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </Modal>
 
       {/* Summary Modal */}
       <Modal

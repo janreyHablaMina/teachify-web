@@ -43,12 +43,15 @@ export async function generateQuizFromFile(
   payload: GeneratePayload,
   maxQuestions: number
 ): Promise<GeneratedQuiz> {
+  const selectedCount = payload.types.reduce((sum, typeEntry) => sum + typeEntry.count, 0);
+  const clampedQuestionCount = Math.max(1, Math.min(selectedCount || 1, maxQuestions));
+
   const { response, data } = await apiGenerateQuizFromFile({
     title: payload.title,
     file: payload.file,
-    types: payload.types,
+    types: payload.types.map((typeEntry) => typeEntry.id),
     difficulty: payload.difficulty,
-    questionCount: Math.min(10, maxQuestions),
+    questionCount: clampedQuestionCount,
     enumerationCount: payload.enumerationCount,
   });
 
