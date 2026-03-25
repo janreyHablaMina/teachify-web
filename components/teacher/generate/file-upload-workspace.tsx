@@ -184,7 +184,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
       <div className="bg-slate-50 border-b border-slate-100 p-8">
         <h3 className="m-0 text-[26px] font-black tracking-tight text-[#0f172a]">Quiz Generator</h3>
         <p className="mt-2 text-[15px] font-medium text-slate-500 leading-relaxed max-w-xl">
-          Transform your classroom materials into professional assessments using Teachify's specialized AI models.
+          Transform your classroom materials into professional assessments using Teachify&apos;s specialized AI models.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-8 p-8">

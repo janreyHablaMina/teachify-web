@@ -11,8 +11,7 @@ import { useTeacherSession } from "@/components/teacher/teacher-session-context"
 import type { ClassroomSummary, QuizSummary, TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useEffect, useMemo, useState } from "react";
 import { getStoredTeacherQuizzes, subscribeTeacherQuizzes } from "@/lib/teacher/quiz-store";
-import { getStoredTeacherClassrooms, subscribeTeacherClassrooms, setStoredTeacherClassrooms } from "@/lib/teacher/classroom-store";
-import { Classroom } from "@/components/teacher/classes/types";
+import { subscribeTeacherClassrooms } from "@/lib/teacher/classroom-store";
 
 import { apiGetClassrooms } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
@@ -28,12 +27,10 @@ const DEFAULT_PLAN_USER: TeacherPlanUser = {
 export default function TeacherDashboardPage() {
   const session = useTeacherSession();
 
-  const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
+  const [quizzes, setQuizzes] = useState<QuizSummary[]>(() => getStoredTeacherQuizzes());
   const [classrooms, setClassrooms] = useState<ClassroomSummary[]>([]);
 
   useEffect(() => {
-    // Quizzes
-    setQuizzes(getStoredTeacherQuizzes());
     const unsubQuizzes = subscribeTeacherQuizzes(() => setQuizzes(getStoredTeacherQuizzes()));
 
     // Classrooms

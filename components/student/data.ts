@@ -1,4 +1,3 @@
-import { LayoutDashboard, BookOpen, ClipboardCheck, Trophy, HelpCircle, Settings } from "lucide-react";
 import { NavItem } from "../ui/nav/types";
 
 export const studentNavItems: NavItem[] = [

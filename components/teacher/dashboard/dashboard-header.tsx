@@ -7,9 +7,7 @@ type DashboardHeaderProps = {
   userEmail?: string;
 };
 
-export function DashboardHeader({ planTier, planMeta, userName, userEmail }: DashboardHeaderProps) {
-  const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
-
+export function DashboardHeader({ userName }: DashboardHeaderProps) {
   return (
     <header className="flex items-start justify-between">
       <div>

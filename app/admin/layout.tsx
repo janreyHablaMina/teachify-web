@@ -35,7 +35,7 @@ export default function AdminLayout({
 
         if (!response.ok) throw new Error("Unauthorized");
         
-        const userData = (data as any)?.user;
+        const userData = (data as { user?: { fullname?: string; email?: string; role?: string } })?.user;
         const role = String(userData?.role ?? "");
 
         if (role !== "admin") {

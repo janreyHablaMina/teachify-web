@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Classroom } from "@/components/teacher/classes/types";
 import { TeacherClassesHeader } from "@/components/teacher/classes/classes-header";
 import { ClassCard } from "@/components/teacher/classes/class-card";
@@ -16,7 +16,7 @@ export default function TeacherClassesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchClassrooms = async () => {
+  const fetchClassrooms = useCallback(async () => {
     try {
       const token = getStoredToken();
       const { response, data } = await apiGetClassrooms<Classroom[]>(token ?? undefined);
@@ -28,11 +28,11 @@ export default function TeacherClassesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchClassrooms();
-  }, []);
+  }, [fetchClassrooms]);
 
   const handleCreateClass = async (data: { name: string; room: string; schedule: string }) => {
     setIsSubmitting(true);

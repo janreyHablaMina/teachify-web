@@ -4,80 +4,36 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getStoredTeacherQuizDetailById, subscribeTeacherQuizzes, type StoredTeacherQuizDetail } from "@/lib/teacher/quiz-store";
+import { QuestionPreviewCard } from "@/components/teacher/quizzes/question-preview-card";
+import { formatQuestionTypeLabel, orderQuestionsByType } from "@/lib/quiz/question-utils";
 
-const QUESTION_TYPE_ORDER: Record<string, number> = {
-  multiple_choice: 0,
-  true_false: 1,
-  enumeration: 2,
-  matching: 3,
-  identification: 4,
-  fill_in_the_blanks: 5,
-  short_answer: 6,
-  essay: 7,
-};
 const QUESTIONS_PER_PAGE = 6;
 
-function normalizeChoiceText(choice: string) {
-  let value = choice.trim();
-  const choicePrefixPattern = /^[A-Za-z]\s*[\)\.\-:]\s*/;
-  while (choicePrefixPattern.test(value)) {
-    value = value.replace(choicePrefixPattern, "").trim();
-  }
-  return value;
-}
-
-function formatChoiceLabel(questionType: string, choice: string, index: number) {
-  const normalized = normalizeChoiceText(choice);
-  if (questionType === "multiple_choice") {
-    return `${String.fromCharCode(65 + index)}. ${normalized}`;
-  }
-  return normalized;
-}
-
-function formatQuestionTypeLabel(type: string) {
-  return type.replace(/_/g, " ");
-}
-
-function parseEnumerationItems(answer: string) {
-  return answer
-    .split(/[\n,;]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 function orderQuestions(quizDetail: StoredTeacherQuizDetail): StoredTeacherQuizDetail["questions"] {
-  return quizDetail.questions
-    .map((question, index) => ({ question, index }))
-    .sort((a, b) => {
-      const aOrder = QUESTION_TYPE_ORDER[a.question.type] ?? 999;
-      const bOrder = QUESTION_TYPE_ORDER[b.question.type] ?? 999;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      return a.index - b.index;
-    })
-    .map((entry) => entry.question);
+  return orderQuestionsByType(quizDetail.questions);
 }
 
 export default function TeacherQuizDetailsPage() {
   const params = useParams<{ id: string }>();
   const quizId = Number(params?.id);
-  const [quizDetail, setQuizDetail] = useState<StoredTeacherQuizDetail | null>(null);
+  const [, setStoreVersion] = useState(0);
   const [questionTypeFilter, setQuestionTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!Number.isFinite(quizId)) return;
-    setQuizDetail(getStoredTeacherQuizDetailById(quizId));
-
     const unsubscribe = subscribeTeacherQuizzes(() => {
-      setQuizDetail(getStoredTeacherQuizDetailById(quizId));
+      setStoreVersion((prev) => prev + 1);
     });
     return unsubscribe;
   }, [quizId]);
 
+  const quizDetail = Number.isFinite(quizId) ? getStoredTeacherQuizDetailById(quizId) : null;
+
   const createdAtLabel = useMemo(() => {
-    if (!quizDetail?.created_at) return "Unknown";
+    if (!quizDetail || !quizDetail.created_at) return "Unknown";
     return new Date(quizDetail.created_at).toLocaleString();
-  }, [quizDetail?.created_at]);
+  }, [quizDetail]);
   const orderedQuestions = useMemo(
     () => (quizDetail ? orderQuestions(quizDetail) : []),
     [quizDetail]
@@ -94,16 +50,6 @@ export default function TeacherQuizDetailsPage() {
   const safePage = Math.min(currentPage, totalPages);
   const pageStart = (safePage - 1) * QUESTIONS_PER_PAGE;
   const paginatedQuestions = filteredQuestions.slice(pageStart, pageStart + QUESTIONS_PER_PAGE);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [questionTypeFilter]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
 
   if (!Number.isFinite(quizId) || !quizDetail) {
     return (
@@ -149,7 +95,10 @@ export default function TeacherQuizDetailsPage() {
           <button
             key={type}
             type="button"
-            onClick={() => setQuestionTypeFilter(type)}
+            onClick={() => {
+              setQuestionTypeFilter(type);
+              setCurrentPage(1);
+            }}
             className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] transition ${
               questionTypeFilter === type
                 ? "border-emerald-600 bg-emerald-100 text-emerald-900"
@@ -163,34 +112,11 @@ export default function TeacherQuizDetailsPage() {
 
       <div className="grid gap-4">
         {paginatedQuestions.map((question, idx) => (
-          <article key={`${idx}-${question.question}`} className="rounded-xl border border-slate-200 bg-white p-4">
-            <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
-              Q{pageStart + idx + 1} - {formatQuestionTypeLabel(question.type)}
-            </p>
-            <p className="mt-2 text-[20px] font-bold text-slate-900">{question.question}</p>
-            {Array.isArray(question.choices) && question.choices.length > 0 ? (
-              <ul className="mt-3 list-disc pl-5 text-[15px] font-semibold text-slate-700">
-                {question.choices.map((choice, choiceIndex) => (
-                  <li key={`${idx}-${choiceIndex}`}>{formatChoiceLabel(question.type, choice, choiceIndex)}</li>
-                ))}
-              </ul>
-            ) : null}
-            {question.type === "enumeration" ? (
-              <div className="mt-3">
-                <p className="m-0 text-[13px] font-black text-teal-700">Answer:</p>
-                <ul className="mt-1 list-disc pl-5 text-[14px] font-semibold text-teal-700">
-                  {parseEnumerationItems(question.answer).map((item, itemIndex) => (
-                    <li key={`${idx}-enum-${itemIndex}`}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <p className="mt-3 text-[13px] font-black text-teal-700">Answer: {question.answer}</p>
-            )}
-            {question.explanation ? (
-              <p className="mt-1 text-[14px] font-semibold text-slate-600">{question.explanation}</p>
-            ) : null}
-          </article>
+          <QuestionPreviewCard
+            key={`${idx}-${question.question}`}
+            question={question}
+            questionNumber={pageStart + idx + 1}
+          />
         ))}
       </div>
 

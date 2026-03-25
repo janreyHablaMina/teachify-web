@@ -169,6 +169,14 @@ export default function StudentClassDetailPage() {
                   <User2 className="h-3.5 w-3.5" />
                   Topic: {assignment.quiz?.topic || "General"}
                 </p>
+                <div className="mt-3">
+                  <Link
+                    href={`/student/quizzes/${assignment.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 no-underline"
+                  >
+                    Take Quiz
+                  </Link>
+                </div>
               </article>
             ))}
           </div>
@@ -177,4 +185,3 @@ export default function StudentClassDetailPage() {
     </div>
   );
 }
-

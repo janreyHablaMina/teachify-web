@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar as CalendarIcon, Clock, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, ChevronDown } from "lucide-react";
 
 interface ExpiryPickerProps {
   viewDate: Date;

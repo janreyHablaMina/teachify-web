@@ -199,6 +199,37 @@ export async function apiGetAssignments<T = unknown>(token?: string): Promise<{ 
   return { response, data };
 }
 
+export async function apiGetAssignment<T = unknown>(
+  token: string | undefined,
+  assignmentId: string | number
+): Promise<{ response: Response; data: T }> {
+  const response = await fetch(`${API_BASE_URL}/api/assignments/${assignmentId}`, {
+    method: "GET",
+    headers: buildHeaders(token),
+  });
+
+  const data = (await parseJson(response)) as T;
+  return { response, data };
+}
+
+export async function apiSubmitAssignment(
+  token: string | undefined,
+  assignmentId: string | number,
+  payload: { answers: Record<string, string> }
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/assignments/${assignmentId}/submit`, {
+    method: "POST",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiCreateAssignment(
   token: string | undefined,
   payload: {

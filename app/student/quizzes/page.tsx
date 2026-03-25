@@ -185,11 +185,11 @@ export default function StudentQuizzesPage() {
 
                 <div className="mt-4 flex items-center justify-end">
                   <Link
-                    href={`/student/classes/${assignment.classroom_id}`}
+                    href={`/student/quizzes/${assignment.id}`}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                   >
                     <Clock3 className="h-3.5 w-3.5" />
-                    Open Class
+                    Take Quiz
                   </Link>
                 </div>
               </article>
