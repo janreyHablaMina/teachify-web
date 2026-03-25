@@ -30,6 +30,57 @@ type RecentGeneratedQuiz = {
   quiz: GeneratedQuiz;
 };
 
+const QUESTION_TYPE_ORDER: Record<string, number> = {
+  multiple_choice: 0,
+  true_false: 1,
+  enumeration: 2,
+  matching: 3,
+  identification: 4,
+  fill_in_the_blanks: 5,
+  short_answer: 6,
+  essay: 7,
+};
+
+function normalizeChoiceText(choice: string) {
+  let value = choice.trim();
+  const choicePrefixPattern = /^[A-Za-z]\s*[\)\.\-:]\s*/;
+  while (choicePrefixPattern.test(value)) {
+    value = value.replace(choicePrefixPattern, "").trim();
+  }
+  return value;
+}
+
+function formatChoiceLabel(questionType: string, choice: string, index: number) {
+  const normalized = normalizeChoiceText(choice);
+  if (questionType === "multiple_choice") {
+    return `${String.fromCharCode(65 + index)}. ${normalized}`;
+  }
+  return normalized;
+}
+
+function formatQuestionTypeLabel(type: string) {
+  return type.replace(/_/g, " ");
+}
+
+function parseEnumerationItems(answer: string) {
+  return answer
+    .split(/[\n,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function orderQuestions(quiz: GeneratedQuiz): GeneratedQuiz["questions"] {
+  return quiz.questions
+    .map((question, index) => ({ question, index }))
+    .sort((a, b) => {
+      const aOrder = QUESTION_TYPE_ORDER[a.question.type] ?? 999;
+      const bOrder = QUESTION_TYPE_ORDER[b.question.type] ?? 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return a.index - b.index;
+    })
+    .map((entry) => entry.question);
+}
+
 export default function TeacherGeneratePage() {
   const { showToast } = useToast();
   const session = useTeacherSession();
@@ -38,6 +89,7 @@ export default function TeacherGeneratePage() {
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
   const [quizToPreview, setQuizToPreview] = useState<GeneratedQuiz | null>(null);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [questionTypeFilter, setQuestionTypeFilter] = useState("all");
   const [recentGeneratedQuizzes, setRecentGeneratedQuizzes] = useState<RecentGeneratedQuiz[]>([]);
   const [fileGenerateError, setFileGenerateError] = useState("");
   const [summaryPrompt, setSummaryPrompt] = useState("");
@@ -122,6 +174,24 @@ export default function TeacherGeneratePage() {
   }, [limit, used]);
   const limitLabel = planTier === "trial" ? "Total Limit" : "Monthly Limit";
   const maxQuestions = planUser.max_questions_per_quiz ?? planMeta.maxQuestions;
+  const orderedQuizPreviewQuestions = useMemo(
+    () => (quizToPreview ? orderQuestions(quizToPreview) : []),
+    [quizToPreview]
+  );
+  const availableQuestionTypeFilters = useMemo(
+    () => ["all", ...Array.from(new Set(orderedQuizPreviewQuestions.map((q) => q.type)))],
+    [orderedQuizPreviewQuestions]
+  );
+  const filteredQuizPreviewQuestions = useMemo(() => {
+    if (questionTypeFilter === "all") return orderedQuizPreviewQuestions;
+    return orderedQuizPreviewQuestions.filter((question) => question.type === questionTypeFilter);
+  }, [orderedQuizPreviewQuestions, questionTypeFilter]);
+
+  const openQuizPreview = (quiz: GeneratedQuiz) => {
+    setQuizToPreview(quiz);
+    setQuestionTypeFilter("all");
+    setIsQuizModalOpen(true);
+  };
 
   const handleGenerate = async (data: GeneratePayload) => {
     setIsLoading(true);
@@ -196,22 +266,14 @@ export default function TeacherGeneratePage() {
   };
 
   const serializeQuizContent = (quiz: GeneratedQuiz) => {
-    const normalizeChoiceText = (choice: string) => {
-      let value = choice.trim();
-      const choicePrefixPattern = /^[A-Za-z]\s*[\)\.\-:]\s*/;
-      while (choicePrefixPattern.test(value)) {
-        value = value.replace(choicePrefixPattern, "").trim();
-      }
-      return value;
-    };
-
+    const orderedQuestions = orderQuestions(quiz);
     const lines: string[] = [
       `Difficulty: ${quiz.difficulty}`,
-      `Total Questions: ${quiz.questions.length}`,
+      `Total Questions: ${orderedQuestions.length}`,
       "",
     ];
 
-    quiz.questions.forEach((question, idx) => {
+    orderedQuestions.forEach((question, idx) => {
       lines.push(`Q${idx + 1} - ${question.type.replace(/_/g, " ")}`);
       lines.push(question.question);
       if (Array.isArray(question.choices) && question.choices.length > 0) {
@@ -221,11 +283,17 @@ export default function TeacherGeneratePage() {
           });
         } else {
           question.choices.forEach((choice, choiceIndex) => {
-            lines.push(`${String.fromCharCode(65 + choiceIndex)}. ${normalizeChoiceText(choice)}`);
+            lines.push(formatChoiceLabel(question.type, choice, choiceIndex));
           });
         }
       }
-      lines.push(`Answer: ${question.answer}`);
+      if (question.type === "enumeration") {
+        const items = parseEnumerationItems(question.answer);
+        lines.push("Answer:");
+        items.forEach((item) => lines.push(`- ${item}`));
+      } else {
+        lines.push(`Answer: ${question.answer}`);
+      }
       if (question.explanation) {
         lines.push(`Explanation: ${question.explanation}`);
       }
@@ -317,10 +385,7 @@ export default function TeacherGeneratePage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setQuizToPreview(generatedQuiz);
-                    setIsQuizModalOpen(true);
-                  }}
+                  onClick={() => openQuizPreview(generatedQuiz)}
                   className="rounded-xl border-2 border-slate-900 bg-white px-5 py-2.5 text-[12px] font-black uppercase tracking-[0.08em] text-slate-900 shadow-[3px_3px_0_#0f172a] transition hover:-translate-y-0.5 hover:bg-slate-50 active:translate-y-0 active:shadow-[2px_2px_0_#0f172a]"
                 >
                   View Questions
@@ -346,10 +411,7 @@ export default function TeacherGeneratePage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
-                        setQuizToPreview(entry.quiz);
-                        setIsQuizModalOpen(true);
-                      }}
+                      onClick={() => openQuizPreview(entry.quiz)}
                       className="rounded-lg border-2 border-slate-900 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-slate-900 shadow-[2px_2px_0_#0f172a] transition hover:-translate-y-0.5 hover:bg-slate-50 active:translate-y-0 active:shadow-[1px_1px_0_#0f172a]"
                     >
                       View
@@ -439,22 +501,53 @@ export default function TeacherGeneratePage() {
         {quizToPreview ? (
           <div className="grid gap-4">
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.08em] text-slate-500">
-              Difficulty: {quizToPreview.difficulty} | {quizToPreview.questions.length} Questions
+              Difficulty: {quizToPreview.difficulty} | {filteredQuizPreviewQuestions.length} of {orderedQuizPreviewQuestions.length} Questions
             </p>
-            {quizToPreview.questions.map((question, idx) => (
+
+            <div className="flex flex-wrap gap-2">
+              {availableQuestionTypeFilters.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setQuestionTypeFilter(type)}
+                  className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] transition ${
+                    questionTypeFilter === type
+                      ? "border-emerald-600 bg-emerald-100 text-emerald-900"
+                      : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+                  }`}
+                >
+                  {type === "all" ? "All" : formatQuestionTypeLabel(type)}
+                </button>
+              ))}
+            </div>
+
+            {filteredQuizPreviewQuestions.map((question, idx) => (
               <article key={`${idx}-${question.question}`} className="rounded-xl border-2 border-slate-900 bg-white p-4 shadow-[3px_3px_0_#0f172a]">
                 <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
-                  Q{idx + 1} - {question.type.replace("_", " ")}
+                  Q{idx + 1} - {formatQuestionTypeLabel(question.type)}
                 </p>
                 <p className="mt-2 text-[15px] font-bold text-[#0f172a]">{question.question}</p>
                 {Array.isArray(question.choices) && question.choices.length > 0 ? (
                   <ul className="mt-3 list-disc pl-5 text-[14px] font-semibold text-slate-700">
                     {question.choices.map((choice, choiceIndex) => (
-                      <li key={`${idx}-${choiceIndex}`}>{choice}</li>
+                      <li key={`${idx}-${choiceIndex}`}>
+                        {formatChoiceLabel(question.type, choice, choiceIndex)}
+                      </li>
                     ))}
                   </ul>
                 ) : null}
-                <p className="mt-3 text-[13px] font-black text-teal-700">Answer: {question.answer}</p>
+                {question.type === "enumeration" ? (
+                  <div className="mt-3">
+                    <p className="m-0 text-[13px] font-black text-teal-700">Answer:</p>
+                    <ul className="mt-1 list-disc pl-5 text-[14px] font-semibold text-teal-700">
+                      {parseEnumerationItems(question.answer).map((item, itemIndex) => (
+                        <li key={`${idx}-enum-${itemIndex}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[13px] font-black text-teal-700">Answer: {question.answer}</p>
+                )}
                 {question.explanation ? (
                   <p className="mt-1 text-[13px] font-semibold text-slate-600">{question.explanation}</p>
                 ) : null}
