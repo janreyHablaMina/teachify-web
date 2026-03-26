@@ -7,34 +7,11 @@ import { API_BASE_URL, apiGetAssignment, apiSubmitAssignment, getApiErrorMessage
 import { getStoredToken } from "@/lib/auth/session";
 import { normalizeChoiceText } from "@/lib/quiz/question-utils";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
-import { formatDeadline } from "../deadline-utils";
-import { EXAM_START_RULES_MESSAGE } from "../exam-policy";
-import { seededShuffle } from "../randomize-utils";
+import { formatDeadline } from "../lib/deadline";
+import { EXAM_START_RULES_MESSAGE } from "../lib/exam-policy";
+import { seededShuffle } from "../lib/randomize";
 import { useStudent } from "@/components/student/student-context";
-
-type QuizQuestion = {
-  id: number;
-  type: string;
-  question_text: string;
-  options?: string[] | null;
-};
-
-type AssignmentDetail = {
-  id: number;
-  classroom_id: number;
-  deadline_at?: string | null;
-  quiz?: {
-    id: number;
-    title?: string | null;
-    topic?: string | null;
-    questions?: QuizQuestion[];
-  } | null;
-  classroom?: { id: number; name?: string | null } | null;
-};
-
-type SubmissionResult = {
-  score?: number;
-};
+import type { AssignmentDetail, SubmissionResult } from "../lib/types";
 
 export default function StudentTakeQuizPage() {
   const { session } = useStudent();

@@ -6,18 +6,9 @@ import { CalendarClock, ClipboardList, Clock3, Filter, Sparkles, Timer, AlertTri
 import { apiGetAssignments } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
-import { formatDeadline, getDeadlineStatus } from "./deadline-utils";
-import { EXAM_START_RULES_MESSAGE_LIST } from "./exam-policy";
-
-type AssignmentItem = {
-  id: number;
-  classroom_id: number;
-  deadline_at?: string | null;
-  quiz?: { id: number; title?: string | null; topic?: string | null } | null;
-  classroom?: { id: number; name?: string | null } | null;
-};
-
-type DeadlineFilter = "all" | "due_soon" | "overdue" | "no_deadline";
+import { formatDeadline, getDeadlineStatus } from "./lib/deadline";
+import { EXAM_START_RULES_MESSAGE_LIST } from "./lib/exam-policy";
+import type { AssignmentItem, DeadlineFilter } from "./lib/types";
 
 export default function StudentQuizzesPage() {
   const router = useRouter();
