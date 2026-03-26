@@ -126,16 +126,12 @@ export default function TeacherDashboardPage() {
         maxQuestions={maxQuestions}
       />
 
-      <p className="-mt-1.5 text-[12px] font-bold text-slate-600">
-        Current plan includes: {planMeta.quizLimitLabel}, up to {maxQuestions} questions per quiz.
-      </p>
-
       <section className="grid grid-cols-1 gap-4 min-[1160px]:grid-cols-2">
         <PlanFeaturesPanel planMeta={planMeta} planTier={planTier} />
         <RecentQuizzesPanel quizzes={recentQuizzes} />
       </section>
 
-      <UnlockProPanel />
+      {(planTier === "trial" || planTier === "basic") ? <UnlockProPanel /> : null}
     </section>
   );
 }

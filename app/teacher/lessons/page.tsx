@@ -10,14 +10,15 @@ import { Search, BookOpen } from "lucide-react";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { useToast } from "@/components/ui/toast/toast-provider";
 import { LessonCard, type LessonSummary } from "@/components/teacher/lessons/lesson-card";
-import { LessonSkeleton } from "@/components/teacher/lessons/lesson-skeleton";
 import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
 import { DocumentModalActions } from "@/components/teacher/shared/document-modal-actions";
+
+const LESSONS_CACHE_KEY = "teachify_teacher_lessons_cache_v1";
 
 export default function TeacherLessonsPage() {
   const { showToast } = useToast();
   const [summaries, setSummaries] = useState<LessonSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSummary, setSelectedSummary] = useState<LessonSummary | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,6 +27,22 @@ export default function TeacherLessonsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
+    if (typeof window !== "undefined") {
+      try {
+          const raw = window.localStorage.getItem(LESSONS_CACHE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as LessonSummary[];
+            if (Array.isArray(parsed)) {
+              setSummaries(parsed);
+            }
+          }
+        } catch {
+        // Ignore cache parse issues and continue with API fetch.
+      }
+    }
+
     async function loadData() {
       try {
         const token = getStoredToken();
@@ -33,17 +50,24 @@ export default function TeacherLessonsPage() {
 
         // Load Summaries
         const { response, data } = await apiGetSummaries<LessonSummary[]>(token);
+        if (!mounted) return;
         if (response.ok) {
           setSummaries(data);
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(LESSONS_CACHE_KEY, JSON.stringify(data));
+          }
         }
       } catch (error) {
         console.error("Failed to load lessons:", error);
       } finally {
-        setIsLoading(false);
+        if (mounted) setHasFetched(true);
       }
     }
 
     loadData();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const filteredSummaries = summaries.filter((s) =>
@@ -82,6 +106,10 @@ export default function TeacherLessonsPage() {
       }
 
       setSummaries((prev) => prev.filter((item) => item.id !== summaryToDelete.id));
+      if (typeof window !== "undefined") {
+        const next = summaries.filter((item) => item.id !== summaryToDelete.id);
+        window.localStorage.setItem(LESSONS_CACHE_KEY, JSON.stringify(next));
+      }
       if (selectedSummary?.id === summaryToDelete.id) {
         setIsModalOpen(false);
         setSelectedSummary(null);
@@ -127,9 +155,7 @@ export default function TeacherLessonsPage() {
           </div>
         </div>
 
-        {isLoading ? (
-          <LessonSkeleton />
-        ) : filteredSummaries.length > 0 ? (
+        {filteredSummaries.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filteredSummaries.map((summary) => (
               <LessonCard
@@ -164,15 +190,17 @@ export default function TeacherLessonsPage() {
             <p className="mt-2 max-w-sm text-[15px] font-bold text-slate-500">
               {searchQuery
                 ? `We couldn't find any lessons matching "${searchQuery}".`
-                : "You haven't generated any AI lessons yet. Start by creating a summary in the generator!"}
+                : !hasFetched
+                  ? "Syncing your lessons in the background..."
+                  : "You haven't generated any AI lessons yet. Start by creating a summary in the generator!"}
             </p>
             {!searchQuery && (
-              <a
+              <Link
                 href="/teacher/generate"
                 className="mt-8 rounded-xl border-2 border-slate-900 bg-indigo-500 px-8 py-3 text-[14px] font-black uppercase tracking-wider text-white shadow-[4px_4px_0_#0f172a] transition hover:-translate-y-1 hover:bg-indigo-600"
               >
                 Create First Lesson
-              </a>
+              </Link>
             )}
           </div>
         )}

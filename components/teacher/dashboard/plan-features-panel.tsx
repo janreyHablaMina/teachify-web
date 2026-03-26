@@ -1,5 +1,6 @@
 import type { PlanMeta, PlanTier } from "./types";
 import { DASHBOARD_BTN_BASE } from "./plan";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 type PlanFeaturesPanelProps = {
   planMeta: PlanMeta;
@@ -15,32 +16,46 @@ export function PlanFeaturesPanel({ planMeta, planTier }: PlanFeaturesPanelProps
         : "Upgrade to School for multi-teacher management and institutional controls.";
 
   return (
-    <article className="flex flex-col gap-[14px] rounded-[18px] border border-slate-900/10 bg-white p-5 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.03)]">
-      <div className="flex items-center justify-between">
-        <h4 className="m-0 text-[20px] font-black tracking-[-0.02em] text-slate-900">Current Plan Features</h4>
+    <article className="flex flex-col gap-4 rounded-[18px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div>
+        <p className="m-0 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">Plan Snapshot</p>
+        <h4 className="m-0 mt-1 text-[20px] font-black tracking-[-0.02em] text-slate-900">{planMeta.label}</h4>
+        <p className="m-0 mt-1 text-[12px] font-bold leading-[1.45] text-slate-600">{planMeta.description}</p>
       </div>
-      <p className="m-0 text-[12px] font-bold leading-[1.45] text-slate-600">{planMeta.description}</p>
-      <div className="grid gap-2.5">
-        {planMeta.features.slice(0, 6).map((feature) => (
-          <div key={feature} className="rounded-xl border border-slate-900/10 bg-slate-50 px-[13px] py-3 text-[14px] font-bold text-slate-900">
-            {feature}
+
+      <div className="grid gap-2">
+        <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-emerald-700">Included</p>
+        {planMeta.features.slice(0, 4).map((feature) => (
+          <div key={feature} className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2.5 text-[13px] font-bold text-slate-800">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+            <span>{feature}</span>
           </div>
         ))}
       </div>
+
       {planMeta.limitations.length > 0 ? (
         <div className="grid gap-2">
-          <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Limitations</p>
+          <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-amber-800">Not Included</p>
           {planMeta.limitations.map((item) => (
-            <div key={item} className="rounded-xl border border-dashed border-slate-900/20 bg-white px-[13px] py-2 text-[13px] font-extrabold text-slate-700">
-              {item}
+            <div key={item} className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2.5 text-[13px] font-extrabold text-slate-700">
+              <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+              <span>{item}</span>
             </div>
           ))}
         </div>
       ) : null}
-      <p className="m-0 text-[12px] font-bold leading-[1.45] text-slate-600">{upgradeCopy}</p>
-      <button type="button" className={`${DASHBOARD_BTN_BASE} w-fit bg-yellow-200`}>
-        Upgrade Plan
-      </button>
+
+      {(planTier === "trial" || planTier === "basic") ? (
+        <div className="mt-1 rounded-xl border border-violet-200 bg-violet-50/70 p-3">
+          <p className="m-0 text-[12px] font-bold leading-[1.45] text-slate-700">{upgradeCopy}</p>
+          <button
+            type="button"
+            className={`${DASHBOARD_BTN_BASE.replace("shadow-[4px_4px_0_#0f172a]", "shadow-sm")} mt-3 w-fit bg-[#ede9fe]`}
+          >
+            Upgrade Plan
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 }
