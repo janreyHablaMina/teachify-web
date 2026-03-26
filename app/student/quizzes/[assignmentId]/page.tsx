@@ -7,6 +7,8 @@ import { API_BASE_URL, apiGetAssignment, apiSubmitAssignment, getApiErrorMessage
 import { getStoredToken } from "@/lib/auth/session";
 import { normalizeChoiceText } from "@/lib/quiz/question-utils";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
+import { formatDeadline } from "../deadline-utils";
+import { EXAM_START_RULES_MESSAGE } from "../exam-policy";
 
 type QuizQuestion = {
   id: number;
@@ -31,25 +33,6 @@ type AssignmentDetail = {
 type SubmissionResult = {
   score?: number;
 };
-
-function parseDeadline(value?: string | null): Date | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
-}
-
-function formatDeadline(value?: string | null): string {
-  const date = parseDeadline(value);
-  if (!date) return "No deadline";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
 
 export default function StudentTakeQuizPage() {
   const router = useRouter();
@@ -333,7 +316,7 @@ export default function StudentTakeQuizPage() {
         onClose={() => router.push("/student/quizzes")}
         onConfirm={() => setIsExamStarted(true)}
         title="Start Exam?"
-        message="After you start, back navigation is disabled until you submit. If you close this tab or browser, your exam will submit automatically."
+        message={EXAM_START_RULES_MESSAGE}
         confirmLabel="I Understand, Start"
         cancelLabel="Not Now"
         variant="accent"

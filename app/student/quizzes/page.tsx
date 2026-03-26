@@ -6,6 +6,8 @@ import { CalendarClock, ClipboardList, Clock3, Filter } from "lucide-react";
 import { apiGetAssignments } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
+import { formatDeadline, getDeadlineStatus } from "./deadline-utils";
+import { EXAM_START_RULES_MESSAGE_LIST } from "./exam-policy";
 
 type AssignmentItem = {
   id: number;
@@ -16,35 +18,6 @@ type AssignmentItem = {
 };
 
 type DeadlineFilter = "all" | "due_soon" | "overdue" | "no_deadline";
-
-function parseDeadline(value?: string | null): Date | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
-}
-
-function formatDeadline(value?: string | null): string {
-  const date = parseDeadline(value);
-  if (!date) return "No deadline";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function getDeadlineStatus(value?: string | null): "overdue" | "due_soon" | "upcoming" | "none" {
-  const deadline = parseDeadline(value);
-  if (!deadline) return "none";
-  const now = new Date();
-  const diffMs = deadline.getTime() - now.getTime();
-  if (diffMs < 0) return "overdue";
-  if (diffMs <= 1000 * 60 * 60 * 24 * 2) return "due_soon";
-  return "upcoming";
-}
 
 export default function StudentQuizzesPage() {
   const router = useRouter();
@@ -210,7 +183,7 @@ export default function StudentQuizzesPage() {
           router.push(`/student/quizzes/${confirmAssignment.id}?start=1`);
         }}
         title="Start Exam?"
-        message={`Once you start, you must finish before leaving. If you close the tab or browser, your exam will be submitted automatically.${confirmAssignment ? ` Quiz: ${confirmAssignment.quiz?.title || `Quiz #${confirmAssignment.id}`}.` : ""}`}
+        message={`${EXAM_START_RULES_MESSAGE_LIST}${confirmAssignment ? ` Quiz: ${confirmAssignment.quiz?.title || `Quiz #${confirmAssignment.id}`}.` : ""}`}
         confirmLabel="Yes, Start Exam"
         cancelLabel="Cancel"
         variant="accent"
