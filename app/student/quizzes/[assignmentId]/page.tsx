@@ -1,11 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { apiGetAssignment, apiSubmitAssignment, getApiErrorMessage } from "@/lib/api/client";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { API_BASE_URL, apiGetAssignment, apiSubmitAssignment, getApiErrorMessage } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { normalizeChoiceText } from "@/lib/quiz/question-utils";
+import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
 
 type QuizQuestion = {
   id: number;
@@ -51,6 +52,8 @@ function formatDeadline(value?: string | null): string {
 }
 
 export default function StudentTakeQuizPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const params = useParams<{ assignmentId: string }>();
   const assignmentId = params?.assignmentId;
   const [assignment, setAssignment] = useState<AssignmentDetail | null>(null);
@@ -60,6 +63,20 @@ export default function StudentTakeQuizPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [isExamStarted, setIsExamStarted] = useState(false);
+
+  const answersRef = useRef<Record<string, string>>({});
+  const isExamStartedRef = useRef(false);
+  const isSubmittedRef = useRef(false);
+  const hasAutoSubmittedRef = useRef(false);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  useEffect(() => {
+    isExamStartedRef.current = isExamStarted;
+  }, [isExamStarted]);
 
   useEffect(() => {
     let mounted = true;
@@ -94,8 +111,72 @@ export default function StudentTakeQuizPage() {
     [answers, questions]
   );
 
+  const submitAttemptOnClose = useCallback(() => {
+    if (!assignmentId || hasAutoSubmittedRef.current || !isExamStartedRef.current || isSubmittedRef.current) return;
+    const token = getStoredToken();
+    if (!token) return;
+
+    hasAutoSubmittedRef.current = true;
+    const payload = JSON.stringify({ answers: answersRef.current });
+    fetch(`${API_BASE_URL}/api/assignments/${assignmentId}/submit`, {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: payload,
+    }).catch(() => {
+      // Keep this silent because the page may already be unloading.
+    });
+  }, [assignmentId]);
+
+  useEffect(() => {
+    if (searchParams.get("start") === "1") {
+      setIsExamStarted(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!isExamStarted || isSubmittedRef.current) return;
+
+    window.history.pushState(null, "", window.location.href);
+
+    const onPopState = () => {
+      if (!isExamStartedRef.current || isSubmittedRef.current) return;
+      window.history.pushState(null, "", window.location.href);
+      setErrorMessage("You cannot go back until you submit your exam.");
+    };
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isExamStartedRef.current || isSubmittedRef.current) return;
+      submitAttemptOnClose();
+      event.preventDefault();
+      event.returnValue = "Your exam will be submitted if you leave this page.";
+    };
+
+    const onPageHide = () => {
+      submitAttemptOnClose();
+    };
+
+    window.addEventListener("popstate", onPopState);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("pagehide", onPageHide);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("pagehide", onPageHide);
+    };
+  }, [isExamStarted, submitAttemptOnClose]);
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!isExamStarted) {
+      setErrorMessage("Start the exam first to submit.");
+      return;
+    }
     if (!assignmentId) return;
     setIsSubmitting(true);
     setSubmitMessage("");
@@ -112,6 +193,7 @@ export default function StudentTakeQuizPage() {
         setErrorMessage(getApiErrorMessage(response, data, "Failed to submit quiz."));
         return;
       }
+      isSubmittedRef.current = true;
       setSubmitMessage("Quiz submitted successfully.");
       setSubmissionResult((data as { submission?: SubmissionResult }).submission ?? null);
     } catch {
@@ -162,6 +244,12 @@ export default function StudentTakeQuizPage() {
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] font-bold text-rose-700">{errorMessage}</div>
       ) : null}
 
+      {!isExamStarted && !submitMessage ? (
+        <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-4 text-[13px] font-bold text-amber-800">
+          Exam has not started yet. Click <span className="font-black">Start Exam</span> to begin.
+        </div>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {questions.map((question, index) => (
           <article key={question.id} className="rounded-xl border border-slate-200 bg-white p-4">
@@ -182,6 +270,7 @@ export default function StudentTakeQuizPage() {
                         name={`question-${question.id}`}
                         value={normalizedOption}
                         checked={answers[question.id] === normalizedOption}
+                        disabled={!isExamStarted || !!submitMessage}
                         onChange={(event) =>
                           setAnswers((prev) => ({
                             ...prev,
@@ -197,6 +286,7 @@ export default function StudentTakeQuizPage() {
             ) : (
               <textarea
                 value={answers[question.id] ?? ""}
+                disabled={!isExamStarted || !!submitMessage}
                 onChange={(event) =>
                   setAnswers((prev) => ({
                     ...prev,
@@ -204,7 +294,7 @@ export default function StudentTakeQuizPage() {
                   }))
                 }
                 rows={question.type === "essay" ? 5 : 3}
-                className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-indigo-500"
+                className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                 placeholder="Type your answer..."
               />
             )}
@@ -212,21 +302,43 @@ export default function StudentTakeQuizPage() {
         ))}
 
         <div className="flex items-center justify-end gap-2 rounded-xl border border-slate-200 bg-white p-4">
-          <Link
-            href="/student/quizzes"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 no-underline"
-          >
-            Back
-          </Link>
+          {!isExamStarted ? (
+            <button
+              type="button"
+              onClick={() => {
+                setIsExamStarted(true);
+                setErrorMessage("");
+              }}
+              className="rounded-lg border border-emerald-300 bg-emerald-100 px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-emerald-900 transition hover:bg-emerald-200"
+            >
+              Start Exam
+            </button>
+          ) : (
+            <span className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-rose-700">
+              Back is locked until submit
+            </span>
+          )}
           <button
             type="submit"
-            disabled={isSubmitting || questions.length === 0}
+            disabled={isSubmitting || questions.length === 0 || !isExamStarted || !!submitMessage}
             className="rounded-lg border border-indigo-300 bg-indigo-100 px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-indigo-900 transition hover:bg-indigo-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? "Submitting..." : "Submit Quiz"}
           </button>
         </div>
       </form>
+
+      <ConfirmationModal
+        isOpen={!isExamStarted && !submitMessage}
+        onClose={() => router.push("/student/quizzes")}
+        onConfirm={() => setIsExamStarted(true)}
+        title="Start Exam?"
+        message="After you start, back navigation is disabled until you submit. If you close this tab or browser, your exam will submit automatically."
+        confirmLabel="I Understand, Start"
+        cancelLabel="Not Now"
+        variant="accent"
+      />
+
     </div>
   );
 }

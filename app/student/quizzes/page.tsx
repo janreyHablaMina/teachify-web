@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CalendarClock, ClipboardList, Clock3, Filter } from "lucide-react";
 import { apiGetAssignments } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
+import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
 
 type AssignmentItem = {
   id: number;
@@ -46,9 +47,11 @@ function getDeadlineStatus(value?: string | null): "overdue" | "due_soon" | "upc
 }
 
 export default function StudentQuizzesPage() {
+  const router = useRouter();
   const [assignments, setAssignments] = useState<AssignmentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<DeadlineFilter>("all");
+  const [confirmAssignment, setConfirmAssignment] = useState<AssignmentItem | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -184,19 +187,34 @@ export default function StudentQuizzesPage() {
                 </div>
 
                 <div className="mt-4 flex items-center justify-end">
-                  <Link
-                    href={`/student/quizzes/${assignment.id}`}
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAssignment(assignment)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                   >
                     <Clock3 className="h-3.5 w-3.5" />
                     Take Quiz
-                  </Link>
+                  </button>
                 </div>
               </article>
             );
           })}
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={!!confirmAssignment}
+        onClose={() => setConfirmAssignment(null)}
+        onConfirm={() => {
+          if (!confirmAssignment) return;
+          router.push(`/student/quizzes/${confirmAssignment.id}?start=1`);
+        }}
+        title="Start Exam?"
+        message={`Once you start, you must finish before leaving. If you close the tab or browser, your exam will be submitted automatically.${confirmAssignment ? ` Quiz: ${confirmAssignment.quiz?.title || `Quiz #${confirmAssignment.id}`}.` : ""}`}
+        confirmLabel="Yes, Start Exam"
+        cancelLabel="Cancel"
+        variant="accent"
+      />
     </div>
   );
 }
