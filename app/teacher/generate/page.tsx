@@ -45,6 +45,7 @@ export default function TeacherGeneratePage() {
   const activeGenerationAbortControllerRef = useRef<AbortController | null>(null);
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerationComplete, setIsGenerationComplete] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
   const [quizToPreview, setQuizToPreview] = useState<GeneratedQuiz | null>(null);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
@@ -159,6 +160,7 @@ export default function TeacherGeneratePage() {
 
   const handleGenerate = async (data: GeneratePayload) => {
     setIsLoading(true);
+    setIsGenerationComplete(false);
     setFileGenerateError("");
     setIsQuizModalOpen(false);
     const abortController = new AbortController();
@@ -179,11 +181,14 @@ export default function TeacherGeneratePage() {
         return next;
       });
       showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");
+      setIsGenerationComplete(true);
     } catch (error) {
       const isAbortError =
         (error instanceof DOMException && error.name === "AbortError") ||
         (error instanceof Error && error.name === "AbortError");
       if (isAbortError) {
+        setIsLoading(false);
+        setIsGenerationComplete(false);
         showToast("Generation canceled.", "success");
         return;
       }
@@ -191,11 +196,12 @@ export default function TeacherGeneratePage() {
       setFileGenerateError(message);
       setGeneratedQuiz(null);
       setIsQuizModalOpen(false);
+      setIsLoading(false);
+      setIsGenerationComplete(false);
     } finally {
       if (activeGenerationAbortControllerRef.current === abortController) {
         activeGenerationAbortControllerRef.current = null;
       }
-      setIsLoading(false);
     }
   };
 
@@ -459,7 +465,16 @@ export default function TeacherGeneratePage() {
         </div>
       )}
 
-      <LoadingOverlay isLoading={isLoading} onCancel={handleCancelGeneration} />
+      {isLoading ? (
+        <LoadingOverlay
+          isComplete={isGenerationComplete}
+          onComplete={() => {
+            setIsLoading(false);
+            setIsGenerationComplete(false);
+          }}
+          onCancel={handleCancelGeneration}
+        />
+      ) : null}
 
       {/* Generated Quiz Modal */}
       <Modal
