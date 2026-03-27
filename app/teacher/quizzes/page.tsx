@@ -153,15 +153,57 @@ export default function TeacherQuizzesPage() {
         ))}
 
         {quizzes.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center gap-4 rounded-[32px] border-2 border-dashed border-[#0f172a]/10 bg-slate-50/50 py-20 text-center">
-            <h3 className="m-0 text-[24px] font-black tracking-tight text-[#0f172a]">No quizzes found</h3>
-            <p className="m-0 text-[15px] font-bold text-slate-400">Start by generating your first quiz from a lesson PDF.</p>
-            <Link 
-              href="/teacher/generate"
-              className="mt-4 rounded-xl border-2 border-[#0f172a] bg-[#0f172a] px-8 py-3 text-[13px] font-black uppercase tracking-wider text-white transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              Generate Now
-            </Link>
+          <div className="col-span-full rounded-[36px] border-2 border-[#0f172a]/10 bg-white p-4 md:p-7">
+            <div className="relative overflow-hidden rounded-[28px] border-2 border-[#0f172a]/15 bg-gradient-to-br from-[#fffbe6] via-[#f8fafc] to-[#ecfeff] p-8 md:p-12">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#fef08a]/40 blur-2xl" />
+              <div className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-[#67e8f9]/30 blur-2xl" />
+
+              <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
+                <span className="inline-flex items-center rounded-full border border-[#0f172a]/20 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-700">
+                  quiz workspace
+                </span>
+                <h3 className="mt-4 m-0 text-[30px] leading-[1.05] font-black tracking-[-0.03em] text-[#0f172a]">
+                  Let&apos;s create your first quiz
+                </h3>
+                <p className="mt-3 mb-0 max-w-xl text-[15px] font-semibold leading-relaxed text-slate-600">
+                  Upload a lesson PDF, choose a question style, and publish in minutes.
+                  Your quizzes will show up here with quick actions to assign, edit, and reuse.
+                </p>
+
+                <div className="mt-7 grid w-full gap-3 text-left md:grid-cols-3">
+                  {[
+                    "Upload lesson document",
+                    "Generate AI questions",
+                    "Assign to your class",
+                  ].map((step, index) => (
+                    <div
+                      key={step}
+                      className="rounded-2xl border border-[#0f172a]/10 bg-white/80 px-4 py-3"
+                    >
+                      <p className="m-0 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
+                        Step {index + 1}
+                      </p>
+                      <p className="mt-1 mb-0 text-[14px] font-extrabold text-[#0f172a]">{step}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
+                  <Link
+                    href="/teacher/generate"
+                    className="inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-[#0f172a] bg-[#0f172a] px-8 py-3 text-[13px] font-black uppercase tracking-wider text-white transition hover:-translate-y-1 hover:shadow-lg"
+                  >
+                    Generate Now
+                  </Link>
+                  <Link
+                    href="/teacher/classes"
+                    className="inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-[#0f172a] bg-[#fef08a] px-8 py-3 text-[13px] font-black uppercase tracking-wider text-[#0f172a] shadow-[3px_3px_0_#0f172a] transition hover:-translate-y-1 hover:shadow-[5px_5px_0_#0f172a]"
+                  >
+                    Manage Classes
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
