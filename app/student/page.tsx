@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BookOpen, Plus, Sparkles, KeyRound, Target, CalendarClock } from "lucide-react";
-import { apiGetClassrooms } from "@/lib/api/client";
+import { apiGetAssignments, apiGetClassrooms } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { StudentClassCard } from "@/components/student/student-class-card";
 import { StudentActivity } from "@/components/student/student-activity";
@@ -28,6 +28,7 @@ function buildFocusLabel(isLoading: boolean, classCount: number, streakDays: num
 export default function StudentDashboard() {
   const { session } = useStudent();
   const [classrooms, setClassrooms] = useState<EnrolledClassroom[]>([]);
+  const [quizCountByClassId, setQuizCountByClassId] = useState<Record<number, number>>({});
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [currentStreakDays, setCurrentStreakDays] = useState(0);
@@ -40,13 +41,25 @@ export default function StudentDashboard() {
       const token = getStoredToken();
       if (!token) return;
 
-      const { response, data } = await apiGetClassrooms<EnrolledClassroom[]>(token);
-      if (response.ok) {
-        const normalized = data.map((classroom) => ({
+      const [classroomsResult, assignmentsResult] = await Promise.all([
+        apiGetClassrooms<EnrolledClassroom[]>(token),
+        apiGetAssignments<Array<{ id: number; classroom_id: number }>>(token),
+      ]);
+
+      if (classroomsResult.response.ok) {
+        const normalized = classroomsResult.data.map((classroom) => ({
           ...classroom,
           enrollment_status: classroom.enrollment_status ?? classroom.pivot?.status ?? "approved",
         }));
         setClassrooms(normalized);
+      }
+
+      if (assignmentsResult.response.ok) {
+        const counts = assignmentsResult.data.reduce<Record<number, number>>((acc, assignment) => {
+          acc[assignment.classroom_id] = (acc[assignment.classroom_id] ?? 0) + 1;
+          return acc;
+        }, {});
+        setQuizCountByClassId(counts);
       }
     } catch {
       // Silent error, empty state shown
@@ -208,7 +221,7 @@ export default function StudentDashboard() {
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {classrooms.map((cls) => (
-              <StudentClassCard key={cls.id} classroom={cls} />
+              <StudentClassCard key={cls.id} classroom={cls} quizCount={quizCountByClassId[cls.id] ?? 0} />
             ))}
 
             <button

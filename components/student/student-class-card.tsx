@@ -4,9 +4,10 @@ import { EnrolledClassroom } from "./types";
 
 interface StudentClassCardProps {
   classroom: EnrolledClassroom;
+  quizCount?: number;
 }
 
-export function StudentClassCard({ classroom }: StudentClassCardProps) {
+export function StudentClassCard({ classroom, quizCount = 0 }: StudentClassCardProps) {
   const status = classroom.enrollment_status ?? classroom.pivot?.status ?? "approved";
   const statusMeta =
     status === "pending"
@@ -60,7 +61,9 @@ export function StudentClassCard({ classroom }: StudentClassCardProps) {
         <div className="mt-6 flex items-center justify-between border-t border-dashed border-slate-200 pt-5">
           <div className="flex items-center gap-1.5 text-slate-500">
             <ClipboardList className="h-4 w-4" />
-            <span className="text-[12px] font-black">4 Quizzes</span>
+            <span className="text-[12px] font-black">
+              {quizCount} Quiz{quizCount === 1 ? "" : "zes"}
+            </span>
           </div>
           <ChevronRight className="h-5 w-5 text-slate-300 transition-transform group-hover:translate-x-1" />
         </div>
