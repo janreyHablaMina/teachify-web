@@ -3,6 +3,12 @@ const DEFAULT_API_BASE_URL = "https://teachify-api-production.up.railway.app";
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/$/, "");
 
 type JsonObject = Record<string, unknown>;
+type JoinByCodePayload = {
+  join_code: string;
+  join_method: "code";
+  source: "code";
+  ignore_invite_expiration: true;
+};
 
 function buildHeaders(token?: string): HeadersInit {
   return {
@@ -312,13 +318,21 @@ export async function apiUpdateInviteExpiration(
 }
 
 export async function apiJoinClassByCode(token: string | undefined, joinCode: string): Promise<{ response: Response; data: JsonObject }> {
+  const payload: JoinByCodePayload = {
+    join_code: joinCode,
+    join_method: "code",
+    source: "code",
+    ignore_invite_expiration: true,
+  };
+
   const response = await fetch(`${API_BASE_URL}/api/classrooms/join-by-code`, {
     method: "POST",
     headers: {
       ...buildHeaders(token),
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ join_code: joinCode }),
+    // Explicitly identify this as code-based join. Backend may use this to bypass invite-link expiry checks.
+    body: JSON.stringify(payload),
   });
 
   const data = await parseJson(response);
