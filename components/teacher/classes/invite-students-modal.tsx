@@ -7,6 +7,7 @@ import { getStoredToken } from "@/lib/auth/session";
 import { useToast } from "@/components/ui/toast/toast-provider";
 import { InviteLinkCard } from "./invite-modal/link-card";
 import { ExpiryPicker } from "./invite-modal/expiry-picker";
+import type { ExpiryMode } from "./invite-modal/types";
 
 interface InviteStudentsModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export function InviteStudentsModal({ isOpen, onClose, joinCode, classId }: Invi
   const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [expiryMode, setExpiryMode] = useState<ExpiryMode>("30m");
 
   // Expiration State
   const [viewDate, setViewDate] = useState(new Date());
@@ -38,39 +40,51 @@ export function InviteStudentsModal({ isOpen, onClose, joinCode, classId }: Invi
     showToast("Link copied!", "success");
   };
 
-  const handleSave = async () => {
+  const handleSave = async (modeOverride?: ExpiryMode): Promise<boolean> => {
+    const mode = modeOverride ?? expiryMode;
     setIsSubmitting(true);
     try {
       const token = getStoredToken();
       let isoDate: string | null = null;
-      
-      if (selectedDay !== null) {
+
+      if (mode === "none") {
+        isoDate = null;
+      } else if (mode === "15m") {
+        isoDate = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      } else if (mode === "30m") {
+        isoDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      } else if (mode === "1h") {
+        isoDate = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      } else if (selectedDay !== null) {
         const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), selectedDay);
-        let h = parseInt(hour);
+        let h = parseInt(hour, 10);
         if (ampm === "PM" && h < 12) h += 12;
         if (ampm === "AM" && h === 12) h = 0;
-        date.setHours(h, parseInt(minute));
+        date.setHours(h, parseInt(minute, 10));
         
         // Frontend check for "after now"
         if (date <= new Date()) {
           showToast("Expiration must be in the future.", "error");
-          setIsSubmitting(false);
-          return;
+          return false;
         }
 
         isoDate = date.toISOString();
+      } else {
+        showToast("Please choose a custom date.", "error");
+        return false;
       }
 
       const { response, data } = await apiUpdateInviteExpiration(token ?? undefined, classId, isoDate);
       if (response.ok) {
-        showToast("Settings saved!", "success");
-        onClose();
+        return true;
       } else {
         const message = getApiErrorMessage(response, data, "Failed to save settings.");
         showToast(message, "error");
+        return false;
       }
     } catch {
       showToast("An unexpected error occurred.", "error");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -78,7 +92,7 @@ export function InviteStudentsModal({ isOpen, onClose, joinCode, classId }: Invi
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f172a]/50 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-[640px] overflow-hidden rounded-[32px] border-2 border-[#0f172a] bg-white shadow-[16px_16px_0_#0f172a] animate-in zoom-in duration-300">
+      <div className="w-full max-w-[720px] max-h-[90vh] overflow-y-auto rounded-[32px] border-2 border-[#0f172a] bg-white shadow-[16px_16px_0_#0f172a] animate-in zoom-in duration-300">
         
         {/* Header */}
         <header className="flex items-center justify-between border-b-2 border-slate-100 bg-slate-50/50 px-8 py-6">
@@ -104,6 +118,8 @@ export function InviteStudentsModal({ isOpen, onClose, joinCode, classId }: Invi
           />
 
           <ExpiryPicker
+            expiryMode={expiryMode}
+            setExpiryMode={setExpiryMode}
             viewDate={viewDate}
             setViewDate={setViewDate}
             selectedDay={selectedDay}
@@ -114,7 +130,7 @@ export function InviteStudentsModal({ isOpen, onClose, joinCode, classId }: Invi
             setMinute={setMinute}
             ampm={ampm}
             setAmpm={setAmpm}
-            onSave={handleSave}
+            onAutoSave={handleSave}
             isSubmitting={isSubmitting}
           />
         </div>

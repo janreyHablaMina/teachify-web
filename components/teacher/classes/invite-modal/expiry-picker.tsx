@@ -1,23 +1,38 @@
 "use client";
 
-import { Calendar as CalendarIcon, Clock, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { Clock } from "lucide-react";
+import { CustomExpiryModal } from "./custom-expiry-modal";
+import type { AutoSaveExpiry, ExpiryMode } from "./types";
 
 interface ExpiryPickerProps {
+  expiryMode: ExpiryMode;
+  setExpiryMode: (mode: ExpiryMode) => void;
   viewDate: Date;
   setViewDate: (date: Date) => void;
   selectedDay: number | null;
   setSelectedDay: (day: number | null) => void;
   hour: string;
-  setHour: (h: string) => void;
+  setHour: (hour: string) => void;
   minute: string;
-  setMinute: (m: string) => void;
+  setMinute: (minute: string) => void;
   ampm: string;
-  setAmpm: (a: string) => void;
-  onSave: () => void;
+  setAmpm: (ampm: string) => void;
+  onAutoSave: AutoSaveExpiry;
   isSubmitting: boolean;
 }
 
+const EXPIRY_OPTIONS: Array<{ key: ExpiryMode; label: string }> = [
+  { key: "none", label: "No expiration" },
+  { key: "15m", label: "15 min" },
+  { key: "30m", label: "30 min" },
+  { key: "1h", label: "1 hour" },
+  { key: "custom", label: "Custom date" },
+];
+
 export function ExpiryPicker({
+  expiryMode,
+  setExpiryMode,
   viewDate,
   setViewDate,
   selectedDay,
@@ -28,135 +43,92 @@ export function ExpiryPicker({
   setMinute,
   ampm,
   setAmpm,
-  onSave,
+  onAutoSave,
   isSubmitting,
 }: ExpiryPickerProps) {
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [customStep, setCustomStep] = useState<1 | 2>(1);
+  const showCustomDate = expiryMode === "custom";
+
+  const selectedCustomDateLabel =
+    selectedDay === null
+      ? "No date selected"
+      : `${viewDate.toLocaleString("default", { month: "short" })} ${selectedDay}, ${viewDate.getFullYear()} at ${hour}:${minute} ${ampm}`;
+
+  const handleModeSelect = (mode: ExpiryMode) => {
+    setExpiryMode(mode);
+
+    if (mode === "custom") {
+      setCustomStep(1);
+      setIsCustomModalOpen(true);
+      return;
+    }
+
+    setIsCustomModalOpen(false);
+    void onAutoSave(mode);
+  };
+
+  const handleCustomApply = async () => {
+    const saved = await onAutoSave("custom");
+    if (saved) {
+      setIsCustomModalOpen(false);
+    }
+  };
+
   return (
-    <div className="mb-8 grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-10">
-      {/* Column 1: Calendar */}
-      <div>
-        <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4 text-[#0f172a]" />
-            <span className="text-[12px] font-black uppercase tracking-widest text-[#0f172a]">Set Expiry Date</span>
+    <>
+      <div className="mb-8 space-y-8">
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-[#0f172a]" />
+            <span className="text-[12px] font-black uppercase tracking-widest text-[#0f172a]">Link Expiration</span>
           </div>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 transition-all text-[#0f172a] font-bold"
-            >
-              &larr;
-            </button>
-            <button
-              onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 transition-all text-[#0f172a] font-bold"
-            >
-              &rarr;
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-3 text-[14px] font-black text-[#0f172a]">
-          {viewDate.toLocaleString("default", { month: "long" })} {viewDate.getFullYear()}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-            <div key={`${d}-${i}`} className="text-[10px] font-black uppercase text-slate-300 py-1.5">
-              {d}
-            </div>
-          ))}
-          {Array.from({ length: new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay() }).map((_, i) => (
-            <div key={`empty-${i}`} />
-          ))}
-          {Array.from({ length: new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
-            const day = i + 1;
-            const isSelected = selectedDay === day;
-            const isToday = day === new Date().getDate() && viewDate.getMonth() === new Date().getMonth();
-            return (
+          <p className="mb-4 text-[13px] font-semibold text-slate-500">Choose a quick expiry or set a custom date and time.</p>
+          <div className="flex flex-wrap gap-3">
+            {EXPIRY_OPTIONS.map((option) => (
               <button
-                key={day}
-                onClick={() => setSelectedDay(day)}
-                className={`aspect-square w-full rounded-xl text-[12px] font-black transition-all ${
-                  isSelected
-                    ? "bg-[#0f172a] text-white shadow-lg"
-                    : isToday
-                      ? "bg-teal-50 text-teal-600"
-                      : "hover:bg-slate-50 text-[#0f172a]"
+                key={option.key}
+                type="button"
+                onClick={() => handleModeSelect(option.key)}
+                disabled={isSubmitting}
+                className={`min-w-[120px] rounded-xl border-2 px-4 py-3 text-[12px] font-black tracking-[0.03em] transition-all ${
+                  expiryMode === option.key
+                    ? "border-[#0f172a] bg-[#0f172a] text-white shadow-[3px_3px_0_#99f6e4]"
+                    : "border-slate-200 bg-white text-[#0f172a] hover:border-[#0f172a]"
                 }`}
               >
-                {day}
+                {option.label}
               </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Column 2: Time Picker */}
-      <div className="flex flex-col border-l-2 border-dashed border-slate-100 pl-10">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="h-4 w-4 text-[#0f172a]" />
-            <span className="text-[12px] font-black uppercase tracking-widest text-[#0f172a]">Rotation Time</span>
-          </div>
-
-          <div className="space-y-4">
-            <div className="relative group">
-              <select
-                value={hour}
-                onChange={(e) => setHour(e.target.value)}
-                className="w-full appearance-none rounded-xl border-2 border-slate-100 bg-white py-3 pl-4 pr-10 text-[16px] font-black text-[#0f172a] outline-none hover:border-[#0f172a] transition-all"
-              >
-                {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-300 pointer-events-none" />
-            </div>
-
-            <div className="relative group">
-              <select
-                value={minute}
-                onChange={(e) => setMinute(e.target.value)}
-                className="w-full appearance-none rounded-xl border-2 border-slate-100 bg-white py-3 pl-4 pr-10 text-[16px] font-black text-[#0f172a] outline-none hover:border-[#0f172a] transition-all"
-              >
-                {["00", "15", "30", "45"].map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-300 pointer-events-none" />
-            </div>
-
-            <div className="flex h-[52px] rounded-xl border-2 border-slate-100 bg-white p-1.5">
-              {["AM", "PM"].map((a) => (
-                <button
-                  key={a}
-                  onClick={() => setAmpm(a)}
-                  className={`flex-1 rounded-lg text-[13px] font-black transition-all ${
-                    ampm === a ? "bg-[#0f172a] text-white shadow-md" : "text-slate-400 hover:text-[#0f172a]"
-                  }`}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
 
-        <div className="mt-auto">
-          <button
-            onClick={onSave}
-            disabled={isSubmitting || selectedDay === null}
-            className="w-full rounded-2xl border-2 border-[#0f172a] bg-[#99f6e4] py-4 text-[14px] font-black uppercase tracking-[0.1em] text-[#0f172a] shadow-[6px_6px_0_#0f172a] hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all"
-          >
-            {isSubmitting ? "Saving..." : "Save Settings"}
-          </button>
-        </div>
+        {showCustomDate && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">Custom Expiration</p>
+            <p className="mt-1 text-[14px] font-semibold text-[#0f172a]">{selectedCustomDateLabel}</p>
+          </div>
+        )}
       </div>
-    </div>
+
+      <CustomExpiryModal
+        isOpen={isCustomModalOpen}
+        onClose={() => setIsCustomModalOpen(false)}
+        customStep={customStep}
+        setCustomStep={setCustomStep}
+        viewDate={viewDate}
+        setViewDate={setViewDate}
+        selectedDay={selectedDay}
+        setSelectedDay={setSelectedDay}
+        hour={hour}
+        setHour={setHour}
+        minute={minute}
+        setMinute={setMinute}
+        ampm={ampm}
+        setAmpm={setAmpm}
+        onApply={handleCustomApply}
+        isSubmitting={isSubmitting}
+      />
+    </>
   );
 }
