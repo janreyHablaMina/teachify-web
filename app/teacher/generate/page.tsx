@@ -32,6 +32,7 @@ import {
 } from "@/lib/quiz/question-utils";
 
 const RECENT_GENERATED_QUIZZES_KEY = "teachify_recent_generated_quizzes_v1";
+const FREE_USAGE_CACHE_PREFIX = "teachify_free_usage_v1";
 
 type RecentGeneratedQuiz = {
   id: number;
@@ -59,6 +60,7 @@ export default function TeacherGeneratePage() {
   const [questionsResult, setQuestionsResult] = useState("");
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [summaryTitle, setSummaryTitle] = useState("");
   const [summaryTopic, setSummaryTopic] = useState("");
   const [lastAddedId, setLastAddedId] = useState<number | null>(null);
   const [summaries, setSummaries] = useState<HistorySummaryItem[]>([]);
@@ -122,11 +124,19 @@ export default function TeacherGeneratePage() {
   }, []);
 
   const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);
+  const isFreePlan = planTier === "trial" || planTier === "free";
   const planMeta = PLAN_CATALOG[planTier];
   const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
   const limit = planUser.quiz_generation_limit ?? (planTier === "trial" ? 3 : 0);
-  const used = planUser.quizzes_used ?? 0;
+  const initialUsed = planUser.quizzes_used ?? 0;
+  const freeUsageCacheKey = useMemo(() => {
+    const email = (session?.email ?? "anonymous").trim().toLowerCase();
+    return `${FREE_USAGE_CACHE_PREFIX}:${email}`;
+  }, [session?.email]);
+  const [liveUsed, setLiveUsed] = useState(initialUsed);
+  const used = liveUsed;
   const remaining = Math.max(0, limit - used);
+  const hasNoGenerationsLeft = limit > 0 && remaining <= 0;
   const progress = useMemo(() => {
     if (limit <= 0) return 0;
     return Math.min(100, Math.max(0, (used / limit) * 100));
@@ -147,6 +157,44 @@ export default function TeacherGeneratePage() {
   }, [orderedQuizPreviewQuestions, questionTypeFilter]);
   const recentGeneratedPreview = useMemo(() => recentGeneratedQuizzes.slice(0, 3), [recentGeneratedQuizzes]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      setLiveUsed(initialUsed);
+      return;
+    }
+
+    if (!isFreePlan) {
+      setLiveUsed(initialUsed);
+      return;
+    }
+
+    const anonymousKey = `${FREE_USAGE_CACHE_PREFIX}:anonymous`;
+    const safeCached = Math.max(
+      ...[freeUsageCacheKey, anonymousKey].map((key) => {
+        const raw = window.localStorage.getItem(key);
+        const parsed = raw ? Number(raw) : NaN;
+        return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+      }),
+      0
+    );
+    setLiveUsed(Math.max(initialUsed, safeCached));
+  }, [initialUsed, isFreePlan, freeUsageCacheKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isFreePlan) return;
+    window.localStorage.setItem(freeUsageCacheKey, String(liveUsed));
+  }, [liveUsed, isFreePlan, freeUsageCacheKey]);
+
+  const consumeGeneration = useCallback(() => {
+    setLiveUsed((prev) => {
+      const next = limit > 0 ? Math.min(limit, prev + 1) : prev + 1;
+      if (typeof window !== "undefined" && isFreePlan) {
+        window.localStorage.setItem(freeUsageCacheKey, String(next));
+      }
+      return next;
+    });
+  }, [limit, isFreePlan, freeUsageCacheKey]);
+
   const openQuizPreview = (quiz: GeneratedQuiz) => {
     setQuizToPreview(quiz);
     setQuestionTypeFilter("all");
@@ -158,6 +206,11 @@ export default function TeacherGeneratePage() {
   };
 
   const handleGenerate = async (data: GeneratePayload) => {
+    if (hasNoGenerationsLeft) {
+      showToast("You have used all 3 free tokens. Upgrade your plan to continue generating.", "error");
+      return;
+    }
+
     setIsLoading(true);
     setIsGenerationComplete(false);
     setFileGenerateError("");
@@ -180,6 +233,7 @@ export default function TeacherGeneratePage() {
         return next;
       });
       showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");
+      consumeGeneration();
       setIsGenerationComplete(true);
     } catch (error) {
       const isAbortError =
@@ -208,6 +262,10 @@ export default function TeacherGeneratePage() {
     const trimmedTopic = summaryTopic.trim();
 
     if (!trimmedTopic) return;
+    if (hasNoGenerationsLeft) {
+      showToast("You have used all 3 free tokens. Upgrade your plan to continue generating.", "error");
+      return;
+    }
 
     const prompt = `Generate a detailed lesson summary for the topic: ${trimmedTopic}`;
 
@@ -222,12 +280,13 @@ export default function TeacherGeneratePage() {
         .replace(/^(#+.*)\n\n/gm, '$1\n');
         
       setSummaryResult(cleanedSummary);
+      consumeGeneration();
       
       // Auto-save to backend
       try {
         const token = getStoredToken();
         if (token) {
-          const finalTopic = summaryTopic.trim() || summaryPrompt.substring(0, 50);
+          const finalTopic = summaryTitle.trim() || summaryTopic.trim() || "Untitled lesson";
           await apiStoreSummary(token, { topic: finalTopic, content: cleanedSummary });
           loadHistory(); // Refresh history list
           showToast("Lesson generated and saved to history!", "success");
@@ -237,6 +296,7 @@ export default function TeacherGeneratePage() {
       }
       setQuestionsResult("");
       setIsQuestionsModalOpen(false);
+      setSummaryTitle(""); // Clear title
       setSummaryTopic(""); // Clear topic
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate summary.";
@@ -340,6 +400,7 @@ export default function TeacherGeneratePage() {
             onGenerate={handleGenerate}
             isLoading={isLoading}
             planTier={planTier}
+            generationsRemaining={remaining}
           />
 
           {fileGenerateError ? (
@@ -427,6 +488,18 @@ export default function TeacherGeneratePage() {
               </header>
 
               <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm">
+                <div className="mb-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5">
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
+                    Lesson Title
+                  </label>
+                  <input
+                    type="text"
+                    value={summaryTitle}
+                    onChange={(event) => setSummaryTitle(event.target.value)}
+                    placeholder="Example: Grade 3 Multiplication"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[14px] font-bold text-[#0f172a] outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 placeholder:text-slate-300"
+                  />
+                </div>
                 <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-2.5 transition-colors focus-within:border-emerald-300">
                   <div className="pt-2 pl-1 text-emerald-600">
                     <Sparkles size={18} strokeWidth={2.5} />
@@ -440,7 +513,7 @@ export default function TeacherGeneratePage() {
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
-                        if (!isSummaryLoading && summaryTopic.trim()) {
+                        if (!isSummaryLoading && summaryTopic.trim() && !hasNoGenerationsLeft) {
                           void handleGenerateSummary();
                         }
                       }
@@ -453,7 +526,7 @@ export default function TeacherGeneratePage() {
                 <button
                   type="button"
                   onClick={handleGenerateSummary}
-                  disabled={isSummaryLoading || !summaryTopic.trim()}
+                  disabled={isSummaryLoading || !summaryTopic.trim() || hasNoGenerationsLeft}
                   className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-900 bg-[#0f172a] px-5 text-[12px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-slate-800 sm:w-auto disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isSummaryLoading ? (

@@ -57,7 +57,7 @@ export function HistorySidebar({
                 </div>
               )}
               
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 flex-1 items-center gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-all group-hover:border-emerald-200 group-hover:bg-emerald-50 group-hover:text-emerald-700">
                   <BookOpen size={18} strokeWidth={2.2} />
                 </div>
@@ -71,7 +71,7 @@ export function HistorySidebar({
                   </p>
                 </div>
               </div>
-              <ArrowRight className="shrink-0 text-slate-300 transition-all group-hover:translate-x-1 group-hover:text-emerald-600" size={16} />
+              <ArrowRight className="ml-2 shrink-0 text-slate-300 transition-all group-hover:translate-x-1 group-hover:text-emerald-600" size={16} />
             </button>
           ))
         ) : (

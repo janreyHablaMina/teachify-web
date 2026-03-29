@@ -25,6 +25,7 @@ interface FileUploadWorkspaceProps {
   onGenerate: (data: GeneratePayload) => void | Promise<void>;
   isLoading: boolean;
   planTier: string;
+  generationsRemaining: number;
 }
 
 const DEFAULT_COUNT = 5;
@@ -88,7 +89,7 @@ const QUESTION_TYPES = [
   },
 ];
 
-export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUploadWorkspaceProps) {
+export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generationsRemaining }: FileUploadWorkspaceProps) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
@@ -174,7 +175,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title || !anySelected) return;
+    if (!file || !title || !anySelected || generationsRemaining <= 0) return;
     const types = selectedEntries.map(([id, v]) => ({ id, count: v.count }));
     onGenerate({ title, file, types, difficulty });
   };
@@ -285,7 +286,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
 
             <button
               type="submit"
-              disabled={isLoading || !file || !anySelected || !title}
+              disabled={isLoading || !file || !anySelected || !title || generationsRemaining <= 0}
               className="relative group mt-2 flex items-center justify-center gap-2 overflow-hidden rounded-xl border border-emerald-300 bg-emerald-100 py-4 text-[14px] font-black uppercase tracking-[0.08em] text-emerald-900 shadow-sm transition hover:bg-emerald-200 disabled:opacity-50"
             >
               {isLoading ? (
@@ -295,7 +296,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier }: FileUpl
                 </div>
               ) : (
                 <>
-                  <span className="z-10">Generate Assessment Now</span>
+                  <span className="z-10">{generationsRemaining <= 0 ? "No Tokens Remaining" : "Generate Assessment Now"}</span>
                   <ChevronRight size={18} strokeWidth={3} className="z-10 transition-transform group-hover:translate-x-1" />
                   <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </>
