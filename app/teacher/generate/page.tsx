@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { TeacherHeader } from "@/components/teacher/teacher-header";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { PLAN_CATALOG, normalizePlanTier } from "@/components/teacher/dashboard/plan";
 import { UsageStats } from "@/components/teacher/generate/usage-stats";
 import { ModeSwitcher } from "@/components/teacher/generate/mode-switcher";
@@ -18,7 +19,6 @@ import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast/toast-provider";
-import { AIEngineHeader } from "@/components/teacher/generate/ai-engine-header";
 import { HistorySidebar, type HistorySummaryItem } from "@/components/teacher/generate/history-sidebar";
 import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
 import { DocumentModalActions } from "@/components/teacher/shared/document-modal-actions";
@@ -52,7 +52,6 @@ export default function TeacherGeneratePage() {
   const [questionTypeFilter, setQuestionTypeFilter] = useState("all");
   const [recentGeneratedQuizzes, setRecentGeneratedQuizzes] = useState<RecentGeneratedQuiz[]>([]);
   const [fileGenerateError, setFileGenerateError] = useState("");
-  const [summaryPrompt, setSummaryPrompt] = useState("");
   const [summaryResult, setSummaryResult] = useState("");
   const [summaryError, setSummaryError] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
@@ -206,13 +205,17 @@ export default function TeacherGeneratePage() {
   };
 
   const handleGenerateSummary = async () => {
-    if (!summaryPrompt.trim()) return;
+    const trimmedTopic = summaryTopic.trim();
+
+    if (!trimmedTopic) return;
+
+    const prompt = `Generate a detailed lesson summary for the topic: ${trimmedTopic}`;
 
     setSummaryError("");
     setIsSummaryLoading(true);
 
     try {
-      const generatedSummary = await generateSummary(summaryPrompt);
+      const generatedSummary = await generateSummary(prompt);
       const cleanedSummary = generatedSummary
         .replace(/\n{3,}/g, '\n\n')
         .replace(/\n\n(?=#)/g, '\n')
@@ -234,7 +237,6 @@ export default function TeacherGeneratePage() {
       }
       setQuestionsResult("");
       setIsQuestionsModalOpen(false);
-      setSummaryPrompt(""); // Clear input
       setSummaryTopic(""); // Clear topic
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate summary.";
@@ -404,47 +406,73 @@ export default function TeacherGeneratePage() {
         </>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
-          <article className="rounded-[18px] border-2 border-slate-900 bg-white shadow-[6px_6px_0_#94a3b8] overflow-hidden">
-             <AIEngineHeader />
+          <article className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] shadow-[0_24px_45px_-18px_rgba(15,23,42,0.2)]">
+            <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-emerald-100/50 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -right-20 h-64 w-64 rounded-full bg-cyan-100/60 blur-3xl" />
 
-             <div className="p-8 text-left space-y-6">
-              <div>
-                <label className="block text-[12px] font-black uppercase tracking-wider text-slate-400 mb-1.5 ml-1">
-                  Lesson Topic
-                </label>
-                <input
-                  type="text"
-                  className="w-full rounded-xl border-2 border-slate-900 bg-slate-50 px-6 py-3.5 text-[15px] font-bold outline-none transition focus:bg-white focus:ring-4 focus:ring-teal-500/10 shadow-inner"
-                  placeholder="e.g. Life of Snow White"
-                  value={summaryTopic}
-                  onChange={(event) => setSummaryTopic(event.target.value)}
-                />
+            <div className="relative flex flex-col gap-6 p-6 sm:p-8">
+              <header className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="m-0 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">AI Summary Studio</p>
+                  <h3 className="mt-2 text-[28px] font-black leading-tight tracking-[-0.03em] text-[#0f172a]">
+                    Build a lesson-ready summary
+                  </h3>
+                  <p className="mt-2 max-w-2xl text-[14px] font-semibold text-slate-500">
+                    Share a topic and generate a classroom-friendly summary in seconds.
+                  </p>
+                </div>
+                <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm">
+                  <Sparkles size={20} strokeWidth={2.5} />
+                </div>
+              </header>
+
+              <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm">
+                <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white p-2.5 transition-colors focus-within:border-emerald-300">
+                  <div className="pt-2 pl-1 text-emerald-600">
+                    <Sparkles size={18} strokeWidth={2.5} />
+                  </div>
+                  <textarea
+                    className="min-h-[112px] w-full resize-none bg-transparent px-1 py-1 text-[19px] font-black leading-tight text-[#0f172a] outline-none placeholder:text-slate-300"
+                    placeholder="Example: Photosynthesis for Grade 6 students"
+                    rows={3}
+                    value={summaryTopic}
+                    onChange={(event) => setSummaryTopic(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        if (!isSummaryLoading && summaryTopic.trim()) {
+                          void handleGenerateSummary();
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[12px] font-black uppercase tracking-wider text-slate-400 mb-1.5 ml-1">
-                  AI Instructions
-                </label>
-                <textarea
-                  className="w-full rounded-xl border-2 border-slate-900 bg-slate-50 p-6 text-[15px] font-bold outline-none transition focus:bg-white focus:ring-4 focus:ring-teal-500/10 shadow-inner"
-                  placeholder="e.g. Summarize the life of Snow White for 5th graders..."
-                  rows={4}
-                  value={summaryPrompt}
-                  onChange={(event) => setSummaryPrompt(event.target.value)}
-                />
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleGenerateSummary}
+                  disabled={isSummaryLoading || !summaryTopic.trim()}
+                  className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-900 bg-[#0f172a] px-5 text-[12px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-slate-800 sm:w-auto disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isSummaryLoading ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Generate Summary</span>
+                      <ArrowRight size={16} strokeWidth={2.75} className="shrink-0 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={handleGenerateSummary}
-                disabled={isSummaryLoading || !summaryPrompt.trim()}
-                className="mt-2 w-full rounded-xl border-2 border-slate-900 bg-[#99f6e4] py-4 text-[14px] font-black uppercase tracking-wider text-slate-900 shadow-[4px_4px_0_#0f172a] transition hover:-translate-y-1 hover:bg-[#5eead4] disabled:transform-none disabled:opacity-50 disabled:shadow-none active:translate-y-0"
-              >
-                {isSummaryLoading ? "Generating Summary..." : "Generate Summary"}
-              </button>
 
               {summaryError ? (
-                <p className="mt-4 rounded-lg border-2 border-red-900 bg-rose-100 px-4 py-3 text-left text-[13px] font-bold text-red-800">
+                <p className="m-0 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-bold text-red-700">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-[12px]">!</span>
                   {summaryError}
                 </p>
               ) : null}
@@ -458,7 +486,6 @@ export default function TeacherGeneratePage() {
             isHistoryLoading={isHistoryLoading}
             onSummaryClick={(s) => {
               setSummaryResult(s.content);
-              setSummaryPrompt(s.topic);
               setIsSummaryModalOpen(true);
             }}
           />
