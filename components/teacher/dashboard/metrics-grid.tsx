@@ -2,6 +2,7 @@ import type { PlanTier } from "./types";
 
 type MetricsGridProps = {
   activeClasses: number;
+  totalClasses: number;
   used: number;
   progressPercent: number;
   planTierLabel: string;
@@ -36,7 +37,7 @@ function MetricCard({
   );
 }
 
-export function MetricsGrid({ activeClasses, used, progressPercent, planTierLabel, planTier, limit, maxQuestions }: MetricsGridProps) {
+export function MetricsGrid({ activeClasses, totalClasses, used, progressPercent, planTierLabel, planTier, limit, maxQuestions }: MetricsGridProps) {
   if (planTier === "trial") {
     const remaining = Math.max(0, limit - used);
     return (
@@ -44,19 +45,19 @@ export function MetricsGrid({ activeClasses, used, progressPercent, planTierLabe
         <MetricCard 
           label="Generations Left" 
           value={`${remaining} / ${limit}`} 
-          subtext="Generations refill monthly" 
+          subtext={`${used} used so far`} 
           colorClass="border-t-teal-400" 
         />
         <MetricCard 
           label="Question Limit" 
           value={`Up to ${maxQuestions}`} 
-          subtext="Standard for Free plan" 
+          subtext="Per generated quiz" 
           colorClass="border-t-amber-400" 
         />
         <MetricCard 
           label="Question Type" 
-          value="Multiple Choice" 
-          subtext="Standard selection" 
+          value="1 Type" 
+          subtext="Multiple Choice only" 
           colorClass="border-t-rose-400" 
         />
         <MetricCard 
@@ -76,19 +77,19 @@ export function MetricsGrid({ activeClasses, used, progressPercent, planTierLabe
         <MetricCard 
           label="Generations Left" 
           value={`${remaining} / ${limit}`} 
-          subtext="+2 generations this month" 
+          subtext={`${used} used this month`} 
           colorClass="border-t-teal-400" 
         />
         <MetricCard 
           label="Question Limit" 
           value={`Up to ${maxQuestions}`} 
-          subtext="Enhanced for Basic plan" 
+          subtext="Per generated quiz" 
           colorClass="border-t-amber-400" 
         />
         <MetricCard 
           label="Doc to Quiz" 
           value="Enabled" 
-          subtext="AI analysis active" 
+          subtext={`${Math.round(progressPercent)}% of monthly usage`} 
           colorClass="border-t-rose-400" 
         />
         <MetricCard 
@@ -106,25 +107,25 @@ export function MetricsGrid({ activeClasses, used, progressPercent, planTierLabe
       <MetricCard 
         label="Active Classes" 
         value={activeClasses} 
-        subtext="+12 this month" 
+        subtext={`${totalClasses} total classroom${totalClasses === 1 ? "" : "s"}`} 
         colorClass="border-t-teal-400" 
       />
       <MetricCard 
         label="Completed Quizzes" 
         value={used} 
-        subtext="+3.2% vs yesterday" 
+        subtext={`${Math.max(0, limit - used)} generation${Math.max(0, limit - used) === 1 ? "" : "s"} remaining`} 
         colorClass="border-t-amber-400" 
       />
       <MetricCard 
         label="Overall Progress" 
         value={`${Math.round(progressPercent)}%`} 
-        subtext="115% of goal" 
+        subtext={`${used} of ${limit} used`} 
         colorClass="border-t-rose-400" 
       />
       <MetricCard 
         label="Plan Tier" 
         value={planTierLabel} 
-        subtext="System optimal" 
+        subtext={`Up to ${maxQuestions} questions per quiz`} 
         colorClass="border-t-violet-400" 
       />
     </section>

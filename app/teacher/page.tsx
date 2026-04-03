@@ -99,6 +99,7 @@ export default function TeacherDashboardPage() {
   }, [limit, used]);
 
   const recentQuizzes = quizzes.slice(0, 5);
+  const totalClasses = classrooms.length;
   const activeClasses = classrooms.filter((c) => c.is_active).length;
   const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
 
@@ -118,6 +119,7 @@ export default function TeacherDashboardPage() {
 
       <MetricsGrid
         activeClasses={activeClasses}
+        totalClasses={totalClasses}
         used={used}
         progressPercent={progressPercent}
         planTierLabel={planTierLabel}
