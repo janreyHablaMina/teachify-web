@@ -116,6 +116,18 @@ export async function apiDeleteSummary(
   return { response, data };
 }
 
+export async function apiConsumeGenerationUsage(
+  token: string | undefined
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/generation-usage/consume`, {
+    method: "POST",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiRegisterStudent(payload: {
   firstname: string;
   middlename?: string;

@@ -26,6 +26,7 @@ interface FileUploadWorkspaceProps {
   isLoading: boolean;
   planTier: string;
   generationsRemaining: number;
+  onNoGenerationsLeft?: () => void;
 }
 
 const DEFAULT_COUNT = 5;
@@ -89,7 +90,7 @@ const QUESTION_TYPES = [
   },
 ];
 
-export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generationsRemaining }: FileUploadWorkspaceProps) {
+export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generationsRemaining, onNoGenerationsLeft }: FileUploadWorkspaceProps) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
@@ -175,14 +176,18 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generatio
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title || !anySelected || generationsRemaining <= 0) return;
+    if (generationsRemaining <= 0) {
+      onNoGenerationsLeft?.();
+      return;
+    }
+    if (!file || !title || !anySelected) return;
     const types = selectedEntries.map(([id, v]) => ({ id, count: v.count }));
     onGenerate({ title, file, types, difficulty });
   };
 
   return (
     <article className="overflow-hidden rounded-[24px] border border-slate-900/10 bg-white p-0 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.05),0_10px_10px_-5px_rgba(0,0,0,0.01)]">
-      <div className="bg-slate-50 border-b border-slate-100 p-8">
+      <div className="bg-white border-b border-slate-100 p-8">
         <h3 className="m-0 text-[26px] font-black tracking-tight text-[#0f172a]">Quiz Generator</h3>
         <p className="mt-2 text-[15px] font-medium text-slate-500 leading-relaxed max-w-xl">
           Transform your classroom materials into professional assessments using Teachify&apos;s specialized AI models.
@@ -286,7 +291,7 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generatio
 
             <button
               type="submit"
-              disabled={isLoading || !file || !anySelected || !title || generationsRemaining <= 0}
+              disabled={isLoading || !file || !anySelected || !title}
               className="relative group mt-2 flex items-center justify-center gap-2 overflow-hidden rounded-xl border border-emerald-300 bg-emerald-100 py-4 text-[14px] font-black uppercase tracking-[0.08em] text-emerald-900 shadow-sm transition hover:bg-emerald-200 disabled:opacity-50"
             >
               {isLoading ? (

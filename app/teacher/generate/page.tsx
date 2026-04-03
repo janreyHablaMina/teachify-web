@@ -12,7 +12,7 @@ import { LoadingOverlay } from "@/components/teacher/generate/loading-overlay";
 import type { GeneratePayload, GeneratedQuiz } from "@/components/teacher/generate/types";
 import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
-import { apiStoreSummary, apiGetSummaries } from "@/lib/api/client";
+import { apiConsumeGenerationUsage, apiStoreSummary, apiGetSummaries } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { generateQuizFromFile, generateSummary } from "@/lib/teacher/generate-service";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
@@ -32,7 +32,6 @@ import {
 } from "@/lib/quiz/question-utils";
 
 const RECENT_GENERATED_QUIZZES_KEY = "teachify_recent_generated_quizzes_v1";
-const FREE_USAGE_CACHE_PREFIX = "teachify_free_usage_v1";
 
 type RecentGeneratedQuiz = {
   id: number;
@@ -56,6 +55,7 @@ export default function TeacherGeneratePage() {
   const [summaryResult, setSummaryResult] = useState("");
   const [summaryError, setSummaryError] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [questionsResult, setQuestionsResult] = useState("");
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
@@ -124,19 +124,15 @@ export default function TeacherGeneratePage() {
   }, []);
 
   const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);
-  const isFreePlan = planTier === "trial" || planTier === "free";
   const planMeta = PLAN_CATALOG[planTier];
   const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
-  const limit = planUser.quiz_generation_limit ?? (planTier === "trial" ? 3 : 0);
+  const limit = planUser.quiz_generation_limit ?? planMeta.quizLimit;
   const initialUsed = planUser.quizzes_used ?? 0;
-  const freeUsageCacheKey = useMemo(() => {
-    const email = (session?.email ?? "anonymous").trim().toLowerCase();
-    return `${FREE_USAGE_CACHE_PREFIX}:${email}`;
-  }, [session?.email]);
   const [liveUsed, setLiveUsed] = useState(initialUsed);
   const used = liveUsed;
   const remaining = Math.max(0, limit - used);
-  const hasNoGenerationsLeft = limit > 0 && remaining <= 0;
+  const hasNoGenerationsLeft = remaining <= 0;
+  const noGenerationsLeftMessage = `You have used all ${limit} generation token${limit === 1 ? "" : "s"}. Upgrade your plan to continue generating.`;
   const progress = useMemo(() => {
     if (limit <= 0) return 0;
     return Math.min(100, Math.max(0, (used / limit) * 100));
@@ -158,42 +154,48 @@ export default function TeacherGeneratePage() {
   const recentGeneratedPreview = useMemo(() => recentGeneratedQuizzes.slice(0, 3), [recentGeneratedQuizzes]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      setLiveUsed(initialUsed);
+    setLiveUsed(initialUsed);
+  }, [initialUsed]);
+
+  const consumeGenerationOnServer = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token) {
+      showToast("Session expired. Please log in again.", "error");
       return;
     }
 
-    if (!isFreePlan) {
-      setLiveUsed(initialUsed);
-      return;
-    }
+    const { response, data } = await apiConsumeGenerationUsage(token);
+    const nextUsedRaw = data?.quizzes_used;
+    const nextUsed =
+      typeof nextUsedRaw === "number"
+        ? nextUsedRaw
+        : typeof nextUsedRaw === "string"
+          ? Number(nextUsedRaw)
+          : NaN;
 
-    const anonymousKey = `${FREE_USAGE_CACHE_PREFIX}:anonymous`;
-    const safeCached = Math.max(
-      ...[freeUsageCacheKey, anonymousKey].map((key) => {
-        const raw = window.localStorage.getItem(key);
-        const parsed = raw ? Number(raw) : NaN;
-        return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-      }),
-      0
-    );
-    setLiveUsed(Math.max(initialUsed, safeCached));
-  }, [initialUsed, isFreePlan, freeUsageCacheKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !isFreePlan) return;
-    window.localStorage.setItem(freeUsageCacheKey, String(liveUsed));
-  }, [liveUsed, isFreePlan, freeUsageCacheKey]);
-
-  const consumeGeneration = useCallback(() => {
-    setLiveUsed((prev) => {
-      const next = limit > 0 ? Math.min(limit, prev + 1) : prev + 1;
-      if (typeof window !== "undefined" && isFreePlan) {
-        window.localStorage.setItem(freeUsageCacheKey, String(next));
+    if (!response.ok) {
+      if (Number.isFinite(nextUsed)) {
+        setLiveUsed(Math.max(0, nextUsed));
       }
-      return next;
-    });
-  }, [limit, isFreePlan, freeUsageCacheKey]);
+      if (response.status === 403) {
+        setIsUpgradeModalOpen(true);
+      }
+      showToast(
+        typeof data?.message === "string"
+          ? data.message
+          : "Failed to sync usage with server.",
+        "error"
+      );
+      return;
+    }
+
+    if (Number.isFinite(nextUsed)) {
+      setLiveUsed(Math.max(0, nextUsed));
+      return;
+    }
+
+    setLiveUsed((prev) => (limit > 0 ? Math.min(limit, prev + 1) : prev + 1));
+  }, [limit, showToast]);
 
   const openQuizPreview = (quiz: GeneratedQuiz) => {
     setQuizToPreview(quiz);
@@ -207,7 +209,7 @@ export default function TeacherGeneratePage() {
 
   const handleGenerate = async (data: GeneratePayload) => {
     if (hasNoGenerationsLeft) {
-      showToast("You have used all 3 free tokens. Upgrade your plan to continue generating.", "error");
+      setIsUpgradeModalOpen(true);
       return;
     }
 
@@ -233,7 +235,7 @@ export default function TeacherGeneratePage() {
         return next;
       });
       showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");
-      consumeGeneration();
+      await consumeGenerationOnServer();
       setIsGenerationComplete(true);
     } catch (error) {
       const isAbortError =
@@ -263,7 +265,7 @@ export default function TeacherGeneratePage() {
 
     if (!trimmedTopic) return;
     if (hasNoGenerationsLeft) {
-      showToast("You have used all 3 free tokens. Upgrade your plan to continue generating.", "error");
+      setIsUpgradeModalOpen(true);
       return;
     }
 
@@ -280,7 +282,8 @@ export default function TeacherGeneratePage() {
         .replace(/^(#+.*)\n\n/gm, '$1\n');
         
       setSummaryResult(cleanedSummary);
-      consumeGeneration();
+      setIsSummaryModalOpen(true);
+      await consumeGenerationOnServer();
       
       // Auto-save to backend
       try {
@@ -401,6 +404,7 @@ export default function TeacherGeneratePage() {
             isLoading={isLoading}
             planTier={planTier}
             generationsRemaining={remaining}
+            onNoGenerationsLeft={() => setIsUpgradeModalOpen(true)}
           />
 
           {fileGenerateError ? (
@@ -513,7 +517,7 @@ export default function TeacherGeneratePage() {
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
-                        if (!isSummaryLoading && summaryTopic.trim() && !hasNoGenerationsLeft) {
+                        if (!isSummaryLoading && summaryTopic.trim()) {
                           void handleGenerateSummary();
                         }
                       }
@@ -526,7 +530,7 @@ export default function TeacherGeneratePage() {
                 <button
                   type="button"
                   onClick={handleGenerateSummary}
-                  disabled={isSummaryLoading || !summaryTopic.trim() || hasNoGenerationsLeft}
+                  disabled={isSummaryLoading || !summaryTopic.trim()}
                   className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-900 bg-[#0f172a] px-5 text-[12px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-slate-800 sm:w-auto disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isSummaryLoading ? (
@@ -620,6 +624,37 @@ export default function TeacherGeneratePage() {
             ))}
           </div>
         ) : null}
+      </Modal>
+
+      <Modal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        title="Generation Limit Reached"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(false)}
+              className="rounded-lg border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100"
+            >
+              Maybe Later
+            </button>
+            <Link
+              href="/teacher"
+              onClick={() => setIsUpgradeModalOpen(false)}
+              className="rounded-lg border-2 border-slate-900 bg-yellow-200 px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-900 no-underline transition hover:bg-yellow-300"
+            >
+              Upgrade Plan
+            </Link>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="m-0 text-[14px] font-bold text-slate-700">{noGenerationsLeftMessage}</p>
+          <p className="m-0 text-[13px] font-semibold text-slate-600">
+            Upgrade your subscription to unlock more generations and keep creating lessons and quizzes.
+          </p>
+        </div>
       </Modal>
 
       {/* Summary Modal */}

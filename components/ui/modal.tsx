@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 type ModalProps = {
@@ -12,10 +12,17 @@ type ModalProps = {
 };
 
 export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
+  const [isVisible, setIsVisible] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      const frame = requestAnimationFrame(() => setIsVisible(true));
+      return () => {
+        cancelAnimationFrame(frame);
+      };
     }
+    setIsVisible(false);
     if (!isOpen) {
       document.body.style.overflow = "unset";
     }
@@ -29,19 +36,21 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
   return (
     <div
       className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ${
-        "opacity-100"
+        isVisible ? "opacity-100" : "opacity-0"
       }`}
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${
+          isVisible ? "opacity-100" : "opacity-0"
+        }`}
         onClick={onClose}
       />
 
       {/* Modal Container */}
       <div
         className={`relative w-full max-w-2xl bg-white border-2 border-slate-900 rounded-[24px] shadow-[8px_8px_0_#0f172a] overflow-hidden transition-all duration-300 ${
-          "scale-100 translate-y-0"
+          isVisible ? "scale-100 translate-y-0 opacity-100" : "scale-95 translate-y-3 opacity-0"
         }`}
       >
         {/* Header */}
