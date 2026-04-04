@@ -39,6 +39,24 @@ type RecentGeneratedQuiz = {
   quiz: GeneratedQuiz;
 };
 
+function parseNumericValue(value: unknown): number | null {
+  const numericValue =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : NaN;
+
+  return Number.isFinite(numericValue) ? Math.max(0, numericValue) : null;
+}
+
+function normalizeSummaryContent(content: string): string {
+  return content
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/\n\n(?=#)/g, "\n")
+    .replace(/^(#+.*)\n\n/gm, "$1\n");
+}
+
 export default function TeacherGeneratePage() {
   const { showToast } = useToast();
   const session = useTeacherSession();
@@ -152,6 +170,7 @@ export default function TeacherGeneratePage() {
     return orderedQuizPreviewQuestions.filter((question) => question.type === questionTypeFilter);
   }, [orderedQuizPreviewQuestions, questionTypeFilter]);
   const recentGeneratedPreview = useMemo(() => recentGeneratedQuizzes.slice(0, 3), [recentGeneratedQuizzes]);
+  const openUpgradeModal = useCallback(() => setIsUpgradeModalOpen(true), []);
 
   useEffect(() => {
     setLiveUsed(initialUsed);
@@ -165,20 +184,14 @@ export default function TeacherGeneratePage() {
     }
 
     const { response, data } = await apiConsumeGenerationUsage(token);
-    const nextUsedRaw = data?.quizzes_used;
-    const nextUsed =
-      typeof nextUsedRaw === "number"
-        ? nextUsedRaw
-        : typeof nextUsedRaw === "string"
-          ? Number(nextUsedRaw)
-          : NaN;
+    const nextUsed = parseNumericValue(data?.quizzes_used);
 
     if (!response.ok) {
-      if (Number.isFinite(nextUsed)) {
-        setLiveUsed(Math.max(0, nextUsed));
+      if (nextUsed !== null) {
+        setLiveUsed(nextUsed);
       }
       if (response.status === 403) {
-        setIsUpgradeModalOpen(true);
+        openUpgradeModal();
       }
       showToast(
         typeof data?.message === "string"
@@ -189,13 +202,32 @@ export default function TeacherGeneratePage() {
       return;
     }
 
-    if (Number.isFinite(nextUsed)) {
-      setLiveUsed(Math.max(0, nextUsed));
+    if (nextUsed !== null) {
+      setLiveUsed(nextUsed);
       return;
     }
 
     setLiveUsed((prev) => (limit > 0 ? Math.min(limit, prev + 1) : prev + 1));
-  }, [limit, showToast]);
+  }, [limit, openUpgradeModal, showToast]);
+
+  const addRecentGeneratedQuiz = useCallback((storedId: number, createdAt: string, quiz: GeneratedQuiz) => {
+    setRecentGeneratedQuizzes((prev) => {
+      const next = [{ id: storedId, createdAt, quiz }, ...prev]
+        .filter((entry, index, list) => list.findIndex((candidate) => candidate.id === entry.id) === index)
+        .slice(0, 6);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(RECENT_GENERATED_QUIZZES_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  }, []);
+
+  const resetSummaryComposer = useCallback(() => {
+    setQuestionsResult("");
+    setIsQuestionsModalOpen(false);
+    setSummaryTitle("");
+    setSummaryTopic("");
+  }, []);
 
   const openQuizPreview = (quiz: GeneratedQuiz) => {
     setQuizToPreview(quiz);
@@ -207,9 +239,9 @@ export default function TeacherGeneratePage() {
     activeGenerationAbortControllerRef.current?.abort();
   };
 
-  const handleGenerate = async (data: GeneratePayload) => {
+  const handleGenerate = useCallback(async (data: GeneratePayload) => {
     if (hasNoGenerationsLeft) {
-      setIsUpgradeModalOpen(true);
+      openUpgradeModal();
       return;
     }
 
@@ -225,15 +257,7 @@ export default function TeacherGeneratePage() {
       setGeneratedQuiz(quiz);
       setQuizToPreview(quiz);
       const storedQuiz = addGeneratedQuizToStore(quiz);
-      setRecentGeneratedQuizzes((prev) => {
-        const next = [{ id: storedQuiz.id, createdAt: storedQuiz.created_at, quiz }, ...prev]
-          .filter((entry, index, list) => list.findIndex((candidate) => candidate.id === entry.id) === index)
-          .slice(0, 6);
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(RECENT_GENERATED_QUIZZES_KEY, JSON.stringify(next));
-        }
-        return next;
-      });
+      addRecentGeneratedQuiz(storedQuiz.id, storedQuiz.created_at, quiz);
       showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");
       await consumeGenerationOnServer();
       setIsGenerationComplete(true);
@@ -258,14 +282,14 @@ export default function TeacherGeneratePage() {
         activeGenerationAbortControllerRef.current = null;
       }
     }
-  };
+  }, [addRecentGeneratedQuiz, consumeGenerationOnServer, hasNoGenerationsLeft, maxQuestions, openUpgradeModal, showToast]);
 
-  const handleGenerateSummary = async () => {
+  const handleGenerateSummary = useCallback(async () => {
     const trimmedTopic = summaryTopic.trim();
 
     if (!trimmedTopic) return;
     if (hasNoGenerationsLeft) {
-      setIsUpgradeModalOpen(true);
+      openUpgradeModal();
       return;
     }
 
@@ -276,10 +300,7 @@ export default function TeacherGeneratePage() {
 
     try {
       const generatedSummary = await generateSummary(prompt);
-      const cleanedSummary = generatedSummary
-        .replace(/\n{3,}/g, '\n\n')
-        .replace(/\n\n(?=#)/g, '\n')
-        .replace(/^(#+.*)\n\n/gm, '$1\n');
+      const cleanedSummary = normalizeSummaryContent(generatedSummary);
         
       setSummaryResult(cleanedSummary);
       setIsSummaryModalOpen(true);
@@ -297,17 +318,14 @@ export default function TeacherGeneratePage() {
       } catch (saveError) {
         console.error("Failed to auto-save summary:", saveError);
       }
-      setQuestionsResult("");
-      setIsQuestionsModalOpen(false);
-      setSummaryTitle(""); // Clear title
-      setSummaryTopic(""); // Clear topic
+      resetSummaryComposer();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate summary.";
       setSummaryError(message);
     } finally {
       setIsSummaryLoading(false);
     }
-  };
+  }, [consumeGenerationOnServer, hasNoGenerationsLeft, loadHistory, openUpgradeModal, resetSummaryComposer, showToast, summaryTitle, summaryTopic]);
 
   const handleSaveSummaryAsPdf = () => {
     downloadSummaryPdf(summaryResult);
@@ -404,7 +422,7 @@ export default function TeacherGeneratePage() {
             isLoading={isLoading}
             planTier={planTier}
             generationsRemaining={remaining}
-            onNoGenerationsLeft={() => setIsUpgradeModalOpen(true)}
+            onNoGenerationsLeft={openUpgradeModal}
           />
 
           {fileGenerateError ? (
