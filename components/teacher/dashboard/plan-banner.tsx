@@ -35,9 +35,9 @@ export function PlanBanner({ planMeta, remaining, limit, used, progressPercent }
         <Link href="/teacher/generate" className={`${DASHBOARD_BTN_BASE} bg-teal-200 text-[13px] tracking-[0.05em] no-underline`}>
           Generate Quiz
         </Link>
-        <button type="button" className={`${DASHBOARD_BTN_BASE} bg-yellow-200`}>
+        <Link href="/teacher/upgrade" className={`${DASHBOARD_BTN_BASE} bg-yellow-200 no-underline`}>
           Upgrade Plan
-        </button>
+        </Link>
       </div>
     </section>
   );

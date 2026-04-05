@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Crown, Sparkles } from "lucide-react";
 import { DASHBOARD_BTN_BASE } from "./plan";
 
@@ -14,13 +15,13 @@ export function UnlockProPanel() {
           </p>
           <h4 className="m-0 mt-1 text-[20px] font-black tracking-[-0.02em] text-slate-900">Unlock Pro Features</h4>
         </div>
-        <button
-          type="button"
-          className={`${DASHBOARD_BTN_BASE.replace("shadow-[4px_4px_0_#0f172a]", "shadow-sm")} bg-[#ede9fe]`}
+        <Link
+          href="/teacher/upgrade"
+          className={`${DASHBOARD_BTN_BASE.replace("shadow-[4px_4px_0_#0f172a]", "shadow-sm")} bg-[#ede9fe] no-underline`}
         >
           <Crown className="mr-1.5 h-4 w-4" />
           Upgrade Plan
-        </button>
+        </Link>
       </div>
       <div className="flex flex-wrap gap-2">
         {features.map((feature) => (

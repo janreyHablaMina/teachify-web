@@ -658,7 +658,7 @@ export default function TeacherGeneratePage() {
               Maybe Later
             </button>
             <Link
-              href="/teacher"
+              href="/teacher/upgrade"
               onClick={() => setIsUpgradeModalOpen(false)}
               className="rounded-lg border-2 border-slate-900 bg-yellow-200 px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-900 no-underline transition hover:bg-yellow-300"
             >

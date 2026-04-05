@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PlanMeta, PlanTier } from "./types";
 import { DASHBOARD_BTN_BASE } from "./plan";
 import { CheckCircle2, XCircle } from "lucide-react";
@@ -48,12 +49,12 @@ export function PlanFeaturesPanel({ planMeta, planTier }: PlanFeaturesPanelProps
       {(planTier === "trial" || planTier === "basic") ? (
         <div className="mt-1 rounded-xl border border-violet-200 bg-violet-50/70 p-3">
           <p className="m-0 text-[12px] font-bold leading-[1.45] text-slate-700">{upgradeCopy}</p>
-          <button
-            type="button"
-            className={`${DASHBOARD_BTN_BASE.replace("shadow-[4px_4px_0_#0f172a]", "shadow-sm")} mt-3 w-fit bg-[#ede9fe]`}
+          <Link
+            href="/teacher/upgrade"
+            className={`${DASHBOARD_BTN_BASE.replace("shadow-[4px_4px_0_#0f172a]", "shadow-sm")} mt-3 w-fit bg-[#ede9fe] no-underline`}
           >
             Upgrade Plan
-          </button>
+          </Link>
         </div>
       ) : null}
     </article>
