@@ -6,6 +6,36 @@ import { useTeacherSession } from "@/components/teacher/teacher-session-context"
 import { PLAN_CATALOG, normalizePlanTier } from "@/components/teacher/dashboard/plan";
 
 const PLAN_ORDER = ["trial", "basic", "pro", "school"] as const;
+const PLAN_THEME = {
+  trial: {
+    card: "border-amber-300 bg-[linear-gradient(180deg,#fffbeb_0%,#fff7ed_100%)]",
+    badge: "border-amber-300 bg-amber-100 text-amber-800",
+    feature: "border-amber-200 bg-white/80",
+    icon: "text-amber-600",
+    cta: "border-amber-300 bg-amber-100 text-amber-800",
+  },
+  basic: {
+    card: "border-teal-300 bg-[linear-gradient(180deg,#ecfeff_0%,#f0fdfa_100%)]",
+    badge: "border-teal-300 bg-teal-100 text-teal-800",
+    feature: "border-teal-200 bg-white/80",
+    icon: "text-teal-600",
+    cta: "border-teal-500 bg-teal-200 text-teal-900 shadow-[3px_3px_0_#0f766e]",
+  },
+  pro: {
+    card: "border-indigo-300 bg-[linear-gradient(180deg,#eef2ff_0%,#f5f3ff_100%)]",
+    badge: "border-indigo-300 bg-indigo-100 text-indigo-800",
+    feature: "border-indigo-200 bg-white/80",
+    icon: "text-indigo-600",
+    cta: "border-indigo-500 bg-indigo-200 text-indigo-900 shadow-[3px_3px_0_#4338ca]",
+  },
+  school: {
+    card: "border-rose-300 bg-[linear-gradient(180deg,#fff1f2_0%,#fef2f2_100%)]",
+    badge: "border-rose-300 bg-rose-100 text-rose-800",
+    feature: "border-rose-200 bg-white/80",
+    icon: "text-rose-600",
+    cta: "border-rose-500 bg-rose-200 text-rose-900 shadow-[3px_3px_0_#be123c]",
+  },
+} as const;
 
 export default function TeacherUpgradePage() {
   const session = useTeacherSession();
@@ -13,7 +43,7 @@ export default function TeacherUpgradePage() {
 
   return (
     <section className="w-full">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <header className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-[linear-gradient(120deg,#ffffff_0%,#ecfeff_50%,#fef3c7_100%)] p-5 shadow-sm">
         <div>
           <p className="mb-1 text-[12px] font-black uppercase tracking-[0.09em] text-slate-500">Dashboard / Upgrade</p>
           <h2 className="text-[32px] font-black leading-none tracking-[-0.03em] text-slate-900">Choose Your Plan</h2>
@@ -32,18 +62,19 @@ export default function TeacherUpgradePage() {
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
         {PLAN_ORDER.map((tier) => {
           const plan = PLAN_CATALOG[tier];
+          const theme = PLAN_THEME[tier];
           const isCurrent = currentPlanTier === tier;
           const isUpgrade = PLAN_ORDER.indexOf(tier) > PLAN_ORDER.indexOf(currentPlanTier);
 
           return (
             <article
               key={tier}
-              className={`relative flex h-full flex-col rounded-2xl border bg-white p-5 shadow-sm ${
-                isCurrent ? "border-emerald-300 ring-4 ring-emerald-100" : "border-slate-200"
+              className={`relative flex h-full flex-col rounded-2xl border p-5 shadow-sm transition-transform hover:-translate-y-1 ${
+                isCurrent ? `${theme.card} ring-4 ring-emerald-100` : theme.card
               }`}
             >
               {isCurrent ? (
-                <span className="absolute -top-3 right-4 rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-800">
+                <span className={`absolute -top-3 right-4 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] ${theme.badge}`}>
                   Current Plan
                 </span>
               ) : null}
@@ -57,8 +88,8 @@ export default function TeacherUpgradePage() {
 
               <div className="grid gap-2">
                 {plan.features.slice(0, 5).map((feature) => (
-                  <div key={feature} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <div key={feature} className={`flex items-start gap-2 rounded-lg border px-3 py-2 ${theme.feature}`}>
+                    <CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${theme.icon}`} />
                     <span className="text-[12px] font-bold text-slate-700">{feature}</span>
                   </div>
                 ))}
@@ -76,7 +107,7 @@ export default function TeacherUpgradePage() {
                 ) : isUpgrade ? (
                   <a
                     href="mailto:billing@teachify.ai?subject=Teachify%20Plan%20Upgrade"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#0f172a] bg-[#fef08a] px-4 py-3 text-[12px] font-black uppercase tracking-[0.08em] text-[#0f172a] no-underline shadow-[3px_3px_0_#0f172a] transition hover:-translate-y-1"
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-[12px] font-black uppercase tracking-[0.08em] no-underline transition hover:-translate-y-1 ${theme.cta}`}
                   >
                     <Crown className="h-4 w-4" />
                     Upgrade to {tier.toUpperCase()}
