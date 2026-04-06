@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { X } from "lucide-react";
 
 type ModalProps = {
@@ -12,18 +12,10 @@ type ModalProps = {
 };
 
 export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
-  const [isVisible, setIsVisible] = useState(false);
-
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      const frame = requestAnimationFrame(() => setIsVisible(true));
-      return () => {
-        cancelAnimationFrame(frame);
-      };
-    }
-    setIsVisible(false);
-    if (!isOpen) {
+    } else {
       document.body.style.overflow = "unset";
     }
     return () => {
@@ -35,23 +27,19 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ${
-        isVisible ? "opacity-100" : "opacity-0"
-      }`}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ animation: "fadeInModal 220ms ease-out" }}
     >
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${
-          isVisible ? "opacity-100" : "opacity-0"
-        }`}
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal Container */}
       <div
-        className={`relative w-full max-w-2xl bg-white border-2 border-slate-900 rounded-[24px] shadow-[8px_8px_0_#0f172a] overflow-hidden transition-all duration-300 ${
-          isVisible ? "scale-100 translate-y-0 opacity-100" : "scale-95 translate-y-3 opacity-0"
-        }`}
+        className="relative w-full max-w-2xl bg-white border-2 border-slate-900 rounded-[24px] shadow-[8px_8px_0_#0f172a] overflow-hidden"
+        style={{ animation: "popInModal 240ms ease-out" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b-2 border-slate-900 bg-teal-50 px-6 py-4">
@@ -78,6 +66,26 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
           </div>
         )}
       </div>
+      <style jsx>{`
+        @keyframes fadeInModal {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes popInModal {
+          from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }
