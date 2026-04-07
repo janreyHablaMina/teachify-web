@@ -141,23 +141,23 @@ export default function TeacherLessonsPage() {
           <div>
             <p className="mb-1 text-[12px] font-black uppercase tracking-[0.09em] text-slate-500">Dashboard / Lessons</p>
             <h2 className="text-[32px] font-black leading-none tracking-[-0.03em] text-slate-900">My AI Lessons</h2>
-            <p className="mt-2 text-[15px] font-bold text-[#9a3412]">Review, search, and manage your generated summaries.</p>
+            <p className="mt-2 text-[15px] font-bold text-slate-600">Review, search, and manage your generated summaries.</p>
           </div>
 
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <div className="relative w-full sm:w-[330px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-300" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400" size={18} />
               <input
                 type="text"
                 placeholder="Search lessons..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-[#fdba74] bg-[#fff7ed] py-3 pl-12 pr-4 text-[14px] font-bold text-[#7c2d12] outline-none transition placeholder:text-[#d97706] focus:border-[#fb923c] focus:ring-4 focus:ring-orange-500/10"
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-[14px] font-bold text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10"
               />
             </div>
             <Link
               href="/teacher/generate"
-              className="inline-flex h-[46px] items-center justify-center rounded-xl border-2 border-[#7c2d12] bg-[#fb923c] px-6 text-[12px] font-black uppercase tracking-[0.08em] text-white shadow-[3px_3px_0_#7c2d12] transition hover:-translate-y-0.5 hover:bg-[#f97316] hover:shadow-[5px_5px_0_#7c2d12]"
+              className="inline-flex h-[46px] items-center justify-center rounded-xl border-2 border-cyan-700 bg-cyan-600 px-6 text-[12px] font-black uppercase tracking-[0.08em] text-white shadow-[3px_3px_0_#155e75] transition hover:-translate-y-0.5 hover:bg-cyan-700 hover:shadow-[5px_5px_0_#155e75]"
             >
               + Create Summary
             </Link>
@@ -178,32 +178,32 @@ export default function TeacherLessonsPage() {
 
             <Link
               href="/teacher/generate"
-              className="group flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#fdba74] bg-[#fff7ed]/70 p-7 transition-all hover:border-[#fb923c] hover:bg-white hover:shadow-md"
+              className="group flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-cyan-300 bg-cyan-50/40 p-7 transition-all hover:border-cyan-500 hover:bg-white hover:shadow-md"
             >
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#fdba74] bg-white text-[#9a3412] transition-transform group-hover:scale-105 group-hover:border-[#fb923c] group-hover:text-[#c2410c]">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-cyan-300 bg-white text-cyan-700 transition-transform group-hover:scale-105 group-hover:border-cyan-500 group-hover:text-cyan-800">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </div>
-              <p className="m-0 text-[15px] font-black text-[#7c2d12]">Create New Lesson</p>
-              <p className="mt-1 text-[13px] font-bold text-[#b45309]">Generate another summary</p>
+              <p className="m-0 text-[15px] font-black text-slate-800">Create New Lesson</p>
+              <p className="mt-1 text-[13px] font-bold text-slate-500">Generate another summary</p>
             </Link>
           </div>
         ) : (
           <div className="rounded-[36px] border-2 border-[#0f172a]/10 bg-white p-4 md:p-7">
-            <div className="relative overflow-hidden rounded-[28px] border-2 border-[#fdba74] bg-gradient-to-br from-[#fff7ed] via-[#fffbeb] to-[#ecfeff] p-8 md:p-12">
-              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#fdba74]/45 blur-2xl" />
-              <div className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-[#fca5a5]/30 blur-2xl" />
+            <div className="relative overflow-hidden rounded-[28px] border-2 border-cyan-200 bg-gradient-to-br from-[#f0f9ff] via-[#ecfeff] to-[#f8fafc] p-8 md:p-12">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-cyan-300/35 blur-2xl" />
+              <div className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-indigo-300/25 blur-2xl" />
 
               <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
-                <span className="inline-flex items-center rounded-full border border-[#fdba74] bg-white/90 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[#9a3412]">
+                <span className="inline-flex items-center rounded-full border border-cyan-300 bg-white/90 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-cyan-800">
                   lesson workspace
                 </span>
-                <h3 className="mt-4 m-0 text-[30px] leading-[1.05] font-black tracking-[-0.03em] text-[#7c2d12]">
+                <h3 className="mt-4 m-0 text-[30px] leading-[1.05] font-black tracking-[-0.03em] text-slate-900">
                   {searchQuery ? "No matching lessons found" : "Create your first AI lesson"}
                 </h3>
-                <p className="mt-3 mb-0 max-w-xl text-[15px] font-semibold leading-relaxed text-[#9a3412]">
+                <p className="mt-3 mb-0 max-w-xl text-[15px] font-semibold leading-relaxed text-slate-600">
                   {searchQuery
                     ? `No lesson title currently matches "${searchQuery}". Try a different keyword.`
                     : !hasFetched
@@ -221,12 +221,12 @@ export default function TeacherLessonsPage() {
                       ].map((step, index) => (
                         <div
                           key={step}
-                          className="rounded-2xl border border-[#fdba74] bg-white/85 px-4 py-3"
+                          className="rounded-2xl border border-cyan-200 bg-white/85 px-4 py-3"
                         >
-                          <p className="m-0 text-[10px] font-black uppercase tracking-[0.12em] text-[#b45309]">
+                          <p className="m-0 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-700">
                             Step {index + 1}
                           </p>
-                          <p className="mt-1 mb-0 text-[14px] font-extrabold text-[#7c2d12]">{step}</p>
+                          <p className="mt-1 mb-0 text-[14px] font-extrabold text-slate-800">{step}</p>
                         </div>
                       ))}
                     </div>
@@ -234,13 +234,13 @@ export default function TeacherLessonsPage() {
                     <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
                       <Link
                         href="/teacher/generate"
-                        className="inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-[#7c2d12] bg-[#7c2d12] px-8 py-3 text-[13px] font-black uppercase tracking-wider text-white transition hover:-translate-y-1 hover:bg-[#9a3412] hover:shadow-lg"
+                        className="inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-cyan-700 bg-cyan-700 px-8 py-3 text-[13px] font-black uppercase tracking-wider text-white transition hover:-translate-y-1 hover:bg-cyan-800 hover:shadow-lg"
                       >
                         Create First Lesson
                       </Link>
                       <Link
                         href="/teacher/quizzes"
-                        className="inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-[#7c2d12] bg-[#fed7aa] px-8 py-3 text-[13px] font-black uppercase tracking-wider text-[#7c2d12] shadow-[3px_3px_0_#7c2d12] transition hover:-translate-y-1 hover:bg-[#fdba74] hover:shadow-[5px_5px_0_#7c2d12]"
+                        className="inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-slate-900 bg-white px-8 py-3 text-[13px] font-black uppercase tracking-wider text-slate-900 shadow-[3px_3px_0_#0f172a] transition hover:-translate-y-1 hover:bg-slate-100 hover:shadow-[5px_5px_0_#0f172a]"
                       >
                         View My Quizzes
                       </Link>
@@ -249,7 +249,7 @@ export default function TeacherLessonsPage() {
                 ) : (
                   <Link
                     href="/teacher/generate"
-                    className="mt-7 inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-[#7c2d12] bg-[#7c2d12] px-8 py-3 text-[13px] font-black uppercase tracking-wider text-white transition hover:-translate-y-1 hover:bg-[#9a3412] hover:shadow-lg"
+                    className="mt-7 inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-cyan-700 bg-cyan-700 px-8 py-3 text-[13px] font-black uppercase tracking-wider text-white transition hover:-translate-y-1 hover:bg-cyan-800 hover:shadow-lg"
                   >
                     Create New Lesson
                   </Link>
