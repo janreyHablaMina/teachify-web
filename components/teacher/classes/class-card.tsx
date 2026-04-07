@@ -10,11 +10,13 @@ interface ClassCardProps {
 export function ClassCard({ classroom }: ClassCardProps) {
   return (
     <Link href={`/teacher/classes/${classroom.id}`} className="group block">
-      <article className="h-full rounded-[24px] border-2 border-[#0f172a] bg-white p-7 shadow-[8px_8px_0_#99f6e4] transition-all hover:-translate-y-1 hover:shadow-[12px_12px_0_#0f172a]">
+      <article className="relative h-full overflow-hidden rounded-[24px] border-2 border-slate-900 bg-[linear-gradient(140deg,#ffffff_0%,#ecfeff_38%,#ede9fe_100%)] p-7 shadow-[6px_6px_0_#99f6e4] transition-all hover:-translate-y-1 hover:shadow-[10px_10px_0_#a78bfa]">
+        <div className="pointer-events-none absolute -right-14 -top-14 h-28 w-28 rounded-full bg-fuchsia-200/55 blur-2xl opacity-0 transition-opacity group-hover:opacity-100" />
+        <div className="pointer-events-none absolute -left-14 -bottom-14 h-28 w-28 rounded-full bg-cyan-200/55 blur-2xl opacity-0 transition-opacity group-hover:opacity-100" />
         <div className="mb-6 flex items-center justify-between">
-          <h4 className="m-0 text-[20px] font-black tracking-tight text-[#0f172a] group-hover:text-teal-700">{classroom.name}</h4>
-          <span className={`rounded-full border-[1.5px] border-[#0f172a] px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
-            classroom.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-500"
+          <h4 className="m-0 text-[20px] font-black tracking-tight text-slate-900 group-hover:text-fuchsia-700">{classroom.name}</h4>
+          <span className={`rounded-full border-2 border-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
+            classroom.is_active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
           }`}>
             {classroom.is_active ? "Active" : "Inactive"}
           </span>
@@ -23,13 +25,13 @@ export function ClassCard({ classroom }: ClassCardProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <p className="m-0 text-[10px] font-black uppercase tracking-widest text-slate-400">Join Code</p>
-            <strong className="text-[18px] font-black tracking-widest text-[#0f172a] selection:bg-yellow-200">
+            <strong className="text-[18px] font-black tracking-widest text-slate-900 selection:bg-fuchsia-100">
               {classroom.join_code}
             </strong>
           </div>
           <div className="flex flex-col gap-1 text-right">
             <p className="m-0 text-[10px] font-black uppercase tracking-widest text-slate-400">Students</p>
-            <strong className="text-[18px] font-black text-[#0f172a]">{classroom.students_count}</strong>
+            <strong className="text-[18px] font-black text-slate-900">{classroom.students_count}</strong>
           </div>
           
           {classroom.room && (
