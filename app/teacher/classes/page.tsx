@@ -5,7 +5,8 @@ import { Classroom } from "@/components/teacher/classes/types";
 import { TeacherClassesHeader } from "@/components/teacher/classes/classes-header";
 import { ClassCard } from "@/components/teacher/classes/class-card";
 import { CreateClassModal } from "@/components/teacher/classes/create-class-modal";
-import { apiCreateClassroom, apiGetClassrooms, getApiErrorMessage } from "@/lib/api/client";
+import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
+import { apiCreateClassroom, apiDeleteClassroom, apiGetClassrooms, getApiErrorMessage } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { useToast } from "@/components/ui/toast/toast-provider";
 
@@ -15,6 +16,8 @@ export default function TeacherClassesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [classroomToDelete, setClassroomToDelete] = useState<Classroom | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchClassrooms = useCallback(async () => {
     try {
@@ -55,6 +58,32 @@ export default function TeacherClassesPage() {
     }
   };
 
+  const handleConfirmDeleteClass = async () => {
+    if (!classroomToDelete) return;
+    const token = getStoredToken();
+    if (!token) {
+      showToast("Session expired. Please log in again.", "error");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { response, data } = await apiDeleteClassroom(token, classroomToDelete.id);
+      if (!response.ok) {
+        showToast(getApiErrorMessage(response, data, "Failed to delete classroom"), "error");
+        return;
+      }
+
+      setClassrooms((prev) => prev.filter((cls) => cls.id !== classroomToDelete.id));
+      setClassroomToDelete(null);
+      showToast("Classroom deleted successfully", "success");
+    } catch {
+      showToast("Failed to delete classroom", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="w-full">
       <TeacherClassesHeader onCreateClick={() => setIsModalOpen(true)} />
@@ -68,7 +97,11 @@ export default function TeacherClassesPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {classrooms.map((cls) => (
-            <ClassCard key={cls.id} classroom={cls} />
+            <ClassCard
+              key={cls.id}
+              classroom={cls}
+              onDelete={(classroom) => setClassroomToDelete(classroom)}
+            />
           ))}
           
           {/* Empty State / Add Card */}
@@ -90,6 +123,17 @@ export default function TeacherClassesPage() {
         onClose={() => setIsModalOpen(false)} 
         onSubmit={handleCreateClass}
         isSubmitting={isSubmitting}
+      />
+
+      <ConfirmationModal
+        isOpen={classroomToDelete !== null}
+        onClose={() => setClassroomToDelete(null)}
+        onConfirm={handleConfirmDeleteClass}
+        title="Delete this classroom?"
+        message={`This action cannot be undone. "${classroomToDelete?.name ?? "This classroom"}" will be permanently removed.`}
+        confirmLabel="Yes, Delete Class"
+        isLoading={isDeleting}
+        variant="danger"
       />
     </div>
   );

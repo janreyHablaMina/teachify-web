@@ -311,6 +311,19 @@ export async function apiCreateClassroom(
   return { response, data };
 }
 
+export async function apiDeleteClassroom(
+  token: string | undefined,
+  classId: string | number
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}`, {
+    method: "DELETE",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiUpdateInviteExpiration(
   token: string | undefined,
   classId: string | number,
