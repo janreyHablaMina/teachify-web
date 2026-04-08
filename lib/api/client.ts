@@ -82,7 +82,7 @@ export async function apiGetSummaries<T = unknown>(token?: string): Promise<{ re
     headers: buildHeaders(token),
   });
 
-  const data = await parseJson(response);
+  const data = (await parseJson(response)) as T;
   return { response, data };
 }
 

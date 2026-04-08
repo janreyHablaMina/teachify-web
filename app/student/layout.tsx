@@ -50,7 +50,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         }
 
         if (mounted) {
-          setSession(apiData.user);
+          setSession(apiData.user ?? null);
           setIsAuthorized(true);
         }
       } catch {

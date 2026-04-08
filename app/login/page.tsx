@@ -19,9 +19,10 @@ export default function LoginPage() {
       try {
         const token = getStoredToken();
         const { response, data } = await apiMe(token ?? undefined);
+        const authData = data as { user?: { role?: unknown } };
 
         if (!response.ok) return;
-        const role = String(data?.user?.role ?? "");
+        const role = String(authData.user?.role ?? "");
         if (!mounted) return;
         router.replace(getRouteForRole(role));
       } catch {
@@ -47,16 +48,17 @@ export default function LoginPage() {
 
     try {
       const { response, data } = await apiLogin({ email, password });
+      const authData = data as { token?: unknown; user?: { role?: unknown } };
 
       if (!response.ok) {
         throw new Error(getApiErrorMessage(response, data, "Login failed. Please try again."));
       }
 
-      if (typeof data?.token === "string") {
-        storeToken(data.token);
+      if (typeof authData.token === "string") {
+        storeToken(authData.token);
       }
 
-      const role = String(data?.user?.role ?? "teacher");
+      const role = String(authData.user?.role ?? "teacher");
       const nextRoute = getRouteForRole(role);
       router.push(nextRoute);
       router.refresh();
