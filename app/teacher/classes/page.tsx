@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Classroom } from "@/components/teacher/classes/types";
 import { TeacherClassesHeader } from "@/components/teacher/classes/classes-header";
@@ -103,18 +104,61 @@ export default function TeacherClassesPage() {
               onDelete={(classroom) => setClassroomToDelete(classroom)}
             />
           ))}
-          
-          {/* Empty State / Add Card */}
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="group flex min-h-[220px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-fuchsia-300 bg-[linear-gradient(145deg,#fdf4ff_0%,#eef2ff_60%,#ecfeff_100%)] p-7 transition-all hover:border-fuchsia-500 hover:bg-white hover:shadow-lg"
-          >
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-slate-900 bg-white text-fuchsia-700 shadow-[4px_4px_0_#f0abfc] transition-transform group-hover:scale-110">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+
+          {classrooms.length === 0 && (
+            <div className="col-span-full rounded-[36px] border-2 border-[#0f172a]/10 bg-white p-4 md:p-7">
+              <div className="relative overflow-hidden rounded-[28px] border-2 border-[#0f172a]/15 bg-gradient-to-br from-[#fdf4ff] via-[#eef2ff] to-[#ecfeff] p-8 md:p-12">
+                <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#f0abfc]/35 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-[#a5b4fc]/30 blur-2xl" />
+
+                <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
+                  <span className="inline-flex items-center rounded-full border border-fuchsia-300/70 bg-white/90 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-fuchsia-700">
+                    class workspace
+                  </span>
+                  <h3 className="mt-4 m-0 text-[30px] leading-[1.05] font-black tracking-[-0.03em] text-[#0f172a]">
+                    Let&apos;s create your first class
+                  </h3>
+                  <p className="mt-3 mb-0 max-w-xl text-[15px] font-semibold leading-relaxed text-slate-600">
+                    Set up a classroom, invite students with a join code, and keep your teaching organized from one place.
+                  </p>
+
+                  <div className="mt-7 grid w-full gap-3 text-left md:grid-cols-3">
+                    {[
+                      "Create classroom details",
+                      "Share class join code",
+                      "Start assigning quizzes",
+                    ].map((step, index) => (
+                      <div
+                        key={step}
+                        className="rounded-2xl border border-fuchsia-200/70 bg-white/85 px-4 py-3"
+                      >
+                        <p className="m-0 text-[10px] font-black uppercase tracking-[0.12em] text-fuchsia-700/80">
+                          Step {index + 1}
+                        </p>
+                        <p className="mt-1 mb-0 text-[14px] font-extrabold text-[#0f172a]">{step}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(true)}
+                      className="inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-[#0f172a] bg-fuchsia-700 px-8 py-3 text-[13px] font-black uppercase tracking-wider text-white transition hover:-translate-y-1 hover:bg-fuchsia-800 hover:shadow-lg"
+                    >
+                      Create Class
+                    </button>
+                    <Link
+                      href="/teacher/generate"
+                      className="inline-flex min-w-[190px] items-center justify-center rounded-xl border-2 border-[#0f172a] bg-indigo-100 px-8 py-3 text-[13px] font-black uppercase tracking-wider text-[#0f172a] no-underline shadow-[3px_3px_0_#0f172a] transition hover:-translate-y-1 hover:bg-indigo-200 hover:shadow-[5px_5px_0_#0f172a]"
+                    >
+                      Generate Quiz
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="m-0 text-[15px] font-black text-slate-900">Create New Class</p>
-            <p className="mt-1 text-[13px] font-bold text-fuchsia-700">Add another classroom</p>
-          </button>
+          )}
         </div>
       )}
 
