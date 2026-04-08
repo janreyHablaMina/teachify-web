@@ -13,6 +13,79 @@ type GeminiResponse = {
   };
 };
 
+type QuestionDifficulty = "easy" | "medium" | "hard";
+type QuestionType =
+  | "multiple_choice"
+  | "true_false"
+  | "enumeration"
+  | "matching"
+  | "identification"
+  | "fill_in_the_blanks"
+  | "short_answer"
+  | "essay";
+
+type QuestionOptions = {
+  itemCount: number;
+  difficulty: QuestionDifficulty;
+  questionTypes: QuestionType[];
+};
+
+const DEFAULT_QUESTION_OPTIONS: QuestionOptions = {
+  itemCount: 8,
+  difficulty: "medium",
+  questionTypes: ["multiple_choice"],
+};
+
+const ALLOWED_QUESTION_TYPES: QuestionType[] = [
+  "multiple_choice",
+  "true_false",
+  "enumeration",
+  "matching",
+  "identification",
+  "fill_in_the_blanks",
+  "short_answer",
+  "essay",
+];
+
+function toQuestionLabel(type: QuestionType): string {
+  return type.replace(/_/g, " ");
+}
+
+function normalizeQuestionOptions(value: unknown): QuestionOptions {
+  if (!value || typeof value !== "object") return DEFAULT_QUESTION_OPTIONS;
+  const payload = value as {
+    itemCount?: unknown;
+    difficulty?: unknown;
+    questionTypes?: unknown;
+  };
+
+  const numericCount =
+    typeof payload.itemCount === "number"
+      ? payload.itemCount
+      : typeof payload.itemCount === "string"
+        ? Number(payload.itemCount)
+        : NaN;
+
+  const itemCount = Number.isFinite(numericCount)
+    ? Math.max(1, Math.min(50, Math.trunc(numericCount)))
+    : DEFAULT_QUESTION_OPTIONS.itemCount;
+
+  const difficulty =
+    payload.difficulty === "easy" || payload.difficulty === "hard" || payload.difficulty === "medium"
+      ? payload.difficulty
+      : DEFAULT_QUESTION_OPTIONS.difficulty;
+
+  const requestedTypes = Array.isArray(payload.questionTypes)
+    ? payload.questionTypes.filter((item): item is QuestionType =>
+        typeof item === "string" && ALLOWED_QUESTION_TYPES.includes(item as QuestionType)
+      )
+    : [];
+
+  const questionTypes = requestedTypes.length > 0 ? requestedTypes : DEFAULT_QUESTION_OPTIONS.questionTypes;
+
+  return { itemCount, difficulty, questionTypes };
+}
+
 function extractOutputText(payload: GeminiResponse): string {
   const parts: string[] = [];
   for (const item of payload.candidates ?? []) {
@@ -42,10 +115,12 @@ export async function POST(request: Request) {
 
   let prompt = "";
   let task: "summary" | "questions" = "summary";
+  let questionOptions: QuestionOptions = DEFAULT_QUESTION_OPTIONS;
   try {
-    const body = (await request.json()) as { prompt?: unknown; task?: unknown };
+    const body = (await request.json()) as { prompt?: unknown; task?: unknown; questionOptions?: unknown };
     prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
     if (body.task === "questions") task = "questions";
+    questionOptions = normalizeQuestionOptions(body.questionOptions);
   } catch {
     return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
   }
@@ -58,10 +133,14 @@ export async function POST(request: Request) {
     task === "questions"
       ? [
           "You are a helpful teaching assistant.",
-          "Create classroom-ready multiple choice questions based only on the provided text.",
-          "Return 8 questions.",
-          "Each question must have choices A-D and one correct answer.",
-          "At the end, add a short answer key list.",
+          "Create classroom-ready questions based only on the provided text.",
+          `Return exactly ${questionOptions.itemCount} questions.`,
+          `Difficulty level: ${questionOptions.difficulty}.`,
+          `Allowed question types: ${questionOptions.questionTypes.map(toQuestionLabel).join(", ")}.`,
+          "For multiple_choice questions, include choices A-D and one correct answer.",
+          "For true_false questions, use only True or False choices.",
+          "At the end, add a concise answer key.",
+          "Use clear markdown headings and number each question.",
           "",
           `Source text:\n${prompt}`,
         ].join("\n")

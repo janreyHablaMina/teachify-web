@@ -1,4 +1,9 @@
-import { apiGenerateQuizFromFile, apiGenerateSummary, getApiErrorMessage } from "@/lib/api/client";
+import {
+  apiGenerateQuizFromFile,
+  apiGenerateSummary,
+  getApiErrorMessage,
+  type QuestionGenerationOptions,
+} from "@/lib/api/client";
 import type { GeneratePayload, GeneratedQuiz } from "@/components/teacher/generate/types";
 
 export async function generateSummary(prompt: string): Promise<string> {
@@ -18,13 +23,17 @@ export async function generateSummary(prompt: string): Promise<string> {
   return generatedSummary;
 }
 
-export async function generateQuestionsFromSummary(summary: string): Promise<string> {
+export async function generateQuestionsFromSummary(
+  summary: string,
+  options?: QuestionGenerationOptions
+): Promise<string> {
   const trimmedSummary = summary.trim();
   if (!trimmedSummary) throw new Error("Summary is required.");
 
   const { response, data } = await apiGenerateSummary({
     prompt: trimmedSummary,
     task: "questions",
+    questionOptions: options,
   });
 
   if (!response.ok) {

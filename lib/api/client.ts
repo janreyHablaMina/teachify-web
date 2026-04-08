@@ -3,6 +3,21 @@ const DEFAULT_API_BASE_URL = "https://teachify-api-production.up.railway.app";
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/$/, "");
 
 type JsonObject = Record<string, unknown>;
+export type QuestionDifficulty = "easy" | "medium" | "hard";
+export type QuestionType =
+  | "multiple_choice"
+  | "true_false"
+  | "enumeration"
+  | "matching"
+  | "identification"
+  | "fill_in_the_blanks"
+  | "short_answer"
+  | "essay";
+export type QuestionGenerationOptions = {
+  itemCount: number;
+  difficulty: QuestionDifficulty;
+  questionTypes: QuestionType[];
+};
 type JoinByCodePayload = {
   join_code: string;
   join_method: "code";
@@ -153,6 +168,7 @@ export async function apiRegisterStudent(payload: {
 export async function apiGenerateSummary(payload: {
   prompt: string;
   task?: "summary" | "questions";
+  questionOptions?: QuestionGenerationOptions;
 }): Promise<{ response: Response; data: JsonObject }> {
   const response = await fetch("/api/teacher/summary", {
     method: "POST",

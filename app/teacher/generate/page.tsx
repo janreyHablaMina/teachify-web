@@ -12,9 +12,15 @@ import { LoadingOverlay } from "@/components/teacher/generate/loading-overlay";
 import type { GeneratePayload, GeneratedQuiz } from "@/components/teacher/generate/types";
 import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
-import { apiConsumeGenerationUsage, apiStoreSummary, apiGetSummaries } from "@/lib/api/client";
+import {
+  apiConsumeGenerationUsage,
+  apiStoreSummary,
+  apiGetSummaries,
+  type QuestionDifficulty,
+  type QuestionType,
+} from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
-import { generateQuizFromFile, generateSummary } from "@/lib/teacher/generate-service";
+import { generateQuizFromFile, generateQuestionsFromSummary, generateSummary } from "@/lib/teacher/generate-service";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
 import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
 import { Modal } from "@/components/ui/modal";
@@ -57,6 +63,17 @@ function normalizeSummaryContent(content: string): string {
     .replace(/^(#+.*)\n\n/gm, "$1\n");
 }
 
+const QUESTION_TYPE_OPTIONS: Array<{ id: QuestionType; label: string }> = [
+  { id: "multiple_choice", label: "Multiple Choice" },
+  { id: "true_false", label: "True / False" },
+  { id: "enumeration", label: "Enumeration" },
+  { id: "matching", label: "Matching" },
+  { id: "identification", label: "Identification" },
+  { id: "fill_in_the_blanks", label: "Fill in Blanks" },
+  { id: "short_answer", label: "Short Answer" },
+  { id: "essay", label: "Essay" },
+];
+
 export default function TeacherGeneratePage() {
   const { showToast } = useToast();
   const session = useTeacherSession();
@@ -83,6 +100,11 @@ export default function TeacherGeneratePage() {
   const [lastAddedId, setLastAddedId] = useState<number | null>(null);
   const [summaries, setSummaries] = useState<HistorySummaryItem[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
+  const [isQuestionSettingsModalOpen, setIsQuestionSettingsModalOpen] = useState(false);
+  const [questionItemCount, setQuestionItemCount] = useState(8);
+  const [questionDifficulty, setQuestionDifficulty] = useState<QuestionDifficulty>("medium");
+  const [selectedQuestionTypes, setSelectedQuestionTypes] = useState<QuestionType[]>(["multiple_choice"]);
 
   // Derive plan from global session to avoid "Free Plan" flash
   const planUser: TeacherPlanUser = useMemo(() => ({
@@ -329,6 +351,55 @@ export default function TeacherGeneratePage() {
 
   const handleSaveSummaryAsPdf = () => {
     downloadSummaryPdf(summaryResult);
+  };
+
+  const handleGenerateQuestionsFromSummary = useCallback(async () => {
+    const trimmedSummary = summaryResult.trim();
+    if (!trimmedSummary) return;
+    if (hasNoGenerationsLeft) {
+      openUpgradeModal();
+      return;
+    }
+    if (selectedQuestionTypes.length === 0) {
+      showToast("Select at least one question type.", "error");
+      return;
+    }
+
+    setIsQuestionsLoading(true);
+    try {
+      const generatedQuestions = await generateQuestionsFromSummary(trimmedSummary, {
+        itemCount: questionItemCount,
+        difficulty: questionDifficulty,
+        questionTypes: selectedQuestionTypes,
+      });
+      const cleanedQuestions = normalizeSummaryContent(generatedQuestions);
+      setQuestionsResult(cleanedQuestions);
+      setIsQuestionSettingsModalOpen(false);
+      setIsSummaryModalOpen(false);
+      setIsQuestionsModalOpen(true);
+      await consumeGenerationOnServer();
+      showToast("Questions generated from lesson summary!", "success");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to generate questions.";
+      showToast(message, "error");
+    } finally {
+      setIsQuestionsLoading(false);
+    }
+  }, [
+    consumeGenerationOnServer,
+    hasNoGenerationsLeft,
+    openUpgradeModal,
+    questionDifficulty,
+    questionItemCount,
+    selectedQuestionTypes,
+    showToast,
+    summaryResult,
+  ]);
+
+  const toggleQuestionType = (typeId: QuestionType) => {
+    setSelectedQuestionTypes((prev) =>
+      prev.includes(typeId) ? prev.filter((item) => item !== typeId) : [...prev, typeId]
+    );
   };
 
   const serializeQuizContent = (quiz: GeneratedQuiz) => {
@@ -681,14 +752,110 @@ export default function TeacherGeneratePage() {
         onClose={() => setIsSummaryModalOpen(false)}
         title="AI Generation Summary"
         footer={
-          <DocumentModalActions
-            isCopied={isCopied}
-            onCopy={() => handleCopyToClipboard(summaryResult)}
-            onExportPdf={handleSaveSummaryAsPdf}
-          />
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setIsQuestionSettingsModalOpen(true)}
+              disabled={isQuestionsLoading || !summaryResult.trim()}
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-emerald-100 px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Generate Questions
+            </button>
+            <DocumentModalActions
+              isCopied={isCopied}
+              onCopy={() => handleCopyToClipboard(summaryResult)}
+              onExportPdf={handleSaveSummaryAsPdf}
+            />
+          </div>
         }
       >
         <GeneratedDocumentViewer content={summaryResult} />
+      </Modal>
+
+      <Modal
+        isOpen={isQuestionSettingsModalOpen}
+        onClose={() => setIsQuestionSettingsModalOpen(false)}
+        title="Question Settings"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsQuestionSettingsModalOpen(false)}
+              className="rounded-lg border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerateQuestionsFromSummary}
+              disabled={isQuestionsLoading}
+              className="rounded-lg border-2 border-slate-900 bg-emerald-100 px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isQuestionsLoading ? "Generating..." : "Generate Questions"}
+            </button>
+          </>
+        }
+      >
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Number of Items</label>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={questionItemCount}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                if (!Number.isFinite(next)) return;
+                setQuestionItemCount(Math.max(1, Math.min(50, Math.trunc(next))));
+              }}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Difficulty</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(["easy", "medium", "hard"] as const).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setQuestionDifficulty(level)}
+                  className={`rounded-lg border px-3 py-2 text-[12px] font-black uppercase tracking-[0.06em] transition ${
+                    questionDifficulty === level
+                      ? "border-emerald-500 bg-emerald-100 text-emerald-900"
+                      : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+                  }`}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Question Types</label>
+            <div className="grid grid-cols-2 gap-2">
+              {QUESTION_TYPE_OPTIONS.map((option) => {
+                const isActive = selectedQuestionTypes.includes(option.id);
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => toggleQuestionType(option.id)}
+                    className={`rounded-lg border px-3 py-2 text-[12px] font-black transition ${
+                      isActive
+                        ? "border-emerald-500 bg-emerald-100 text-emerald-900"
+                        : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </Modal>
 
       {/* Questions Modal */}
