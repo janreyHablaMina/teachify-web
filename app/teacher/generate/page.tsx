@@ -9,6 +9,7 @@ import { UsageStats } from "@/components/teacher/generate/usage-stats";
 import { ModeSwitcher } from "@/components/teacher/generate/mode-switcher";
 import { FileUploadWorkspace } from "@/components/teacher/generate/file-upload-workspace";
 import { LoadingOverlay } from "@/components/teacher/generate/loading-overlay";
+import { QuestionGenerationProgress } from "@/components/teacher/generate/question-generation-progress";
 import type { GeneratePayload, GeneratedQuiz } from "@/components/teacher/generate/types";
 import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
@@ -93,6 +94,7 @@ export default function TeacherGeneratePage() {
   const { showToast } = useToast();
   const session = useTeacherSession();
   const activeGenerationAbortControllerRef = useRef<AbortController | null>(null);
+  const activeQuestionGenerationAbortControllerRef = useRef<AbortController | null>(null);
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerationComplete, setIsGenerationComplete] = useState(false);
@@ -395,6 +397,8 @@ export default function TeacherGeneratePage() {
     }
 
     setIsQuestionsLoading(true);
+    const abortController = new AbortController();
+    activeQuestionGenerationAbortControllerRef.current = abortController;
     try {
       const generatedQuestions = await generateQuestionsFromSummary(trimmedSummary, {
         itemCount: totalSelectedQuestionItems,
@@ -403,7 +407,7 @@ export default function TeacherGeneratePage() {
         questionTypeCounts: Object.fromEntries(
           selectedQuestionTypeEntries.map((entry) => [entry.type, entry.count])
         ),
-      });
+      }, abortController.signal);
       const cleanedQuestions = normalizeSummaryContent(generatedQuestions);
       setQuestionsResult(cleanedQuestions);
       setIsSummaryQuestionSettingsStep(false);
@@ -412,9 +416,19 @@ export default function TeacherGeneratePage() {
       await consumeGenerationOnServer();
       showToast("Questions generated from lesson summary!", "success");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to generate questions.";
-      showToast(message, "error");
+      const isAbortError =
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (error instanceof Error && error.name === "AbortError");
+      if (isAbortError) {
+        showToast("Question generation canceled.", "success");
+      } else {
+        const message = error instanceof Error ? error.message : "Failed to generate questions.";
+        showToast(message, "error");
+      }
     } finally {
+      if (activeQuestionGenerationAbortControllerRef.current === abortController) {
+        activeQuestionGenerationAbortControllerRef.current = null;
+      }
       setIsQuestionsLoading(false);
     }
   }, [
@@ -427,6 +441,10 @@ export default function TeacherGeneratePage() {
     summaryResult,
     totalSelectedQuestionItems,
   ]);
+
+  const handleCancelQuestionGeneration = () => {
+    activeQuestionGenerationAbortControllerRef.current?.abort();
+  };
 
   const toggleQuestionType = (typeId: QuestionType) => {
     setQuestionTypeCounts((prev) => {
@@ -532,6 +550,7 @@ export default function TeacherGeneratePage() {
   useEffect(() => {
     return () => {
       activeGenerationAbortControllerRef.current?.abort();
+      activeQuestionGenerationAbortControllerRef.current?.abort();
     };
   }, []);
 
@@ -561,13 +580,24 @@ export default function TeacherGeneratePage() {
 
       {mode === "file" ? (
         <>
-          <FileUploadWorkspace
-            onGenerate={handleGenerate}
-            isLoading={isLoading}
-            planTier={planTier}
-            generationsRemaining={remaining}
-            onNoGenerationsLeft={openUpgradeModal}
-          />
+          {isLoading ? (
+            <LoadingOverlay
+              isComplete={isGenerationComplete}
+              onComplete={() => {
+                setIsLoading(false);
+                setIsGenerationComplete(false);
+              }}
+              onCancel={handleCancelGeneration}
+            />
+          ) : (
+            <FileUploadWorkspace
+              onGenerate={handleGenerate}
+              isLoading={isLoading}
+              planTier={planTier}
+              generationsRemaining={remaining}
+              onNoGenerationsLeft={openUpgradeModal}
+            />
+          )}
 
           {fileGenerateError ? (
             <p className="mt-4 rounded-lg border-2 border-red-900 bg-rose-100 px-4 py-3 text-left text-[13px] font-bold text-red-800">
@@ -731,17 +761,6 @@ export default function TeacherGeneratePage() {
         </div>
       )}
 
-      {isLoading ? (
-        <LoadingOverlay
-          isComplete={isGenerationComplete}
-          onComplete={() => {
-            setIsLoading(false);
-            setIsGenerationComplete(false);
-          }}
-          onCancel={handleCancelGeneration}
-        />
-      ) : null}
-
       {/* Generated Quiz Modal */}
       <Modal
         isOpen={isQuizModalOpen}
@@ -826,14 +845,20 @@ export default function TeacherGeneratePage() {
           setIsSummaryModalOpen(false);
           setIsSummaryQuestionSettingsStep(false);
         }}
-        title={isSummaryQuestionSettingsStep ? "Question Settings" : "AI Generation Summary"}
+        title={
+          isSummaryQuestionSettingsStep
+            ? (isQuestionsLoading ? "Generating Questions" : "Question Settings")
+            : "AI Generation Summary"
+        }
         footer={
           isSummaryQuestionSettingsStep ? (
+            isQuestionsLoading ? null : (
             <>
               <button
                 type="button"
                 onClick={() => setIsSummaryQuestionSettingsStep(false)}
-                className="rounded-lg border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100"
+                disabled={isQuestionsLoading}
+                className="rounded-lg border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Back
               </button>
@@ -846,6 +871,7 @@ export default function TeacherGeneratePage() {
                 {isQuestionsLoading ? "Generating..." : "Generate Questions"}
               </button>
             </>
+            )
           ) : (
             <div className="flex flex-wrap gap-3">
               <button
@@ -866,6 +892,9 @@ export default function TeacherGeneratePage() {
         }
       >
         {isSummaryQuestionSettingsStep ? (
+          isQuestionsLoading ? (
+            <QuestionGenerationProgress onCancel={handleCancelQuestionGeneration} />
+          ) : (
           <div className="grid gap-4">
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
               <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
@@ -954,6 +983,7 @@ export default function TeacherGeneratePage() {
               </div>
             </div>
           </div>
+          )
         ) : (
           <GeneratedDocumentViewer content={summaryResult} />
         )}

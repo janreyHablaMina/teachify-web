@@ -170,7 +170,7 @@ export async function apiGenerateSummary(payload: {
   prompt: string;
   task?: "summary" | "questions";
   questionOptions?: QuestionGenerationOptions;
-}): Promise<{ response: Response; data: JsonObject }> {
+}, options?: { signal?: AbortSignal }): Promise<{ response: Response; data: JsonObject }> {
   const response = await fetch("/api/teacher/summary", {
     method: "POST",
     headers: {
@@ -178,6 +178,7 @@ export async function apiGenerateSummary(payload: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+    signal: options?.signal,
   });
 
   const data = await parseJson(response);

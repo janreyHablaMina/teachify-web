@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
 import { apiDeleteSummary, apiGetSummaries, getApiErrorMessage } from "@/lib/api/client";
@@ -14,6 +14,7 @@ import { LessonCard, type LessonSummary } from "@/components/teacher/lessons/les
 import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated-document-viewer";
 import { DocumentModalActions } from "@/components/teacher/shared/document-modal-actions";
 import { generateQuestionsFromSummary } from "@/lib/teacher/generate-service";
+import { QuestionGenerationProgress } from "@/components/teacher/generate/question-generation-progress";
 
 const LESSONS_CACHE_KEY = "teachify_teacher_lessons_cache_v1";
 const QUESTION_TYPE_OPTIONS: Array<{ id: QuestionType; label: string }> = [
@@ -44,6 +45,7 @@ function buildInitialQuestionTypeCounts(defaultCount = 8): QuestionTypeCountConf
 
 export default function TeacherLessonsPage() {
   const { showToast } = useToast();
+  const activeQuestionGenerationAbortControllerRef = useRef<AbortController | null>(null);
   const [summaries, setSummaries] = useState<LessonSummary[]>([]);
   const [hasFetched, setHasFetched] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -186,6 +188,8 @@ export default function TeacherLessonsPage() {
       return;
     }
     setIsQuestionsLoading(true);
+    const abortController = new AbortController();
+    activeQuestionGenerationAbortControllerRef.current = abortController;
     try {
       const generatedQuestions = await generateQuestionsFromSummary(content, {
         itemCount: totalSelectedQuestionItems,
@@ -194,18 +198,32 @@ export default function TeacherLessonsPage() {
         questionTypeCounts: Object.fromEntries(
           selectedQuestionTypeEntries.map((entry) => [entry.type, entry.count])
         ),
-      });
+      }, abortController.signal);
       setQuestionsResult(generatedQuestions);
       setIsQuestionSettingsStep(false);
       setIsModalOpen(false);
       setIsQuestionsModalOpen(true);
       showToast("Questions generated from lesson!", "success");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to generate questions.";
-      showToast(message, "error");
+      const isAbortError =
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (error instanceof Error && error.name === "AbortError");
+      if (isAbortError) {
+        showToast("Question generation canceled.", "success");
+      } else {
+        const message = error instanceof Error ? error.message : "Failed to generate questions.";
+        showToast(message, "error");
+      }
     } finally {
+      if (activeQuestionGenerationAbortControllerRef.current === abortController) {
+        activeQuestionGenerationAbortControllerRef.current = null;
+      }
       setIsQuestionsLoading(false);
     }
+  };
+
+  const handleCancelQuestionGeneration = () => {
+    activeQuestionGenerationAbortControllerRef.current?.abort();
   };
 
   const toggleQuestionType = (typeId: QuestionType) => {
@@ -231,6 +249,12 @@ export default function TeacherLessonsPage() {
       };
     });
   };
+
+  useEffect(() => {
+    return () => {
+      activeQuestionGenerationAbortControllerRef.current?.abort();
+    };
+  }, []);
 
   const adjustQuestionTypeCount = (typeId: QuestionType, delta: number) => {
     setQuestionTypeCounts((prev) => {
@@ -381,14 +405,20 @@ export default function TeacherLessonsPage() {
           setIsModalOpen(false);
           setIsQuestionSettingsStep(false);
         }}
-        title={isQuestionSettingsStep ? "Question Settings" : (selectedSummary?.topic ?? "AI Lesson")}
+        title={
+          isQuestionSettingsStep
+            ? (isQuestionsLoading ? "Generating Questions" : "Question Settings")
+            : (selectedSummary?.topic ?? "AI Lesson")
+        }
         footer={
           isQuestionSettingsStep ? (
+            isQuestionsLoading ? null : (
             <>
               <button
                 type="button"
                 onClick={() => setIsQuestionSettingsStep(false)}
-                className="rounded-lg border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100"
+                disabled={isQuestionsLoading}
+                className="rounded-lg border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Back
               </button>
@@ -401,6 +431,7 @@ export default function TeacherLessonsPage() {
                 {isQuestionsLoading ? "Generating..." : "Generate Questions"}
               </button>
             </>
+            )
           ) : (
             <div className="flex flex-wrap gap-3">
               <button
@@ -421,6 +452,9 @@ export default function TeacherLessonsPage() {
         }
       >
         {isQuestionSettingsStep ? (
+          isQuestionsLoading ? (
+            <QuestionGenerationProgress onCancel={handleCancelQuestionGeneration} />
+          ) : (
           <div className="grid gap-4">
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
               <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
@@ -509,6 +543,7 @@ export default function TeacherLessonsPage() {
               </div>
             </div>
           </div>
+          )
         ) : (
           <GeneratedDocumentViewer content={selectedSummary?.content ?? ""} />
         )}

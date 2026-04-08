@@ -25,7 +25,8 @@ export async function generateSummary(prompt: string): Promise<string> {
 
 export async function generateQuestionsFromSummary(
   summary: string,
-  options?: QuestionGenerationOptions
+  options?: QuestionGenerationOptions,
+  signal?: AbortSignal
 ): Promise<string> {
   const trimmedSummary = summary.trim();
   if (!trimmedSummary) throw new Error("Summary is required.");
@@ -34,7 +35,7 @@ export async function generateQuestionsFromSummary(
     prompt: trimmedSummary,
     task: "questions",
     questionOptions: options,
-  });
+  }, { signal });
 
   if (!response.ok) {
     throw new Error(getApiErrorMessage(response, data, "Failed to generate questions."));
