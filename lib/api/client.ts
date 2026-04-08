@@ -17,6 +17,7 @@ export type QuestionGenerationOptions = {
   itemCount: number;
   difficulty: QuestionDifficulty;
   questionTypes: QuestionType[];
+  questionTypeCounts?: Partial<Record<QuestionType, number>>;
 };
 type JoinByCodePayload = {
   join_code: string;

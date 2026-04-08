@@ -28,12 +28,14 @@ type QuestionOptions = {
   itemCount: number;
   difficulty: QuestionDifficulty;
   questionTypes: QuestionType[];
+  questionTypeCounts: Partial<Record<QuestionType, number>>;
 };
 
 const DEFAULT_QUESTION_OPTIONS: QuestionOptions = {
   itemCount: 8,
   difficulty: "medium",
   questionTypes: ["multiple_choice"],
+  questionTypeCounts: { multiple_choice: 8 },
 };
 
 const ALLOWED_QUESTION_TYPES: QuestionType[] = [
@@ -57,6 +59,7 @@ function normalizeQuestionOptions(value: unknown): QuestionOptions {
     itemCount?: unknown;
     difficulty?: unknown;
     questionTypes?: unknown;
+    questionTypeCounts?: unknown;
   };
 
   const numericCount =
@@ -82,8 +85,39 @@ function normalizeQuestionOptions(value: unknown): QuestionOptions {
     : [];
 
   const questionTypes = requestedTypes.length > 0 ? requestedTypes : DEFAULT_QUESTION_OPTIONS.questionTypes;
+  const rawCounts =
+    payload.questionTypeCounts && typeof payload.questionTypeCounts === "object"
+      ? (payload.questionTypeCounts as Record<string, unknown>)
+      : {};
 
-  return { itemCount, difficulty, questionTypes };
+  const parsedCounts = questionTypes.reduce<Partial<Record<QuestionType, number>>>((acc, type) => {
+    const raw = rawCounts[type];
+    const numericRaw =
+      typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+    if (Number.isFinite(numericRaw) && numericRaw > 0) {
+      acc[type] = Math.max(1, Math.min(50, Math.trunc(numericRaw)));
+    }
+    return acc;
+  }, {});
+
+  const hasCustomDistribution = Object.keys(parsedCounts).length > 0;
+  const distribution = hasCustomDistribution
+    ? parsedCounts
+    : questionTypes.reduce<Partial<Record<QuestionType, number>>>((acc, type, index) => {
+        const base = Math.floor(itemCount / questionTypes.length);
+        const extra = index < (itemCount % questionTypes.length) ? 1 : 0;
+        acc[type] = base + extra;
+        return acc;
+      }, {});
+
+  const normalizedItemCount = Object.values(distribution).reduce((sum, count) => sum + (count ?? 0), 0);
+
+  return {
+    itemCount: Math.max(1, Math.min(50, normalizedItemCount || itemCount)),
+    difficulty,
+    questionTypes,
+    questionTypeCounts: distribution,
+  };
 }
 
 function extractOutputText(payload: GeminiResponse): string {
@@ -137,6 +171,9 @@ export async function POST(request: Request) {
           `Return exactly ${questionOptions.itemCount} questions.`,
           `Difficulty level: ${questionOptions.difficulty}.`,
           `Allowed question types: ${questionOptions.questionTypes.map(toQuestionLabel).join(", ")}.`,
+          `Target distribution by type: ${questionOptions.questionTypes
+            .map((type) => `${toQuestionLabel(type)} = ${questionOptions.questionTypeCounts[type] ?? 0}`)
+            .join(", ")}.`,
           "For multiple_choice questions, include choices A-D and one correct answer.",
           "For true_false questions, use only True or False choices.",
           "At the end, add a concise answer key.",

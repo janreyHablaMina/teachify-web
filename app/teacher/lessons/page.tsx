@@ -27,6 +27,21 @@ const QUESTION_TYPE_OPTIONS: Array<{ id: QuestionType; label: string }> = [
   { id: "essay", label: "Essay" },
 ];
 
+type QuestionTypeCountConfig = Record<QuestionType, { enabled: boolean; count: number }>;
+
+function buildInitialQuestionTypeCounts(defaultCount = 8): QuestionTypeCountConfig {
+  return {
+    multiple_choice: { enabled: true, count: defaultCount },
+    true_false: { enabled: false, count: 1 },
+    enumeration: { enabled: false, count: 1 },
+    matching: { enabled: false, count: 1 },
+    identification: { enabled: false, count: 1 },
+    fill_in_the_blanks: { enabled: false, count: 1 },
+    short_answer: { enabled: false, count: 1 },
+    essay: { enabled: false, count: 1 },
+  };
+}
+
 export default function TeacherLessonsPage() {
   const { showToast } = useToast();
   const [summaries, setSummaries] = useState<LessonSummary[]>([]);
@@ -40,10 +55,12 @@ export default function TeacherLessonsPage() {
   const [questionsResult, setQuestionsResult] = useState("");
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
   const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
-  const [isQuestionSettingsModalOpen, setIsQuestionSettingsModalOpen] = useState(false);
-  const [questionItemCount, setQuestionItemCount] = useState(8);
+  const [isQuestionSettingsStep, setIsQuestionSettingsStep] = useState(false);
   const [questionDifficulty, setQuestionDifficulty] = useState<QuestionDifficulty>("medium");
-  const [selectedQuestionTypes, setSelectedQuestionTypes] = useState<QuestionType[]>(["multiple_choice"]);
+  const [questionTypeCounts, setQuestionTypeCounts] = useState<QuestionTypeCountConfig>(() =>
+    buildInitialQuestionTypeCounts()
+  );
+  const questionSettingsMaxItems = 50;
 
   useEffect(() => {
     let mounted = true;
@@ -92,9 +109,17 @@ export default function TeacherLessonsPage() {
   const filteredSummaries = summaries.filter((s) =>
     s.topic.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const selectedQuestionTypeEntries = QUESTION_TYPE_OPTIONS.filter(
+    (option) => questionTypeCounts[option.id].enabled
+  ).map((option) => ({
+    type: option.id,
+    count: questionTypeCounts[option.id].count,
+  }));
+  const totalSelectedQuestionItems = selectedQuestionTypeEntries.reduce((sum, entry) => sum + entry.count, 0);
 
   const handleView = (summary: LessonSummary) => {
     setIsCopied(false);
+    setIsQuestionSettingsStep(false);
     setSelectedSummary(summary);
     setIsModalOpen(true);
   };
@@ -156,19 +181,22 @@ export default function TeacherLessonsPage() {
   const handleGenerateQuestionsFromLesson = async () => {
     const content = selectedSummary?.content?.trim() ?? "";
     if (!content) return;
-    if (selectedQuestionTypes.length === 0) {
+    if (selectedQuestionTypeEntries.length === 0) {
       showToast("Select at least one question type.", "error");
       return;
     }
     setIsQuestionsLoading(true);
     try {
       const generatedQuestions = await generateQuestionsFromSummary(content, {
-        itemCount: questionItemCount,
+        itemCount: totalSelectedQuestionItems,
         difficulty: questionDifficulty,
-        questionTypes: selectedQuestionTypes,
+        questionTypes: selectedQuestionTypeEntries.map((entry) => entry.type),
+        questionTypeCounts: Object.fromEntries(
+          selectedQuestionTypeEntries.map((entry) => [entry.type, entry.count])
+        ),
       });
       setQuestionsResult(generatedQuestions);
-      setIsQuestionSettingsModalOpen(false);
+      setIsQuestionSettingsStep(false);
       setIsModalOpen(false);
       setIsQuestionsModalOpen(true);
       showToast("Questions generated from lesson!", "success");
@@ -181,9 +209,43 @@ export default function TeacherLessonsPage() {
   };
 
   const toggleQuestionType = (typeId: QuestionType) => {
-    setSelectedQuestionTypes((prev) =>
-      prev.includes(typeId) ? prev.filter((item) => item !== typeId) : [...prev, typeId]
-    );
+    setQuestionTypeCounts((prev) => {
+      const current = prev[typeId];
+      if (current.enabled) {
+        return {
+          ...prev,
+          [typeId]: { ...current, enabled: false },
+        };
+      }
+
+      const otherTotal = Object.entries(prev)
+        .filter(([key, value]) => key !== typeId && value.enabled)
+        .reduce((sum, [, value]) => sum + value.count, 0);
+      const allowedForType = Math.max(1, questionSettingsMaxItems - otherTotal);
+      return {
+        ...prev,
+        [typeId]: {
+          enabled: true,
+          count: Math.min(Math.max(1, current.count), allowedForType),
+        },
+      };
+    });
+  };
+
+  const adjustQuestionTypeCount = (typeId: QuestionType, delta: number) => {
+    setQuestionTypeCounts((prev) => {
+      const current = prev[typeId];
+      if (!current.enabled) return prev;
+      const otherTotal = Object.entries(prev)
+        .filter(([key, value]) => key !== typeId && value.enabled)
+        .reduce((sum, [, value]) => sum + value.count, 0);
+      const allowedForType = Math.max(1, questionSettingsMaxItems - otherTotal);
+      const nextCount = Math.max(1, Math.min(allowedForType, current.count + delta));
+      return {
+        ...prev,
+        [typeId]: { ...current, count: nextCount },
+      };
+    });
   };
 
   return (
@@ -315,113 +377,135 @@ export default function TeacherLessonsPage() {
       {/* Modal for viewing the full lesson */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={selectedSummary?.topic ?? "AI Lesson"}
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsQuestionSettingsStep(false);
+        }}
+        title={isQuestionSettingsStep ? "Question Settings" : (selectedSummary?.topic ?? "AI Lesson")}
         footer={
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => setIsQuestionSettingsModalOpen(true)}
-              disabled={isQuestionsLoading || !(selectedSummary?.content ?? "").trim()}
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-emerald-100 px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Generate Questions
-            </button>
-            <DocumentModalActions
-              isCopied={isCopied}
-              onCopy={() => handleCopyToClipboard(selectedSummary?.content ?? "")}
-              onExportPdf={() => selectedSummary && handleDownload(selectedSummary)}
-            />
-          </div>
-        }
-      >
-        <GeneratedDocumentViewer content={selectedSummary?.content ?? ""} />
-      </Modal>
-
-      <Modal
-        isOpen={isQuestionSettingsModalOpen}
-        onClose={() => setIsQuestionSettingsModalOpen(false)}
-        title="Question Settings"
-        footer={
-          <>
-            <button
-              type="button"
-              onClick={() => setIsQuestionSettingsModalOpen(false)}
-              className="rounded-lg border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleGenerateQuestionsFromLesson}
-              disabled={isQuestionsLoading}
-              className="rounded-lg border-2 border-slate-900 bg-emerald-100 px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isQuestionsLoading ? "Generating..." : "Generate Questions"}
-            </button>
-          </>
-        }
-      >
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Number of Items</label>
-            <input
-              type="number"
-              min={1}
-              max={50}
-              value={questionItemCount}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                if (!Number.isFinite(next)) return;
-                setQuestionItemCount(Math.max(1, Math.min(50, Math.trunc(next))));
-              }}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-emerald-500"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Difficulty</label>
-            <div className="grid grid-cols-3 gap-2">
-              {(["easy", "medium", "hard"] as const).map((level) => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => setQuestionDifficulty(level)}
-                  className={`rounded-lg border px-3 py-2 text-[12px] font-black uppercase tracking-[0.06em] transition ${
-                    questionDifficulty === level
-                      ? "border-emerald-500 bg-emerald-100 text-emerald-900"
-                      : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
-                  }`}
-                >
-                  {level}
-                </button>
-              ))}
+          isQuestionSettingsStep ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsQuestionSettingsStep(false)}
+                className="rounded-lg border-2 border-slate-900 bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:bg-slate-100"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerateQuestionsFromLesson}
+                disabled={isQuestionsLoading || totalSelectedQuestionItems <= 0}
+                className="rounded-lg border-2 border-slate-900 bg-emerald-100 px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isQuestionsLoading ? "Generating..." : "Generate Questions"}
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setIsQuestionSettingsStep(true)}
+                disabled={isQuestionsLoading || !(selectedSummary?.content ?? "").trim()}
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-emerald-100 px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Generate Questions
+              </button>
+              <DocumentModalActions
+                isCopied={isCopied}
+                onCopy={() => handleCopyToClipboard(selectedSummary?.content ?? "")}
+                onExportPdf={() => selectedSummary && handleDownload(selectedSummary)}
+              />
             </div>
-          </div>
+          )
+        }
+      >
+        {isQuestionSettingsStep ? (
+          <div className="grid gap-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
+                Total Selected Items
+              </p>
+              <p className="mt-1 text-[14px] font-black text-slate-900">
+                {totalSelectedQuestionItems} / {questionSettingsMaxItems} allowed
+              </p>
+            </div>
 
-          <div className="grid gap-2">
-            <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Question Types</label>
-            <div className="grid grid-cols-2 gap-2">
-              {QUESTION_TYPE_OPTIONS.map((option) => {
-                const isActive = selectedQuestionTypes.includes(option.id);
-                return (
+            <div className="grid gap-2">
+              <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Difficulty</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["easy", "medium", "hard"] as const).map((level) => (
                   <button
-                    key={option.id}
+                    key={level}
                     type="button"
-                    onClick={() => toggleQuestionType(option.id)}
-                    className={`rounded-lg border px-3 py-2 text-[12px] font-black transition ${
-                      isActive
+                    onClick={() => setQuestionDifficulty(level)}
+                    className={`rounded-lg border px-3 py-2 text-[12px] font-black uppercase tracking-[0.06em] transition ${
+                      questionDifficulty === level
                         ? "border-emerald-500 bg-emerald-100 text-emerald-900"
                         : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
                     }`}
                   >
-                    {option.label}
+                    {level}
                   </button>
-                );
-              })}
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Question Types</label>
+              <div className="grid grid-cols-1 gap-2">
+                {QUESTION_TYPE_OPTIONS.map((option) => {
+                  const typeState = questionTypeCounts[option.id];
+                  const isActive = typeState.enabled;
+                  return (
+                    <div
+                      key={option.id}
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 transition ${
+                        isActive
+                          ? "border-emerald-500 bg-emerald-100"
+                          : "border-slate-300 bg-white"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleQuestionType(option.id)}
+                        className={`text-[12px] font-black ${
+                          isActive ? "text-emerald-900" : "text-slate-600"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                      {isActive ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => adjustQuestionTypeCount(option.id, -1)}
+                            className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-300 bg-white text-emerald-700"
+                          >
+                            -
+                          </button>
+                          <span className="min-w-[24px] text-center text-[13px] font-black text-emerald-900">
+                            {typeState.count}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => adjustQuestionTypeCount(option.id, 1)}
+                            disabled={totalSelectedQuestionItems >= questionSettingsMaxItems}
+                            className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-300 bg-white text-emerald-700 disabled:opacity-40"
+                          >
+                            +
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <GeneratedDocumentViewer content={selectedSummary?.content ?? ""} />
+        )}
       </Modal>
 
       <Modal
