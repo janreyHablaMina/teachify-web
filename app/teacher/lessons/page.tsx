@@ -452,7 +452,12 @@ export default function TeacherLessonsPage() {
             </div>
 
             <div className="grid gap-2">
-              <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">Question Types</label>
+              <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
+                Question Types
+                <span className="ml-2 text-[10px] font-bold normal-case tracking-normal text-slate-400">
+                  (you can select multiple)
+                </span>
+              </label>
               <div className="grid grid-cols-1 gap-2">
                 {QUESTION_TYPE_OPTIONS.map((option) => {
                   const typeState = questionTypeCounts[option.id];
@@ -460,26 +465,24 @@ export default function TeacherLessonsPage() {
                   return (
                     <div
                       key={option.id}
+                      onClick={() => toggleQuestionType(option.id)}
                       className={`flex items-center justify-between rounded-lg border px-3 py-2 transition ${
                         isActive
                           ? "border-emerald-500 bg-emerald-100"
-                          : "border-slate-300 bg-white"
+                          : "border-slate-300 bg-white hover:border-slate-400"
                       }`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggleQuestionType(option.id)}
-                        className={`text-[12px] font-black ${
-                          isActive ? "text-emerald-900" : "text-slate-600"
-                        }`}
-                      >
+                      <span className={`text-[12px] font-black ${isActive ? "text-emerald-900" : "text-slate-600"}`}>
                         {option.label}
-                      </button>
+                      </span>
                       {isActive ? (
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => adjustQuestionTypeCount(option.id, -1)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              adjustQuestionTypeCount(option.id, -1);
+                            }}
                             className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-300 bg-white text-emerald-700"
                           >
                             -
@@ -489,7 +492,10 @@ export default function TeacherLessonsPage() {
                           </span>
                           <button
                             type="button"
-                            onClick={() => adjustQuestionTypeCount(option.id, 1)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              adjustQuestionTypeCount(option.id, 1);
+                            }}
                             disabled={totalSelectedQuestionItems >= questionSettingsMaxItems}
                             className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-300 bg-white text-emerald-700 disabled:opacity-40"
                           >
