@@ -244,7 +244,15 @@ export default function TeacherGeneratePage() {
         setLiveUsed(nextUsed);
       }
       if (response.status === 403) {
-        openUpgradeModal();
+        if (planTier === "trial") {
+          openUpgradeModal();
+        } else {
+          showToast(
+            "Usage sync issue detected for your subscription. Please refresh the page and try again.",
+            "error"
+          );
+          return;
+        }
       }
       showToast(
         typeof data?.message === "string"
@@ -261,7 +269,7 @@ export default function TeacherGeneratePage() {
     }
 
     setLiveUsed((prev) => (limit > 0 ? Math.min(limit, prev + 1) : prev + 1));
-  }, [limit, openUpgradeModal, showToast]);
+  }, [limit, openUpgradeModal, planTier, showToast]);
 
   const addRecentGeneratedQuiz = useCallback((storedId: number, createdAt: string, quiz: GeneratedQuiz) => {
     setRecentGeneratedQuizzes((prev) => {
