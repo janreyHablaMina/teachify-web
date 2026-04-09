@@ -274,7 +274,8 @@ export default function TeacherLessonsPage() {
 
   const setQuestionTypeCount = (typeId: QuestionType, rawValue: string) => {
     const parsedValue = Number.parseInt(rawValue.trim() === "" ? "1" : rawValue, 10);
-    if (Number.isNaN(parsedValue)) return;
+    if (Number.isNaN(parsedValue)) return null;
+    let nextCountForType: number | null = null;
 
     setQuestionTypeCounts((prev) => {
       const current = prev[typeId];
@@ -284,11 +285,14 @@ export default function TeacherLessonsPage() {
         .reduce((sum, [, value]) => sum + value.count, 0);
       const allowedForType = Math.max(1, questionSettingsMaxItems - otherTotal);
       const nextCount = Math.max(1, Math.min(allowedForType, parsedValue));
+      nextCountForType = nextCount;
       return {
         ...prev,
         [typeId]: { ...current, count: nextCount },
       };
     });
+
+    return nextCountForType;
   };
 
   return (
@@ -555,7 +559,16 @@ export default function TeacherLessonsPage() {
                             defaultValue={typeState.count}
                             onBlur={(event) => {
                               event.stopPropagation();
-                              setQuestionTypeCount(option.id, event.target.value);
+                              const rawValue = event.target.value;
+                              const normalizedCount = setQuestionTypeCount(option.id, rawValue);
+                              if (normalizedCount === null) {
+                                event.currentTarget.value = String(typeState.count);
+                                return;
+                              }
+                              if (Number.parseInt(rawValue || "0", 10) > allowedForType) {
+                                showToast(`Maximum allowed for ${option.label} is ${allowedForType}.`, "error");
+                              }
+                              event.currentTarget.value = String(normalizedCount);
                             }}
                             onKeyDown={(event) => {
                               if (event.key === "Enter") {

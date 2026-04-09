@@ -147,7 +147,8 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generatio
 
   const setCount = (id: string, rawValue: string) => {
     const parsedValue = Number.parseInt(rawValue.trim() === "" ? "1" : rawValue, 10);
-    if (Number.isNaN(parsedValue)) return;
+    if (Number.isNaN(parsedValue)) return null;
+    let nextCountForType: number | null = null;
 
     setTypeCounts((prev) => {
       if (!prev[id]?.enabled) return prev;
@@ -156,8 +157,11 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generatio
         .reduce((sum, [, v]) => sum + v.count, 0);
       const maxForThis = Math.max(1, planMax - otherTotal);
       const next = Math.max(1, Math.min(maxForThis, parsedValue));
+      nextCountForType = next;
       return { ...prev, [id]: { ...prev[id], count: next } };
     });
+
+    return nextCountForType;
   };
 
   const selectedEntries = Object.entries(typeCounts).filter(([, v]) => v.enabled);
@@ -379,7 +383,18 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generatio
                             min={1}
                             max={maxForThis}
                             defaultValue={state.count}
-                            onBlur={(event) => setCount(type.id, event.target.value)}
+                            onBlur={(event) => {
+                              const rawValue = event.target.value;
+                              const normalizedCount = setCount(type.id, rawValue);
+                              if (normalizedCount === null) {
+                                event.currentTarget.value = String(state.count);
+                                return;
+                              }
+                              if (Number.parseInt(rawValue || "0", 10) > maxForThis) {
+                                showToast(`Maximum allowed for ${type.label} is ${maxForThis}.`, "error");
+                              }
+                              event.currentTarget.value = String(normalizedCount);
+                            }}
                             onKeyDown={(event) => {
                               if (event.key === "Enter") {
                                 event.preventDefault();
