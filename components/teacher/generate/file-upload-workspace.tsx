@@ -145,6 +145,21 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generatio
     });
   };
 
+  const setCount = (id: string, rawValue: string) => {
+    const parsedValue = Number.parseInt(rawValue.trim() === "" ? "1" : rawValue, 10);
+    if (Number.isNaN(parsedValue)) return;
+
+    setTypeCounts((prev) => {
+      if (!prev[id]?.enabled) return prev;
+      const otherTotal = Object.entries(prev)
+        .filter(([k, v]) => k !== id && v.enabled)
+        .reduce((sum, [, v]) => sum + v.count, 0);
+      const maxForThis = Math.max(1, planMax - otherTotal);
+      const next = Math.max(1, Math.min(maxForThis, parsedValue));
+      return { ...prev, [id]: { ...prev[id], count: next } };
+    });
+  };
+
   const selectedEntries = Object.entries(typeCounts).filter(([, v]) => v.enabled);
   const totalItems = selectedEntries.reduce((sum, [, v]) => sum + v.count, 0);
   const anySelected = selectedEntries.length > 0;
@@ -295,6 +310,10 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generatio
                 const Icon = type.icon;
                 const state = typeCounts[type.id];
                 const isSelected = state.enabled && !type.locked;
+                const otherTotal = Object.entries(typeCounts)
+                  .filter(([key, value]) => key !== type.id && value.enabled)
+                  .reduce((sum, [, value]) => sum + value.count, 0);
+                const maxForThis = Math.max(1, planMax - otherTotal);
 
                 return (
                   <div
@@ -348,15 +367,31 @@ export function FileUploadWorkspace({ onGenerate, isLoading, planTier, generatio
                           <button
                             type="button"
                             onClick={() => adjustCount(type.id, -1)}
-                            className="flex h-6 w-6 items-center justify-center rounded-md bg-white border border-emerald-200 text-emerald-700 transition hover:bg-emerald-100"
+                            disabled={state.count <= 1}
+                            className="flex h-6 w-6 items-center justify-center rounded-md bg-white border border-emerald-200 text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             <Minus size={12} strokeWidth={3} />
                           </button>
-                          <span className="inline-flex h-6 min-w-[22px] items-center justify-center text-center text-[16px] font-black text-emerald-700">{state.count}</span>
+                          <input
+                            key={`${type.id}-${state.count}`}
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            max={maxForThis}
+                            defaultValue={state.count}
+                            onBlur={(event) => setCount(type.id, event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                (event.currentTarget as HTMLInputElement).blur();
+                              }
+                            }}
+                            className="h-6 w-14 rounded-md border border-emerald-200 bg-white px-1 text-center text-[14px] font-black text-emerald-700 outline-none focus:border-emerald-400"
+                          />
                           <button
                             type="button"
                             onClick={() => adjustCount(type.id, +1)}
-                            disabled={totalItems >= planMax}
+                            disabled={state.count >= maxForThis || totalItems >= planMax}
                             className="flex h-6 w-6 items-center justify-center rounded-md bg-white border border-emerald-200 text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             <Plus size={12} strokeWidth={3} />

@@ -272,6 +272,25 @@ export default function TeacherLessonsPage() {
     });
   };
 
+  const setQuestionTypeCount = (typeId: QuestionType, rawValue: string) => {
+    const parsedValue = Number.parseInt(rawValue.trim() === "" ? "1" : rawValue, 10);
+    if (Number.isNaN(parsedValue)) return;
+
+    setQuestionTypeCounts((prev) => {
+      const current = prev[typeId];
+      if (!current.enabled) return prev;
+      const otherTotal = Object.entries(prev)
+        .filter(([key, value]) => key !== typeId && value.enabled)
+        .reduce((sum, [, value]) => sum + value.count, 0);
+      const allowedForType = Math.max(1, questionSettingsMaxItems - otherTotal);
+      const nextCount = Math.max(1, Math.min(allowedForType, parsedValue));
+      return {
+        ...prev,
+        [typeId]: { ...current, count: nextCount },
+      };
+    });
+  };
+
   return (
     <section className="w-full pb-10">
       <div className="flex flex-col gap-7">
@@ -496,6 +515,10 @@ export default function TeacherLessonsPage() {
                 {QUESTION_TYPE_OPTIONS.map((option) => {
                   const typeState = questionTypeCounts[option.id];
                   const isActive = typeState.enabled;
+                  const otherTotal = Object.entries(questionTypeCounts)
+                    .filter(([key, value]) => key !== option.id && value.enabled)
+                    .reduce((sum, [, value]) => sum + value.count, 0);
+                  const allowedForType = Math.max(1, questionSettingsMaxItems - otherTotal);
                   return (
                     <div
                       key={option.id}
@@ -517,20 +540,38 @@ export default function TeacherLessonsPage() {
                               event.stopPropagation();
                               adjustQuestionTypeCount(option.id, -1);
                             }}
+                            disabled={typeState.count <= 1}
                             className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-300 bg-white text-emerald-700"
                           >
                             -
                           </button>
-                          <span className="min-w-[24px] text-center text-[13px] font-black text-emerald-900">
-                            {typeState.count}
-                          </span>
+                          <input
+                            key={`${option.id}-${typeState.count}`}
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            max={allowedForType}
+                            onClick={(event) => event.stopPropagation()}
+                            defaultValue={typeState.count}
+                            onBlur={(event) => {
+                              event.stopPropagation();
+                              setQuestionTypeCount(option.id, event.target.value);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                (event.currentTarget as HTMLInputElement).blur();
+                              }
+                            }}
+                            className="h-6 w-14 rounded-md border border-emerald-300 bg-white px-1 text-center text-[13px] font-black text-emerald-900 outline-none focus:border-emerald-500"
+                          />
                           <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
                               adjustQuestionTypeCount(option.id, 1);
                             }}
-                            disabled={totalSelectedQuestionItems >= questionSettingsMaxItems}
+                            disabled={typeState.count >= allowedForType || totalSelectedQuestionItems >= questionSettingsMaxItems}
                             className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-300 bg-white text-emerald-700 disabled:opacity-40"
                           >
                             +
