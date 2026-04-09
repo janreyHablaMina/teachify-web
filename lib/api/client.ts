@@ -282,6 +282,7 @@ export async function apiCreateAssignment(
         choices?: string[];
         answer?: string;
         explanation?: string;
+        points?: number;
       }>;
     };
   }

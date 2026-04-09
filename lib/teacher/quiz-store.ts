@@ -162,6 +162,20 @@ export function deleteTeacherQuizFromStore(quizId: number): Quiz[] {
   return next;
 }
 
+export function updateStoredTeacherQuizQuestions(quizId: number, questions: GeneratedQuiz["questions"]) {
+  const details = getStoredTeacherQuizDetails();
+  const nextDetails = details.map((quiz) =>
+    quiz.id === quizId
+      ? {
+          ...quiz,
+          questions,
+        }
+      : quiz
+  );
+  setStoredTeacherQuizDetails(nextDetails);
+  notifyQuizStoreChanged();
+}
+
 export function subscribeTeacherQuizzes(onStoreChange: () => void) {
   if (!isBrowser()) return () => {};
 

@@ -226,7 +226,7 @@ export default function StudentTakeQuizPage() {
         {randomizedQuestions.map((question, index) => (
           <article key={question.id} className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
-              Q{index + 1} - {question.type.replace(/_/g, " ")}
+              Q{index + 1} - {question.type.replace(/_/g, " ")} | {Math.max(1, Number(question.points ?? 1) || 1)} pts
             </p>
             <p className="mt-2 text-[17px] font-bold text-[#0f172a]">{question.question_text}</p>
 

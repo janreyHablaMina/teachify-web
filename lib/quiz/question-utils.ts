@@ -15,6 +15,7 @@ export type PreviewQuestion = {
   choices?: string[] | null;
   answer: string;
   explanation?: string | null;
+  points?: number;
 };
 
 export function normalizeChoiceText(choice: string): string {

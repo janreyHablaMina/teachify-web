@@ -6,6 +6,7 @@ type GeneratedQuestion = {
   choices?: string[];
   answer: string;
   explanation?: string;
+  points?: number;
 };
 
 type GeneratedQuiz = {
@@ -66,12 +67,20 @@ function parseQuizOutput(raw: string, allowedTypes: string[]): GeneratedQuiz | n
             const choices = Array.isArray(qq.choices)
               ? qq.choices.filter((c): c is string => typeof c === "string" && Boolean(c.trim()))
               : undefined;
+            const parsedPoints =
+              typeof qq.points === "number"
+                ? qq.points
+                : typeof qq.points === "string"
+                  ? Number(qq.points)
+                  : NaN;
+            const points = Number.isFinite(parsedPoints) ? Math.max(1, Math.min(100, Math.floor(parsedPoints))) : 1;
             return {
               type,
               question: qq.question.trim(),
               answer: qq.answer.trim(),
               choices,
               explanation: typeof qq.explanation === "string" ? qq.explanation.trim() : undefined,
+              points,
             };
           })
           .filter(Boolean) as GeneratedQuestion[])
@@ -154,6 +163,7 @@ export async function POST(request: Request) {
       `Allowed question types: ${types.join(", ")}`,
       "Return strictly valid JSON using this shape:",
       `{"title":"string","difficulty":"easy|medium|hard","questions":[{"type":"${types.join("|")}","question":"string","choices":["A","B","C","D"],"answer":"string","explanation":"string"}]}`,
+      "Each question should include a numeric points field. Default to 1 if not specified.",
       "For true_false use choices [\"True\",\"False\"].",
       "For essay, identification, fill_in_the_blanks or enumeration, omit choices.",
       "For identification, provide a short 1-3 word answer.",

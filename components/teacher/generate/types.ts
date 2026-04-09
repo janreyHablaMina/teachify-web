@@ -12,6 +12,7 @@ export type GeneratedQuestion = {
   choices?: string[];
   answer: string;
   explanation?: string;
+  points?: number;
 };
 
 export type GeneratedQuiz = {

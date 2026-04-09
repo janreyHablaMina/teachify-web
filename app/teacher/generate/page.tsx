@@ -23,7 +23,7 @@ import {
 import { getStoredToken } from "@/lib/auth/session";
 import { generateQuizFromFile, generateQuestionsFromSummary, generateSummary } from "@/lib/teacher/generate-service";
 import { downloadSummaryPdf } from "@/lib/pdf/download-summary-pdf";
-import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
+import { addGeneratedQuizToStore, updateStoredTeacherQuizQuestions } from "@/lib/teacher/quiz-store";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast/toast-provider";
 import { HistorySidebar, type HistorySummaryItem } from "@/components/teacher/generate/history-sidebar";
@@ -98,6 +98,7 @@ export default function TeacherGeneratePage() {
   const [isGenerationComplete, setIsGenerationComplete] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
   const [quizToPreview, setQuizToPreview] = useState<GeneratedQuiz | null>(null);
+  const [quizToPreviewStoreId, setQuizToPreviewStoreId] = useState<number | null>(null);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [questionTypeFilter, setQuestionTypeFilter] = useState("all");
   const [recentGeneratedQuizzes, setRecentGeneratedQuizzes] = useState<RecentGeneratedQuiz[]>([]);
@@ -288,8 +289,9 @@ export default function TeacherGeneratePage() {
     setSummaryTopic("");
   }, []);
 
-  const openQuizPreview = (quiz: GeneratedQuiz) => {
+  const openQuizPreview = (quiz: GeneratedQuiz, storeId?: number) => {
     setQuizToPreview(quiz);
+    setQuizToPreviewStoreId(typeof storeId === "number" ? storeId : null);
     setQuestionTypeFilter("all");
     setIsQuizModalOpen(true);
   };
@@ -318,6 +320,7 @@ export default function TeacherGeneratePage() {
       setQuestionTypeFilter("all");
       setIsQuizModalOpen(true);
       const storedQuiz = addGeneratedQuizToStore(quiz);
+      setQuizToPreviewStoreId(storedQuiz.id);
       addRecentGeneratedQuiz(storedQuiz.id, storedQuiz.created_at, quiz);
       showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");
       await consumeGenerationOnServer();
@@ -578,6 +581,20 @@ export default function TeacherGeneratePage() {
     }
   };
 
+  const updatePreviewQuestionPoints = (questionIndex: number, nextPoints: number) => {
+    const sanitizedPoints = Math.max(1, Math.min(100, Math.floor(nextPoints)));
+    setQuizToPreview((prev) => {
+      if (!prev || !prev.questions[questionIndex]) return prev;
+      const nextQuestions = prev.questions.map((question, index) =>
+        index === questionIndex ? { ...question, points: sanitizedPoints } : question
+      );
+      return {
+        ...prev,
+        questions: nextQuestions,
+      };
+    });
+  };
+
   useEffect(() => {
     return () => {
       activeGenerationAbortControllerRef.current?.abort();
@@ -590,6 +607,36 @@ export default function TeacherGeneratePage() {
       setIsSummaryQuestionSettingsStep(false);
     }
   }, [isSummaryModalOpen]);
+
+  useEffect(() => {
+    if (!quizToPreview) return;
+
+    if (quizToPreviewStoreId !== null) {
+      updateStoredTeacherQuizQuestions(quizToPreviewStoreId, quizToPreview.questions);
+      setRecentGeneratedQuizzes((prev) =>
+        prev.map((entry) =>
+          entry.id === quizToPreviewStoreId
+            ? {
+                ...entry,
+                quiz: {
+                  ...entry.quiz,
+                  questions: quizToPreview.questions,
+                },
+              }
+            : entry
+        )
+      );
+    }
+
+    setGeneratedQuiz((prev) =>
+      prev && prev.title === quizToPreview.title
+        ? {
+            ...prev,
+            questions: quizToPreview.questions,
+          }
+        : prev
+    );
+  }, [quizToPreview, quizToPreviewStoreId]);
 
   return (
     <section className="w-full">
@@ -647,7 +694,7 @@ export default function TeacherGeneratePage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => openQuizPreview(generatedQuiz)}
+                    onClick={() => openQuizPreview(generatedQuiz, quizToPreviewStoreId ?? undefined)}
                   className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
                 >
                   View Questions
@@ -681,7 +728,7 @@ export default function TeacherGeneratePage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => openQuizPreview(entry.quiz)}
+                      onClick={() => openQuizPreview(entry.quiz, entry.id)}
                       className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.06em] text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
                     >
                       View
@@ -826,14 +873,20 @@ export default function TeacherGeneratePage() {
               ))}
             </div>
 
-            {filteredQuizPreviewQuestions.map((question, idx) => (
-              <QuestionPreviewCard
-                key={`${idx}-${question.question}`}
-                question={question}
-                questionNumber={idx + 1}
-                variant="modal"
-              />
-            ))}
+            {filteredQuizPreviewQuestions.map((question, idx) => {
+              const sourceIndex = quizToPreview.questions.indexOf(question);
+              return (
+                <QuestionPreviewCard
+                  key={`${idx}-${question.question}`}
+                  question={question}
+                  questionNumber={idx + 1}
+                  variant="modal"
+                  onPointsChange={
+                    sourceIndex >= 0 ? (nextPoints) => updatePreviewQuestionPoints(sourceIndex, nextPoints) : undefined
+                  }
+                />
+              );
+            })}
           </div>
         ) : null}
       </Modal>

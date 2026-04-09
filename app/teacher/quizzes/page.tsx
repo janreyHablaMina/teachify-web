@@ -106,6 +106,7 @@ export default function TeacherQuizzesPage() {
                   choices: question.choices,
                   answer: question.answer,
                   explanation: question.explanation,
+                  points: question.points,
                 })),
               },
             }

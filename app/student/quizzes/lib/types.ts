@@ -13,6 +13,7 @@ export type QuizQuestion = {
   type: string;
   question_text: string;
   options?: string[] | null;
+  points?: number;
 };
 
 export type AssignmentDetail = {
