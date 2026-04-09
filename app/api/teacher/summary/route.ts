@@ -174,9 +174,10 @@ export async function POST(request: Request) {
           `Target distribution by type: ${questionOptions.questionTypes
             .map((type) => `${toQuestionLabel(type)} = ${questionOptions.questionTypeCounts[type] ?? 0}`)
             .join(", ")}.`,
-          "For multiple_choice questions, include choices A-D and one correct answer.",
+          "For multiple_choice questions, include choices A-D.",
           "For true_false questions, use only True or False choices.",
-          "At the end, add a concise answer key.",
+          "After each question (including text-based questions), include a line in this exact format: Answer: <correct answer>.",
+          "Do not add a separate answer key section at the end.",
           "Use clear markdown headings and number each question.",
           "",
           `Source text:\n${prompt}`,

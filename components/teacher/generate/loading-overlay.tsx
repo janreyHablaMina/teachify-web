@@ -55,8 +55,8 @@ export function LoadingOverlay({ isComplete = false, onComplete, onCancel }: Loa
   }, [isComplete, progress, onComplete]);
 
   return (
-    <div className="w-full rounded-[24px] border border-slate-900/10 bg-white p-8 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.05),0_10px_10px_-5px_rgba(0,0,0,0.01)]">
-      <div className="mx-auto w-full max-w-[440px] rounded-[18px] border-2 border-slate-900 bg-white p-8 shadow-[8px_8px_0_#0f172a]">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/45 px-4 backdrop-blur-[2px]">
+      <div className="w-full max-w-[500px] rounded-[18px] border-2 border-slate-900 bg-white p-8 shadow-[8px_8px_0_#0f172a]">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="relative flex h-24 w-24 items-center justify-center rounded-[20px] border-2 border-slate-900 bg-cyan-50 shadow-[4px_4px_0_#0f172a]">
             <div className="pointer-events-none absolute -inset-3 rounded-[22px] border-2 border-teal-400/30 animate-[pulse_1.9s_ease-in-out_infinite]" />

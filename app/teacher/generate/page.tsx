@@ -603,6 +603,14 @@ export default function TeacherGeneratePage() {
 
       {mode === "file" ? (
         <>
+          <FileUploadWorkspace
+            onGenerate={handleGenerate}
+            isLoading={isLoading}
+            planTier={planTier}
+            generationsRemaining={remaining}
+            onNoGenerationsLeft={openUpgradeModal}
+          />
+
           {isLoading ? (
             <LoadingOverlay
               isComplete={isGenerationComplete}
@@ -612,15 +620,7 @@ export default function TeacherGeneratePage() {
               }}
               onCancel={handleCancelGeneration}
             />
-          ) : (
-            <FileUploadWorkspace
-              onGenerate={handleGenerate}
-              isLoading={isLoading}
-              planTier={planTier}
-              generationsRemaining={remaining}
-              onNoGenerationsLeft={openUpgradeModal}
-            />
-          )}
+          ) : null}
 
           {fileGenerateError ? (
             <p className="mt-4 rounded-lg border-2 border-red-900 bg-rose-100 px-4 py-3 text-left text-[13px] font-bold text-red-800">
