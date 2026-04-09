@@ -68,10 +68,8 @@ const QUESTION_TYPE_OPTIONS: Array<{ id: QuestionType; label: string }> = [
   { id: "multiple_choice", label: "Multiple Choice" },
   { id: "true_false", label: "True / False" },
   { id: "enumeration", label: "Enumeration" },
-  { id: "matching", label: "Matching" },
   { id: "identification", label: "Identification" },
   { id: "fill_in_the_blanks", label: "Fill in Blanks" },
-  { id: "short_answer", label: "Short Answer" },
   { id: "essay", label: "Essay" },
 ];
 
@@ -317,6 +315,8 @@ export default function TeacherGeneratePage() {
       const quiz = await generateQuizFromFile(data, maxQuestions, abortController.signal);
       setGeneratedQuiz(quiz);
       setQuizToPreview(quiz);
+      setQuestionTypeFilter("all");
+      setIsQuizModalOpen(true);
       const storedQuiz = addGeneratedQuizToStore(quiz);
       addRecentGeneratedQuiz(storedQuiz.id, storedQuiz.created_at, quiz);
       showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");

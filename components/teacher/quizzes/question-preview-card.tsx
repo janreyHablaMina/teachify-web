@@ -56,7 +56,10 @@ export function QuestionPreviewCard({
         <p className="mt-3 text-[13px] font-black text-teal-700">Answer: {question.answer}</p>
       )}
 
-      {question.explanation ? (
+      {question.type !== "enumeration" &&
+      question.type !== "multiple_choice" &&
+      question.type !== "identification" &&
+      question.explanation ? (
         <p className={`mt-1 font-semibold text-slate-600 ${isModal ? "text-[13px]" : "text-[14px]"}`}>
           {question.explanation}
         </p>

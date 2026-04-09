@@ -18,10 +18,8 @@ type QuestionType =
   | "multiple_choice"
   | "true_false"
   | "enumeration"
-  | "matching"
   | "identification"
   | "fill_in_the_blanks"
-  | "short_answer"
   | "essay";
 
 type QuestionOptions = {
@@ -42,10 +40,8 @@ const ALLOWED_QUESTION_TYPES: QuestionType[] = [
   "multiple_choice",
   "true_false",
   "enumeration",
-  "matching",
   "identification",
   "fill_in_the_blanks",
-  "short_answer",
   "essay",
 ];
 

@@ -21,10 +21,8 @@ const QUESTION_TYPE_OPTIONS: Array<{ id: QuestionType; label: string }> = [
   { id: "multiple_choice", label: "Multiple Choice" },
   { id: "true_false", label: "True / False" },
   { id: "enumeration", label: "Enumeration" },
-  { id: "matching", label: "Matching" },
   { id: "identification", label: "Identification" },
   { id: "fill_in_the_blanks", label: "Fill in Blanks" },
-  { id: "short_answer", label: "Short Answer" },
   { id: "essay", label: "Essay" },
 ];
 

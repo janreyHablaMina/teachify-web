@@ -7,9 +7,7 @@ import {
   CheckSquare, 
   CircleHelp, 
   ListOrdered, 
-  AlignLeft, 
   FileText, 
-  Layers, 
   Type, 
   PencilLine,
   ChevronRight,
@@ -54,13 +52,6 @@ const QUESTION_TYPES = [
     lockedForTrial: true 
   },
   { 
-    id: "matching", 
-    label: "Matching", 
-    icon: Layers, 
-    desc: "Column A to Column B",
-    lockedForTrial: true 
-  },
-  { 
     id: "identification", 
     label: "Identification", 
     icon: Type, 
@@ -74,14 +65,7 @@ const QUESTION_TYPES = [
     desc: "Completion type questions",
     lockedForTrial: true 
   },
-  { 
-    id: "short_answer", 
-    label: "Short Answer", 
-    icon: AlignLeft, 
-    desc: "Pointed explanations",
-    lockedForTrial: true 
-  },
-  { 
+  {
     id: "essay", 
     label: "Essay", 
     icon: FileText, 
