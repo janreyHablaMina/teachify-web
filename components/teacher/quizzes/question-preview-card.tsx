@@ -59,6 +59,7 @@ export function QuestionPreviewCard({
       {question.type !== "enumeration" &&
       question.type !== "multiple_choice" &&
       question.type !== "identification" &&
+      question.type !== "essay" &&
       question.explanation ? (
         <p className={`mt-1 font-semibold text-slate-600 ${isModal ? "text-[13px]" : "text-[14px]"}`}>
           {question.explanation}

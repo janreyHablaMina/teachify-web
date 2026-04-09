@@ -27,6 +27,15 @@ type GeminiResponse = {
   };
 };
 
+const SUPPORTED_QUESTION_TYPES = [
+  "multiple_choice",
+  "true_false",
+  "enumeration",
+  "identification",
+  "fill_in_the_blanks",
+  "essay",
+] as const;
+
 function extractText(payload: GeminiResponse): string {
   const out: string[] = [];
   for (const candidate of payload.candidates ?? []) {
@@ -39,7 +48,7 @@ function extractText(payload: GeminiResponse): string {
   return out.join("\n").trim();
 }
 
-function parseQuizOutput(raw: string): GeneratedQuiz | null {
+function parseQuizOutput(raw: string, allowedTypes: string[]): GeneratedQuiz | null {
   const cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/, "").trim();
   try {
     const parsed = JSON.parse(cleaned) as Partial<GeneratedQuiz>;
@@ -53,6 +62,7 @@ function parseQuizOutput(raw: string): GeneratedQuiz | null {
             if (typeof qq.question !== "string" || !qq.question.trim()) return null;
             if (typeof qq.answer !== "string" || !qq.answer.trim()) return null;
             const type = typeof qq.type === "string" && qq.type.trim() ? qq.type.trim() : "multiple_choice";
+            if (!allowedTypes.includes(type)) return null;
             const choices = Array.isArray(qq.choices)
               ? qq.choices.filter((c): c is string => typeof c === "string" && Boolean(c.trim()))
               : undefined;
@@ -99,7 +109,13 @@ export async function POST(request: Request) {
     title = String(formData.get("title") ?? "Generated Quiz").trim() || "Generated Quiz";
     difficulty = String(formData.get("difficulty") ?? "medium").trim().toLowerCase();
     const rawTypes = String(formData.get("types") ?? "multiple_choice");
-    types = rawTypes.split(",").map((t) => t.trim()).filter(Boolean);
+    types = rawTypes
+      .split(",")
+      .map((t) => t.trim())
+      .filter((type): type is string => Boolean(type) && SUPPORTED_QUESTION_TYPES.includes(type as (typeof SUPPORTED_QUESTION_TYPES)[number]));
+    if (types.length === 0) {
+      types = ["multiple_choice"];
+    }
     const rawCount = Number(formData.get("questionCount") ?? 10);
     questionCount = Number.isFinite(rawCount) ? Math.max(1, Math.min(50, Math.floor(rawCount))) : 10;
     enumerationCount = Number(formData.get("enumerationCount") ?? 5);
@@ -137,12 +153,11 @@ export async function POST(request: Request) {
       `Difficulty level: ${difficulty}`,
       `Allowed question types: ${types.join(", ")}`,
       "Return strictly valid JSON using this shape:",
-      '{"title":"string","difficulty":"easy|medium|hard","questions":[{"type":"multiple_choice|true_false|short_answer|essay|enumeration|matching|identification|fill_in_the_blanks","question":"string","choices":["A","B","C","D"],"answer":"string","explanation":"string"}]}',
+      `{"title":"string","difficulty":"easy|medium|hard","questions":[{"type":"${types.join("|")}","question":"string","choices":["A","B","C","D"],"answer":"string","explanation":"string"}]}`,
       "For true_false use choices [\"True\",\"False\"].",
-      "For short_answer, essay, identification, fill_in_the_blanks or enumeration, omit choices.",
+      "For essay, identification, fill_in_the_blanks or enumeration, omit choices.",
       "For identification, provide a short 1-3 word answer.",
       "For fill_in_the_blanks, provide the full sentence with the blank replaced by '_______' in the question field.",
-      "For matching, the question should be the stimulus and the answer should be the correct matching response.",
       enumerationInstruction,
       "Ensure all questions are based on the uploaded document only.",
     ].filter(Boolean).join("\n");
@@ -182,7 +197,7 @@ export async function POST(request: Request) {
     }
 
     const text = extractText(data);
-    const quiz = parseQuizOutput(text);
+    const quiz = parseQuizOutput(text, types);
     if (!quiz) {
       return NextResponse.json({ message: "Generated output was invalid. Please try again." }, { status: 502 });
     }
