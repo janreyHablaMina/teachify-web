@@ -15,6 +15,7 @@ import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import {
   apiConsumeGenerationUsage,
+  apiUpdateQuizQuestions,
   apiStoreSummary,
   apiGetSummaries,
   type QuestionDifficulty,
@@ -93,6 +94,9 @@ export default function TeacherGeneratePage() {
   const session = useTeacherSession();
   const activeGenerationAbortControllerRef = useRef<AbortController | null>(null);
   const activeQuestionGenerationAbortControllerRef = useRef<AbortController | null>(null);
+  const pendingQuizPointsSyncRef = useRef<{ quizId: number; questions: GeneratedQuiz["questions"] } | null>(null);
+  const quizPointsSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasLoggedQuizSyncUnsupportedRef = useRef(false);
   const [mode, setMode] = useState<"chat" | "file">("file");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerationComplete, setIsGenerationComplete] = useState(false);
@@ -588,17 +592,63 @@ export default function TeacherGeneratePage() {
       const nextQuestions = prev.questions.map((question, index) =>
         index === questionIndex ? { ...question, points: sanitizedPoints } : question
       );
+      if (quizToPreviewStoreId !== null) {
+        pendingQuizPointsSyncRef.current = {
+          quizId: quizToPreviewStoreId,
+          questions: nextQuestions,
+        };
+      }
       return {
         ...prev,
         questions: nextQuestions,
       };
     });
+
+    if (quizPointsSyncTimerRef.current) {
+      clearTimeout(quizPointsSyncTimerRef.current);
+    }
+
+    quizPointsSyncTimerRef.current = setTimeout(async () => {
+      const pending = pendingQuizPointsSyncRef.current;
+      if (!pending) return;
+
+      const token = getStoredToken();
+      if (!token) return;
+
+      try {
+        const { response } = await apiUpdateQuizQuestions(token, pending.quizId, {
+          questions: pending.questions.map((question) => ({
+            type: question.type,
+            question: question.question,
+            choices: question.choices,
+            answer: question.answer,
+            explanation: question.explanation,
+            points: question.points,
+          })),
+        });
+
+        if (!response.ok && ![404, 405].includes(response.status) && !hasLoggedQuizSyncUnsupportedRef.current) {
+          hasLoggedQuizSyncUnsupportedRef.current = true;
+          console.warn("Quiz points could not be synced to backend; points remain saved locally.");
+        }
+      } catch {
+        if (!hasLoggedQuizSyncUnsupportedRef.current) {
+          hasLoggedQuizSyncUnsupportedRef.current = true;
+          console.warn("Quiz points could not be synced to backend; points remain saved locally.");
+        }
+      }
+
+      pendingQuizPointsSyncRef.current = null;
+    }, 800);
   };
 
   useEffect(() => {
     return () => {
       activeGenerationAbortControllerRef.current?.abort();
       activeQuestionGenerationAbortControllerRef.current?.abort();
+      if (quizPointsSyncTimerRef.current) {
+        clearTimeout(quizPointsSyncTimerRef.current);
+      }
     };
   }, []);
 

@@ -300,6 +300,46 @@ export async function apiCreateAssignment(
   return { response, data };
 }
 
+export async function apiUpdateQuizQuestions(
+  token: string | undefined,
+  quizId: string | number,
+  payload: {
+    questions: Array<{
+      type: string;
+      question: string;
+      choices?: string[];
+      answer?: string;
+      explanation?: string;
+      points?: number;
+    }>;
+  }
+): Promise<{ response: Response; data: JsonObject }> {
+  const request = {
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  };
+
+  // Preferred update route.
+  let response = await fetch(`${API_BASE_URL}/api/quizzes/${quizId}`, {
+    ...request,
+    method: "PATCH",
+  });
+
+  // Backward-compatible fallback for servers that use PUT for updates.
+  if (response.status === 404 || response.status === 405) {
+    response = await fetch(`${API_BASE_URL}/api/quizzes/${quizId}`, {
+      ...request,
+      method: "PUT",
+    });
+  }
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiGetClassroom<T = unknown>(
   token: string | undefined,
   classId: string | number
