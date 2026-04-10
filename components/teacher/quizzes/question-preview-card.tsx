@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import {
   formatChoiceLabel,
   formatQuestionTypeLabel,
@@ -20,6 +24,11 @@ export function QuestionPreviewCard({
 }: QuestionPreviewCardProps) {
   const isModal = variant === "modal";
   const points = Math.max(1, Number(question.points ?? 1) || 1);
+  const [pointsInput, setPointsInput] = useState(String(points));
+
+  useEffect(() => {
+    setPointsInput(String(points));
+  }, [points]);
 
   return (
     <article
@@ -42,11 +51,26 @@ export function QuestionPreviewCard({
           <input
             type="number"
             min={1}
-            value={points}
+            value={pointsInput}
             onChange={(event) => {
-              const raw = Number.parseInt(event.target.value, 10);
+              const nextValue = event.target.value;
+              setPointsInput(nextValue);
+              if (!nextValue) return;
+              const raw = Number.parseInt(nextValue, 10);
               if (!Number.isFinite(raw)) return;
               onPointsChange(Math.max(1, raw));
+            }}
+            onBlur={() => {
+              const raw = Number.parseInt(pointsInput, 10);
+              if (!Number.isFinite(raw)) {
+                setPointsInput(String(points));
+                return;
+              }
+              const clamped = Math.max(1, Math.min(100, Math.floor(raw)));
+              if (clamped !== points) {
+                onPointsChange(clamped);
+              }
+              setPointsInput(String(clamped));
             }}
             className="h-7 w-16 rounded-md border border-slate-300 bg-white px-2 text-center text-[12px] font-black text-slate-800 outline-none focus:border-emerald-500"
           />

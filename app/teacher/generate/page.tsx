@@ -613,8 +613,8 @@ export default function TeacherGeneratePage() {
 
     if (quizToPreviewStoreId !== null) {
       updateStoredTeacherQuizQuestions(quizToPreviewStoreId, quizToPreview.questions);
-      setRecentGeneratedQuizzes((prev) =>
-        prev.map((entry) =>
+      setRecentGeneratedQuizzes((prev) => {
+        const next = prev.map((entry) =>
           entry.id === quizToPreviewStoreId
             ? {
                 ...entry,
@@ -624,8 +624,12 @@ export default function TeacherGeneratePage() {
                 },
               }
             : entry
-        )
-      );
+        );
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(RECENT_GENERATED_QUIZZES_KEY, JSON.stringify(next));
+        }
+        return next;
+      });
     }
 
     setGeneratedQuiz((prev) =>
