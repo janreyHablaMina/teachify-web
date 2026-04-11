@@ -195,16 +195,27 @@ export default function StudentQuizzesPage() {
                       <CalendarClock className="h-4 w-4 text-slate-400" />
                       <span>{formatDeadline(assignment.deadline_at)}</span>
                     </p>
+                    {assignment.has_submitted ? (
+                      <p className="mt-2 m-0 text-[12px] font-black uppercase tracking-[0.08em] text-emerald-700">
+                        Submitted{assignment.submission?.score != null ? ` | Score: ${Math.round(assignment.submission.score)}%` : ""}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="mt-4 flex items-center justify-end">
                     <button
                       type="button"
-                      onClick={() => setConfirmAssignment(assignment)}
+                      onClick={() => {
+                        if (assignment.has_submitted) {
+                          router.push(`/student/quizzes/${assignment.id}`);
+                          return;
+                        }
+                        setConfirmAssignment(assignment);
+                      }}
                       className="inline-flex items-center gap-1.5 rounded-lg border-2 border-slate-900 bg-[linear-gradient(135deg,#e0e7ff_0%,#ede9fe_100%)] px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-slate-800 shadow-[3px_3px_0_#0f172a] transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#0f172a]"
                     >
                       <Clock3 className="h-3.5 w-3.5" />
-                      Take Quiz
+                      {assignment.has_submitted ? "Review" : "Take Quiz"}
                     </button>
                   </div>
                 </div>

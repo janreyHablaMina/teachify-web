@@ -4,6 +4,12 @@ export type AssignmentItem = {
   id: number;
   classroom_id: number;
   deadline_at?: string | null;
+  has_submitted?: boolean;
+  submission?: {
+    id: number;
+    score?: number | null;
+    submitted_at?: string | null;
+  } | null;
   quiz?: { id: number; title?: string | null; topic?: string | null } | null;
   classroom?: { id: number; name?: string | null } | null;
 };
@@ -20,6 +26,13 @@ export type AssignmentDetail = {
   id: number;
   classroom_id: number;
   deadline_at?: string | null;
+  has_submitted?: boolean;
+  submission?: {
+    id: number;
+    score?: number | null;
+    submitted_at?: string | null;
+    answers?: Record<string, unknown> | null;
+  } | null;
   quiz?: {
     id: number;
     title?: string | null;

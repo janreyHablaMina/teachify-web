@@ -41,6 +41,29 @@ function inferEnumerationCount(questionText: string): number | null {
   return NUMBER_WORDS[wordMatch[1]] ?? null;
 }
 
+function parseEnumerationAnswerParts(rawAnswer: string, count: number): string[] {
+  const normalized = String(rawAnswer ?? "");
+  let tokens: string[] = [];
+
+  if (normalized) {
+    // Keep exact spacing for per-input mode by preferring newline-separated values.
+    if (normalized.includes("\n")) {
+      tokens = normalized.split(/\n/);
+    } else if (/[;,]/.test(normalized)) {
+      // Fallback for older answers that may have comma/semicolon-separated values.
+      tokens = normalized
+        .split(/[;,]+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+    } else {
+      // Single-field typed value: preserve all user spacing.
+      tokens = [normalized];
+    }
+  }
+
+  return Array.from({ length: count }, (_, index) => tokens[index] ?? "");
+}
+
 export default function StudentTakeQuizPage() {
   const { session } = useStudent();
   const router = useRouter();
@@ -85,6 +108,33 @@ export default function StudentTakeQuizPage() {
           return;
         }
         setAssignment(data);
+        if ((data as AssignmentDetail).has_submitted) {
+          const existingSubmission = (data as AssignmentDetail).submission;
+          isSubmittedRef.current = true;
+          setIsExamStarted(true);
+          setSubmitMessage("Quiz already submitted. Review mode enabled.");
+          setSubmissionResult(
+            existingSubmission
+              ? {
+                  score: typeof existingSubmission.score === "number" ? existingSubmission.score : undefined,
+                }
+              : null
+          );
+          const submittedAnswers = existingSubmission?.answers;
+          if (submittedAnswers && typeof submittedAnswers === "object") {
+            const restoredAnswers = Object.entries(submittedAnswers as Record<string, unknown>).reduce<Record<string, string>>(
+              (acc, [questionId, payload]) => {
+                if (payload && typeof payload === "object" && "answer" in (payload as Record<string, unknown>)) {
+                  const raw = (payload as { answer?: unknown }).answer;
+                  acc[questionId] = typeof raw === "string" ? raw : String(raw ?? "");
+                }
+                return acc;
+              },
+              {}
+            );
+            setAnswers(restoredAnswers);
+          }
+        }
       } catch {
         if (mounted) setErrorMessage("Failed to load quiz.");
       } finally {
@@ -324,23 +374,51 @@ export default function StudentTakeQuizPage() {
                       Give {enumerationCountHint} answer{enumerationCountHint === 1 ? "" : "s"}.
                     </p>
                   ) : null}
-                  <textarea
-                    value={answers[question.id] ?? ""}
-                    disabled={!isExamStarted || !!submitMessage}
-                    onChange={(event) =>
-                      setAnswers((prev) => ({
-                        ...prev,
-                        [question.id]: event.target.value,
-                      }))
-                    }
-                    rows={question.type === "essay" ? 5 : 3}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    placeholder={
-                      isEnumerationQuestion && enumerationCountHint
-                        ? `Enter ${enumerationCountHint} answers (separated by commas or new lines)...`
-                        : "Type your answer..."
-                    }
-                  />
+                  {isEnumerationQuestion && enumerationCountHint ? (
+                    <div className="grid gap-2">
+                      {parseEnumerationAnswerParts(answers[question.id] ?? "", enumerationCountHint).map((value, partIndex, list) => (
+                        <input
+                          key={`${question.id}-enum-${partIndex}`}
+                          type="text"
+                          value={value}
+                          disabled={!isExamStarted || !!submitMessage}
+                          onChange={(event) =>
+                            setAnswers((prev) => {
+                              const nextParts = parseEnumerationAnswerParts(prev[question.id] ?? "", enumerationCountHint);
+                              nextParts[partIndex] = event.target.value;
+                              const combined = nextParts
+                                .map((part) => part)
+                                .join("\n");
+                              return {
+                                ...prev,
+                                [question.id]: combined,
+                              };
+                            })
+                          }
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                          placeholder={`Answer ${partIndex + 1} of ${list.length}`}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={answers[question.id] ?? ""}
+                      disabled={!isExamStarted || !!submitMessage}
+                      onChange={(event) =>
+                        setAnswers((prev) => ({
+                          ...prev,
+                          [question.id]: event.target.value,
+                        }))
+                      }
+                      rows={question.type === "essay" ? 5 : 3}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      placeholder={
+                        isEnumerationQuestion && enumerationCountHint
+                          ? `Enter ${enumerationCountHint} answers (separated by commas or new lines)...`
+                          : "Type your answer..."
+                      }
+                    />
+                  )}
                 </div>
               );
             })()}
