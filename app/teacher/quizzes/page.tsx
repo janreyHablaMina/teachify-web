@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QuizCard } from "@/components/teacher/quizzes/quiz-card";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
 import { Modal } from "@/components/ui/modal";
@@ -22,6 +23,8 @@ type ClassroomOption = {
 };
 
 export default function TeacherQuizzesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [quizzes, setQuizzes] = useState<Quiz[]>(() => getStoredTeacherQuizzes());
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
@@ -75,6 +78,20 @@ export default function TeacherQuizzesPage() {
     setSelectedClassroomId(classrooms[0]?.id ?? null);
     setDeadlineInput("");
   };
+
+  useEffect(() => {
+    const assignQuizIdRaw = searchParams.get("assignQuizId");
+    if (!assignQuizIdRaw) return;
+    const assignQuizId = Number(assignQuizIdRaw);
+    if (!Number.isFinite(assignQuizId)) return;
+    const targetQuiz = quizzes.find((quiz) => quiz.id === assignQuizId);
+    if (!targetQuiz) return;
+
+    setQuizToAssign(targetQuiz);
+    setSelectedClassroomId(classrooms[0]?.id ?? null);
+    setDeadlineInput("");
+    router.replace("/teacher/quizzes");
+  }, [classrooms, quizzes, router, searchParams]);
 
   const handleAssignQuiz = async () => {
     if (!quizToAssign || !selectedClassroomId) {

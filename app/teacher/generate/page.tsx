@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { PLAN_CATALOG, normalizePlanTier } from "@/components/teacher/dashboard/plan";
@@ -91,6 +92,7 @@ function buildInitialQuestionTypeCounts(defaultCount = 8): QuestionTypeCountConf
 }
 
 export default function TeacherGeneratePage() {
+  const router = useRouter();
   const { showToast } = useToast();
   const session = useTeacherSession();
   const activeGenerationAbortControllerRef = useRef<AbortController | null>(null);
@@ -117,6 +119,7 @@ export default function TeacherGeneratePage() {
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
   const [questionsResultTypeFilter, setQuestionsResultTypeFilter] = useState("all");
   const [questionsQuizTitle, setQuestionsQuizTitle] = useState("");
+  const [savedQuestionsQuizId, setSavedQuestionsQuizId] = useState<number | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [summaryTitle, setSummaryTitle] = useState("");
   const [summaryTopic, setSummaryTopic] = useState("");
@@ -417,29 +420,53 @@ export default function TeacherGeneratePage() {
       subtitle: `Difficulty: ${questionDifficulty}`,
     });
   };
-  const handleSaveGeneratedQuestionsToQuizzes = useCallback(() => {
-    const trimmedTitle = questionsQuizTitle.trim();
+  const saveGeneratedQuestionsQuiz = useCallback((
+    options?: {
+      showSuccessToast?: boolean;
+      titleOverride?: string;
+      questionsOverride?: GeneratedQuiz["questions"];
+    }
+  ) => {
+    const trimmedTitle = (options?.titleOverride ?? questionsQuizTitle).trim();
     if (!trimmedTitle) {
       showToast("Please enter a quiz title before saving.", "error");
-      return;
+      return null;
     }
-    if (parsedQuestionsResult.questions.length === 0) {
+    const sourceQuestions = options?.questionsOverride ?? parsedQuestionsResult.questions;
+    if (sourceQuestions.length === 0) {
       showToast("No parsed questions found to save.", "error");
-      return;
+      return null;
     }
 
     const quizToStore: GeneratedQuiz = {
       title: trimmedTitle,
       difficulty: questionDifficulty,
-      questions: parsedQuestionsResult.questions.map((question) => ({
+      questions: sourceQuestions.map((question) => ({
         ...question,
         points: Math.max(1, Number(question.points ?? 1) || 1),
       })),
     };
     const storedQuiz = addGeneratedQuizToStore(quizToStore);
     addRecentGeneratedQuiz(storedQuiz.id, storedQuiz.created_at, quizToStore);
-    showToast(`Saved "${trimmedTitle}" to My Quizzes.`, "success");
+    if (options?.showSuccessToast ?? true) {
+      showToast(`Saved "${trimmedTitle}" to My Quizzes.`, "success");
+    }
+    setSavedQuestionsQuizId(storedQuiz.id);
+    return storedQuiz;
   }, [addRecentGeneratedQuiz, parsedQuestionsResult.questions, questionDifficulty, questionsQuizTitle, showToast]);
+  const handleAssignGeneratedQuestions = useCallback(() => {
+    if (savedQuestionsQuizId) {
+      showToast(`Opening assign flow for "${questionsQuizTitle.trim() || "quiz"}".`, "success");
+      setIsQuestionsModalOpen(false);
+      router.push(`/teacher/quizzes?assignQuizId=${savedQuestionsQuizId}`);
+      return;
+    }
+    const storedQuiz = saveGeneratedQuestionsQuiz({ showSuccessToast: false });
+    if (!storedQuiz) return;
+    showToast(`Opening assign flow for "${storedQuiz.title}".`, "success");
+    setIsQuestionsModalOpen(false);
+    router.push(`/teacher/quizzes?assignQuizId=${storedQuiz.id}`);
+  }, [questionsQuizTitle, router, saveGeneratedQuestionsQuiz, savedQuestionsQuizId, showToast]);
 
   const handleGenerateQuestionsFromSummary = useCallback(async () => {
     const trimmedSummary = summaryResult.trim();
@@ -450,6 +477,11 @@ export default function TeacherGeneratePage() {
     }
     if (selectedQuestionTypeEntries.length === 0) {
       showToast("Select at least one question type.", "error");
+      return;
+    }
+    const finalQuizTitle = questionsQuizTitle.trim() || summaryTitle.trim() || summaryTopic.trim() || "";
+    if (!finalQuizTitle) {
+      showToast("Please enter a quiz title before generating questions.", "error");
       return;
     }
 
@@ -466,14 +498,20 @@ export default function TeacherGeneratePage() {
         ),
       }, abortController.signal);
       const cleanedQuestions = normalizeSummaryContent(generatedQuestions);
+      const parsedForSave = parseGeneratedQuestions(cleanedQuestions).questions;
       setQuestionsResult(cleanedQuestions);
       setQuestionsResultTypeFilter("all");
-      setQuestionsQuizTitle((prev) => prev.trim() || summaryTitle.trim() || summaryTopic.trim() || "Generated Quiz");
+      setQuestionsQuizTitle(finalQuizTitle);
       setIsSummaryQuestionSettingsStep(false);
       setIsSummaryModalOpen(false);
+      saveGeneratedQuestionsQuiz({
+        showSuccessToast: false,
+        titleOverride: finalQuizTitle,
+        questionsOverride: parsedForSave,
+      });
       setIsQuestionsModalOpen(true);
       await consumeGenerationOnServer();
-      showToast("Questions generated from lesson summary!", "success");
+      showToast("Questions generated and saved to My Quizzes!", "success");
     } catch (error) {
       const isAbortError =
         (error instanceof DOMException && error.name === "AbortError") ||
@@ -495,6 +533,8 @@ export default function TeacherGeneratePage() {
     hasNoGenerationsLeft,
     openUpgradeModal,
     questionDifficulty,
+    questionsQuizTitle,
+    saveGeneratedQuestionsQuiz,
     selectedQuestionTypeEntries,
     showToast,
     summaryResult,
@@ -1061,7 +1101,8 @@ export default function TeacherGeneratePage() {
               <button
                 type="button"
                 onClick={() => {
-                  setQuestionsQuizTitle((prev) => prev.trim() || summaryTitle.trim() || summaryTopic.trim() || "Generated Quiz");
+    setQuestionsQuizTitle((prev) => prev.trim() || summaryTitle.trim() || summaryTopic.trim() || "Generated Quiz");
+    setSavedQuestionsQuizId(null);
                   setIsSummaryQuestionSettingsStep(true);
                 }}
                 disabled={isQuestionsLoading || !summaryResult.trim()}
@@ -1225,17 +1266,18 @@ export default function TeacherGeneratePage() {
         onClose={() => {
           setIsQuestionsModalOpen(false);
           setQuestionsQuizTitle("");
+          setSavedQuestionsQuizId(null);
         }}
         title={parsedQuestionsResult.title || "Generated Questions"}
         footer={
           <>
             <button
               type="button"
-              onClick={handleSaveGeneratedQuestionsToQuizzes}
+              onClick={handleAssignGeneratedQuestions}
               disabled={!questionsQuizTitle.trim() || parsedQuestionsResult.questions.length === 0}
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-emerald-100 px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-cyan-100 px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Save to My Quizzes
+              Assign
             </button>
             <DocumentModalActions
               onExportPdf={handleSaveQuestionsAsPdf}
