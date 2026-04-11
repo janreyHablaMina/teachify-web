@@ -485,6 +485,7 @@ export function getApiErrorMessage(
 
   const message =
     validationMessages ||
+    (typeof data.error === "string" ? data.error : null) ||
     (typeof data.message === "string" ? data.message : null) ||
     fallback;
 

@@ -22,6 +22,38 @@ type ClassroomOption = {
   name: string;
 };
 
+function normalizeQuestionForAssignment(question: {
+  type: string;
+  question: string;
+  choices?: string[] | null;
+  answer?: string;
+  explanation?: string;
+  points?: number;
+}) {
+  const normalizedType = String(question.type ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+  const normalizedChoices = Array.isArray(question.choices)
+    ? question.choices.map((choice) => String(choice).trim()).filter(Boolean)
+    : [];
+  const choices =
+    normalizedChoices.length > 0
+      ? normalizedChoices
+      : normalizedType === "true_false"
+        ? ["True", "False"]
+        : undefined;
+
+  return {
+    type: normalizedType || "multiple_choice",
+    question: String(question.question ?? "").trim(),
+    choices,
+    answer: typeof question.answer === "string" ? question.answer : "",
+    explanation: typeof question.explanation === "string" ? question.explanation : undefined,
+    points: Math.max(1, Number(question.points ?? 1) || 1),
+  };
+}
+
 export default function TeacherQuizzesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -117,19 +149,29 @@ export default function TeacherQuizzesPage() {
                 title: quizDetail.title,
                 topic: quizDetail.topic,
                 type: quizDetail.type,
-                questions: quizDetail.questions.map((question) => ({
-                  type: question.type,
-                  question: question.question,
-                  choices: question.choices,
-                  answer: question.answer,
-                  explanation: question.explanation,
-                  points: question.points,
-                })),
+                questions: quizDetail.questions.map((question) => normalizeQuestionForAssignment(question)),
               },
             }
           : {}),
       };
-      const { response, data } = await apiCreateAssignment(token, payload);
+      let { response, data } = await apiCreateAssignment(token, payload);
+
+      // Some generated/local quizzes don't exist in backend quizzes table.
+      // Retry with quiz_payload only (without quiz_id) so backend can create from payload.
+      if (!response.ok && quizDetail) {
+        const fallbackPayload = {
+          classroom_id: selectedClassroomId,
+          deadline_at: deadlineInput ? new Date(deadlineInput).toISOString() : null,
+          quiz_payload: {
+            title: quizDetail.title,
+            topic: quizDetail.topic,
+            type: quizDetail.type,
+            questions: quizDetail.questions.map((question) => normalizeQuestionForAssignment(question)),
+          },
+        };
+        ({ response, data } = await apiCreateAssignment(token, fallbackPayload));
+      }
+
       if (!response.ok) {
         showToast(getApiErrorMessage(response, data, "Failed to assign quiz."), "error");
         return;

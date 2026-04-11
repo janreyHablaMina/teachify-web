@@ -13,6 +13,34 @@ import { seededShuffle } from "../lib/randomize";
 import { useStudent } from "@/components/student/student-context";
 import type { AssignmentDetail, SubmissionResult } from "../lib/types";
 
+const NUMBER_WORDS: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+};
+
+function inferEnumerationCount(questionText: string): number | null {
+  const text = questionText.toLowerCase();
+  const digitMatch = text.match(/\b(?:give|list|name|mention|enumerate|write|identify)\s+(\d{1,2})\b/);
+  if (digitMatch) {
+    const count = Number.parseInt(digitMatch[1], 10);
+    return Number.isFinite(count) && count > 0 ? count : null;
+  }
+
+  const wordMatch = text.match(/\b(?:give|list|name|mention|enumerate|write|identify)\s+(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/);
+  if (!wordMatch) return null;
+  return NUMBER_WORDS[wordMatch[1]] ?? null;
+}
+
 export default function StudentTakeQuizPage() {
   const { session } = useStudent();
   const router = useRouter();
@@ -27,6 +55,7 @@ export default function StudentTakeQuizPage() {
   const [submitMessage, setSubmitMessage] = useState("");
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
   const [isExamStarted, setIsExamStarted] = useState(false);
+  const [trueFalseFollowUps, setTrueFalseFollowUps] = useState<Record<string, string>>({});
 
   const answersRef = useRef<Record<string, string>>({});
   const isExamStartedRef = useRef(false);
@@ -230,46 +259,91 @@ export default function StudentTakeQuizPage() {
             </p>
             <p className="mt-2 text-[17px] font-bold text-[#0f172a]">{question.question_text}</p>
 
-            {Array.isArray(question.options) && question.options.length > 0 ? (
-              <div className="mt-3 space-y-2">
-                {question.options.map((option, optionIndex) => {
-                  const key = String.fromCharCode(65 + optionIndex);
-                  const normalizedOption = normalizeChoiceText(option);
-                  return (
-                    <label key={`${question.id}-${optionIndex}`} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-[14px] font-semibold text-slate-700 hover:bg-slate-50">
+            {(() => {
+              const normalizedType = String(question.type ?? "").trim().toLowerCase();
+              const isTrueFalseQuestion = normalizedType === "true_false" || normalizedType === "true false";
+              const isEnumerationQuestion = normalizedType === "enumeration";
+              const enumerationCountHint = isEnumerationQuestion ? inferEnumerationCount(question.question_text ?? "") : null;
+              const options = Array.isArray(question.options) && question.options.length > 0
+                ? question.options
+                : isTrueFalseQuestion
+                  ? ["True", "False"]
+                  : [];
+              const selectedValue = String(answers[question.id] ?? "").trim().toLowerCase();
+              const shouldShowFalseInput = isTrueFalseQuestion && selectedValue === "false";
+
+              if (options.length > 0) {
+                return (
+                  <div className="mt-3 space-y-2">
+                    {options.map((option, optionIndex) => {
+                      const key = String.fromCharCode(65 + optionIndex);
+                      const normalizedOption = normalizeChoiceText(option);
+                      return (
+                        <label key={`${question.id}-${optionIndex}`} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-[14px] font-semibold text-slate-700 hover:bg-slate-50">
+                          <input
+                            type="radio"
+                            name={`question-${question.id}`}
+                            value={normalizedOption}
+                            checked={answers[question.id] === normalizedOption}
+                            disabled={!isExamStarted || !!submitMessage}
+                            onChange={(event) =>
+                              setAnswers((prev) => ({
+                                ...prev,
+                                [question.id]: event.target.value,
+                              }))
+                            }
+                          />
+                          <span>{key}. {normalizedOption}</span>
+                        </label>
+                      );
+                    })}
+
+                    {shouldShowFalseInput ? (
                       <input
-                        type="radio"
-                        name={`question-${question.id}`}
-                        value={normalizedOption}
-                        checked={answers[question.id] === normalizedOption}
+                        type="text"
+                        value={trueFalseFollowUps[question.id] ?? ""}
                         disabled={!isExamStarted || !!submitMessage}
                         onChange={(event) =>
-                          setAnswers((prev) => ({
+                          setTrueFalseFollowUps((prev) => ({
                             ...prev,
                             [question.id]: event.target.value,
                           }))
                         }
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        placeholder="If false, enter the corrected statement (optional)..."
                       />
-                      <span>{key}. {normalizedOption}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            ) : (
-              <textarea
-                value={answers[question.id] ?? ""}
-                disabled={!isExamStarted || !!submitMessage}
-                onChange={(event) =>
-                  setAnswers((prev) => ({
-                    ...prev,
-                    [question.id]: event.target.value,
-                  }))
-                }
-                rows={question.type === "essay" ? 5 : 3}
-                className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                placeholder="Type your answer..."
-              />
-            )}
+                    ) : null}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="mt-3 space-y-2">
+                  {isEnumerationQuestion && enumerationCountHint ? (
+                    <p className="m-0 text-[12px] font-bold text-indigo-700">
+                      Give {enumerationCountHint} answer{enumerationCountHint === 1 ? "" : "s"}.
+                    </p>
+                  ) : null}
+                  <textarea
+                    value={answers[question.id] ?? ""}
+                    disabled={!isExamStarted || !!submitMessage}
+                    onChange={(event) =>
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [question.id]: event.target.value,
+                      }))
+                    }
+                    rows={question.type === "essay" ? 5 : 3}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    placeholder={
+                      isEnumerationQuestion && enumerationCountHint
+                        ? `Enter ${enumerationCountHint} answers (separated by commas or new lines)...`
+                        : "Type your answer..."
+                    }
+                  />
+                </div>
+              );
+            })()}
           </article>
         ))}
 
