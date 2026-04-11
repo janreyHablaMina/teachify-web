@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
 import { apiDeleteSummary, apiGetSummaries, getApiErrorMessage } from "@/lib/api/client";
@@ -15,6 +15,10 @@ import { GeneratedDocumentViewer } from "@/components/teacher/generate/generated
 import { DocumentModalActions } from "@/components/teacher/shared/document-modal-actions";
 import { generateQuestionsFromSummary } from "@/lib/teacher/generate-service";
 import { QuestionGenerationProgress } from "@/components/teacher/generate/question-generation-progress";
+import { QuestionPreviewCard } from "@/components/teacher/quizzes/question-preview-card";
+import { parseGeneratedQuestions } from "@/lib/quiz/generated-questions-parser";
+import { formatQuestionTypeLabel } from "@/lib/quiz/question-utils";
+import { addGeneratedQuizToStore } from "@/lib/teacher/quiz-store";
 
 const LESSONS_CACHE_KEY = "teachify_teacher_lessons_cache_v1";
 const QUESTION_TYPE_OPTIONS: Array<{ id: QuestionType; label: string }> = [
@@ -54,6 +58,8 @@ export default function TeacherLessonsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [questionsResult, setQuestionsResult] = useState("");
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
+  const [questionsResultTypeFilter, setQuestionsResultTypeFilter] = useState("all");
+  const [questionsQuizTitle, setQuestionsQuizTitle] = useState("");
   const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
   const [isQuestionSettingsStep, setIsQuestionSettingsStep] = useState(false);
   const [questionDifficulty, setQuestionDifficulty] = useState<QuestionDifficulty>("medium");
@@ -116,6 +122,15 @@ export default function TeacherLessonsPage() {
     count: questionTypeCounts[option.id].count,
   }));
   const totalSelectedQuestionItems = selectedQuestionTypeEntries.reduce((sum, entry) => sum + entry.count, 0);
+  const parsedQuestionsResult = useMemo(() => parseGeneratedQuestions(questionsResult), [questionsResult]);
+  const availableQuestionsResultTypeFilters = useMemo(
+    () => ["all", ...Array.from(new Set(parsedQuestionsResult.questions.map((question) => question.type)))],
+    [parsedQuestionsResult.questions]
+  );
+  const filteredQuestionsResult = useMemo(() => {
+    if (questionsResultTypeFilter === "all") return parsedQuestionsResult.questions;
+    return parsedQuestionsResult.questions.filter((question) => question.type === questionsResultTypeFilter);
+  }, [parsedQuestionsResult.questions, questionsResultTypeFilter]);
 
   const handleView = (summary: LessonSummary) => {
     setIsCopied(false);
@@ -127,6 +142,34 @@ export default function TeacherLessonsPage() {
   const handleDownload = (summary: LessonSummary) => {
     downloadSummaryPdf(summary.content);
     showToast("Downloading PDF...", "success");
+  };
+  const handleSaveQuestionsAsPdf = () => {
+    downloadSummaryPdf(questionsResult, {
+      fileNamePrefix: "teachify-questions",
+      title: "Generated Questions",
+      subtitle: `Difficulty: ${questionDifficulty}`,
+    });
+  };
+  const handleSaveGeneratedQuestionsToQuizzes = () => {
+    const trimmedTitle = questionsQuizTitle.trim();
+    if (!trimmedTitle) {
+      showToast("Please enter a quiz title before saving.", "error");
+      return;
+    }
+    if (parsedQuestionsResult.questions.length === 0) {
+      showToast("No parsed questions found to save.", "error");
+      return;
+    }
+
+    addGeneratedQuizToStore({
+      title: trimmedTitle,
+      difficulty: questionDifficulty,
+      questions: parsedQuestionsResult.questions.map((question) => ({
+        ...question,
+        points: Math.max(1, Number(question.points ?? 1) || 1),
+      })),
+    });
+    showToast(`Saved "${trimmedTitle}" to My Quizzes.`, "success");
   };
 
   const handleDeleteRequest = (summary: LessonSummary) => {
@@ -198,6 +241,8 @@ export default function TeacherLessonsPage() {
         ),
       }, abortController.signal);
       setQuestionsResult(generatedQuestions);
+      setQuestionsResultTypeFilter("all");
+      setQuestionsQuizTitle((prev) => prev.trim() || selectedSummary?.topic?.trim() || "Generated Quiz");
       setIsQuestionSettingsStep(false);
       setIsModalOpen(false);
       setIsQuestionsModalOpen(true);
@@ -457,7 +502,10 @@ export default function TeacherLessonsPage() {
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => setIsQuestionSettingsStep(true)}
+                onClick={() => {
+                  setQuestionsQuizTitle((prev) => prev.trim() || selectedSummary?.topic?.trim() || "Generated Quiz");
+                  setIsQuestionSettingsStep(true);
+                }}
                 disabled={isQuestionsLoading || !(selectedSummary?.content ?? "").trim()}
                 className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-emerald-100 px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -477,6 +525,18 @@ export default function TeacherLessonsPage() {
             <QuestionGenerationProgress onCancel={handleCancelQuestionGeneration} />
           ) : (
           <div className="grid gap-4">
+            <div className="grid gap-1">
+              <label className="text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
+                Quiz Title
+              </label>
+              <input
+                type="text"
+                value={questionsQuizTitle}
+                onChange={(event) => setQuestionsQuizTitle(event.target.value)}
+                placeholder="Enter quiz title"
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-[14px] font-bold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+              />
+            </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
               <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-500">
                 Total Selected Items
@@ -603,17 +663,63 @@ export default function TeacherLessonsPage() {
 
       <Modal
         isOpen={isQuestionsModalOpen}
-        onClose={() => setIsQuestionsModalOpen(false)}
-        title="Generated Questions"
+        onClose={() => {
+          setIsQuestionsModalOpen(false);
+          setQuestionsQuizTitle("");
+        }}
+        title={parsedQuestionsResult.title || selectedSummary?.topic || "Generated Questions"}
         footer={
-          <DocumentModalActions
-            isCopied={isCopied}
-            onCopy={() => handleCopyToClipboard(questionsResult)}
-            copyLabel="Copy Questions"
-          />
+          <>
+            <button
+              type="button"
+              onClick={handleSaveGeneratedQuestionsToQuizzes}
+              disabled={!questionsQuizTitle.trim() || parsedQuestionsResult.questions.length === 0}
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-emerald-100 px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Save to My Quizzes
+            </button>
+            <DocumentModalActions
+              onExportPdf={handleSaveQuestionsAsPdf}
+              exportLabel="Export PDF"
+            />
+          </>
         }
       >
-        <GeneratedDocumentViewer content={questionsResult} />
+        {parsedQuestionsResult.questions.length > 0 ? (
+          <div className="grid gap-4">
+            <p className="m-0 text-[12px] font-bold uppercase tracking-[0.08em] text-slate-500">
+              Difficulty: {questionDifficulty} | {filteredQuestionsResult.length} of {parsedQuestionsResult.questions.length} Questions
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {availableQuestionsResultTypeFilters.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setQuestionsResultTypeFilter(type)}
+                  className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] transition ${
+                    questionsResultTypeFilter === type
+                      ? "border-emerald-600 bg-emerald-100 text-emerald-900"
+                      : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+                  }`}
+                >
+                  {type === "all" ? "All" : formatQuestionTypeLabel(type)}
+                </button>
+              ))}
+            </div>
+
+            {filteredQuestionsResult.map((question, idx) => (
+              <QuestionPreviewCard
+                key={`${idx}-${question.question}`}
+                question={question}
+                questionNumber={idx + 1}
+                variant="modal"
+              />
+            ))}
+          </div>
+        ) : (
+          <GeneratedDocumentViewer content={questionsResult} />
+        )}
       </Modal>
 
       <ConfirmationModal
