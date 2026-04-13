@@ -2,7 +2,7 @@
 
 import { StudentList } from "@/components/teacher/classes/student-list";
 import { Student } from "@/components/teacher/classes/types";
-import { Users, GraduationCap, ClipboardList, TrendingUp, UserPlus, Activity } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, TrendingUp, UserPlus, Activity, AlertTriangle, CheckCircle2, Clock3 } from "lucide-react";
 import Link from "next/link";
 import React, { useState, use, useEffect, useMemo } from "react";
 import { InviteStudentsModal } from "@/components/teacher/classes/invite-students-modal";
@@ -24,7 +24,40 @@ type ClassroomDetailsApi = {
     pivot?: { created_at?: string; status?: "pending" | "approved" | "suspended" | "rejected" };
     created_at?: string;
   }>;
-  assignments?: Array<{ id: number; quiz?: { id: number } | null }>;
+  assignments?: AssignmentTracking[];
+};
+
+type AssignmentExamStatus = {
+  student_id: number;
+  student_name: string;
+  student_email: string;
+  status: "submitted" | "not_taken" | "in_progress" | "needs_attention";
+  submission_id?: number | null;
+  submitted_at?: string | null;
+  score?: number | null;
+  completion_rate?: number | null;
+  answered_items?: number | null;
+  graded_items?: number | null;
+};
+
+type AssignmentTracking = {
+  id: number;
+  classroom_id: number;
+  deadline_at?: string | null;
+  created_at?: string | null;
+  quiz?: {
+    id: number;
+    title?: string | null;
+    topic?: string | null;
+    question_count?: number | null;
+  } | null;
+  status_counts?: {
+    submitted?: number;
+    not_taken?: number;
+    in_progress?: number;
+    needs_attention?: number;
+  } | null;
+  student_exam_statuses?: AssignmentExamStatus[];
 };
 
 export default function TeacherClassDetails({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
@@ -34,6 +67,9 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
   const [classroom, setClassroom] = useState<ClassroomDetailsApi | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingStudentId, setUpdatingStudentId] = useState<number | null>(null);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null);
+  const [examStatusFilter, setExamStatusFilter] = useState<"all" | "submitted" | "not_taken" | "in_progress" | "needs_attention">("all");
+  const [examSearch, setExamSearch] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -80,6 +116,36 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
   const totalStudents = approvedStudents.length;
   const activeQuizzes = (classroom?.assignments ?? []).filter((assignment) => assignment.quiz).length;
   const classStatus = classroom?.is_active === false ? "Inactive" : "Active";
+  const assignmentsWithQuiz = useMemo(
+    () => (classroom?.assignments ?? []).filter((assignment) => assignment.quiz),
+    [classroom?.assignments]
+  );
+  const selectedAssignment = useMemo(() => {
+    if (assignmentsWithQuiz.length === 0) return null;
+    if (selectedAssignmentId === null) return assignmentsWithQuiz[0];
+    return assignmentsWithQuiz.find((assignment) => assignment.id === selectedAssignmentId) ?? assignmentsWithQuiz[0];
+  }, [assignmentsWithQuiz, selectedAssignmentId]);
+  const selectedAssignmentCounts = selectedAssignment?.status_counts ?? null;
+  const selectedAssignmentStatuses = useMemo(() => {
+    const base = selectedAssignment?.student_exam_statuses ?? [];
+    return base.filter((entry) => {
+      if (examStatusFilter !== "all" && entry.status !== examStatusFilter) return false;
+      const query = examSearch.trim().toLowerCase();
+      if (!query) return true;
+      return entry.student_name.toLowerCase().includes(query) || entry.student_email.toLowerCase().includes(query);
+    });
+  }, [examSearch, examStatusFilter, selectedAssignment?.student_exam_statuses]);
+
+  useEffect(() => {
+    if (assignmentsWithQuiz.length === 0) {
+      setSelectedAssignmentId(null);
+      return;
+    }
+
+    if (!selectedAssignmentId || !assignmentsWithQuiz.some((assignment) => assignment.id === selectedAssignmentId)) {
+      setSelectedAssignmentId(assignmentsWithQuiz[0].id);
+    }
+  }, [assignmentsWithQuiz, selectedAssignmentId]);
 
   const applyStudentStatus = (studentId: number, status: "pending" | "approved" | "suspended" | "rejected") => {
     setClassroom((prev) => {
@@ -124,6 +190,36 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
       showToast("Failed to update student status.", "error");
     } finally {
       setUpdatingStudentId(null);
+    }
+  };
+
+  const getExamStatusLabel = (status: AssignmentExamStatus["status"]) => {
+    switch (status) {
+      case "submitted":
+        return "Submitted";
+      case "not_taken":
+        return "Not Taken";
+      case "in_progress":
+        return "Currently Taking";
+      case "needs_attention":
+        return "Needs Attention";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const getExamStatusBadge = (status: AssignmentExamStatus["status"]) => {
+    switch (status) {
+      case "submitted":
+        return "border-emerald-300 bg-emerald-50 text-emerald-700";
+      case "not_taken":
+        return "border-slate-300 bg-slate-100 text-slate-700";
+      case "in_progress":
+        return "border-sky-300 bg-sky-50 text-sky-700";
+      case "needs_attention":
+        return "border-amber-300 bg-amber-50 text-amber-700";
+      default:
+        return "border-slate-300 bg-slate-100 text-slate-700";
     }
   };
 
@@ -231,6 +327,168 @@ export default function TeacherClassDetails({ params: paramsPromise }: { params:
           </div>
         ))}
       </div>
+
+      <section className="mb-12 space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="m-0 text-[22px] font-black tracking-tight text-slate-900">Assigned Exams</h3>
+            <p className="mt-1 text-[13px] font-semibold text-slate-500">
+              Click an exam to see who submitted, who has not taken it, who is currently taking, and who needs attention.
+            </p>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
+            Needs Attention is inferred when score or completion looks unusually low.
+          </div>
+        </div>
+
+        {assignmentsWithQuiz.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-[14px] font-semibold text-slate-500">
+            No exams are assigned to this class yet.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {assignmentsWithQuiz.map((assignment) => {
+                const counts = assignment.status_counts ?? {};
+                const isSelected = selectedAssignment?.id === assignment.id;
+                return (
+                  <button
+                    key={assignment.id}
+                    type="button"
+                    onClick={() => setSelectedAssignmentId(assignment.id)}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      isSelected
+                        ? "border-teal-400 bg-teal-50 shadow-[0_0_0_2px_rgba(20,184,166,0.14)]"
+                        : "border-slate-200 bg-white hover:border-teal-200 hover:bg-teal-50/40"
+                    }`}
+                  >
+                    <p className="m-0 text-[15px] font-black text-slate-900">{assignment.quiz?.title || `Exam #${assignment.id}`}</p>
+                    <p className="mt-1 text-[12px] font-semibold text-slate-500">
+                      {assignment.quiz?.question_count ?? 0} items
+                      {" | "}
+                      Deadline: {assignment.deadline_at ? new Date(assignment.deadline_at).toLocaleString() : "No deadline"}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
+                      <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700">
+                        Submitted: {counts.submitted ?? 0}
+                      </span>
+                      <span className="rounded-md border border-slate-200 bg-slate-100 px-2 py-1 text-slate-700">
+                        Not Taken: {counts.not_taken ?? 0}
+                      </span>
+                      <span className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-sky-700">
+                        Taking: {counts.in_progress ?? 0}
+                      </span>
+                      <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-amber-700">
+                        Needs Attention: {counts.needs_attention ?? 0}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedAssignment ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h4 className="m-0 text-[20px] font-black text-slate-900">
+                      {selectedAssignment.quiz?.title || `Exam #${selectedAssignment.id}`} - Student Status
+                    </h4>
+                    <p className="mt-1 text-[12px] font-semibold text-slate-500">
+                      Showing {selectedAssignmentStatuses.length} student{selectedAssignmentStatuses.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      value={examSearch}
+                      onChange={(event) => setExamSearch(event.target.value)}
+                      placeholder="Search student..."
+                      className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-[13px] font-semibold text-slate-700 outline-none focus:border-teal-400"
+                    />
+                    <select
+                      value={examStatusFilter}
+                      onChange={(event) =>
+                        setExamStatusFilter(
+                          event.target.value as "all" | "submitted" | "not_taken" | "in_progress" | "needs_attention"
+                        )
+                      }
+                      className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-[13px] font-semibold text-slate-700 outline-none focus:border-teal-400"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="submitted">Submitted</option>
+                      <option value="not_taken">Not Taken</option>
+                      <option value="in_progress">Currently Taking</option>
+                      <option value="needs_attention">Needs Attention</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                    <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-emerald-700">Submitted</p>
+                    <p className="mt-1 text-[24px] font-black text-emerald-800">{selectedAssignmentCounts?.submitted ?? 0}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-100 p-3">
+                    <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-slate-600">Not Taken</p>
+                    <p className="mt-1 text-[24px] font-black text-slate-700">{selectedAssignmentCounts?.not_taken ?? 0}</p>
+                  </div>
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+                    <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-sky-700">Currently Taking</p>
+                    <p className="mt-1 text-[24px] font-black text-sky-800">{selectedAssignmentCounts?.in_progress ?? 0}</p>
+                  </div>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className="m-0 text-[11px] font-black uppercase tracking-[0.08em] text-amber-700">Needs Attention</p>
+                    <p className="mt-1 text-[24px] font-black text-amber-800">{selectedAssignmentCounts?.needs_attention ?? 0}</p>
+                  </div>
+                </div>
+
+                {selectedAssignmentStatuses.length === 0 ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-[13px] font-semibold text-slate-500">
+                    No students match this filter.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedAssignmentStatuses.map((entry) => (
+                      <article key={`${selectedAssignment.id}-${entry.student_id}`} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="m-0 text-[14px] font-black text-slate-900">{entry.student_name}</p>
+                            <p className="mt-0.5 text-[12px] font-semibold text-slate-500">{entry.student_email}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`rounded-md border px-2 py-1 text-[11px] font-black uppercase tracking-[0.08em] ${getExamStatusBadge(entry.status)}`}>
+                              {getExamStatusLabel(entry.status)}
+                            </span>
+                            {entry.status === "submitted" ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : null}
+                            {entry.status === "in_progress" ? <Clock3 className="h-4 w-4 text-sky-600" /> : null}
+                            {entry.status === "needs_attention" ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : null}
+                          </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-4 text-[12px] font-semibold text-slate-600">
+                          <span>
+                            Score: <strong className="text-slate-900">{typeof entry.score === "number" ? `${Math.round(entry.score)}%` : "-"}</strong>
+                          </span>
+                          <span>
+                            Completion: <strong className="text-slate-900">{typeof entry.completion_rate === "number" ? `${entry.completion_rate}%` : "-"}</strong>
+                          </span>
+                          <span>
+                            Answered: <strong className="text-slate-900">{typeof entry.answered_items === "number" ? entry.answered_items : "-"}</strong>
+                            {` / `}
+                            <strong className="text-slate-900">{typeof entry.graded_items === "number" ? entry.graded_items : "-"}</strong>
+                          </span>
+                          <span>
+                            Submitted At: <strong className="text-slate-900">{entry.submitted_at ? new Date(entry.submitted_at).toLocaleString() : "-"}</strong>
+                          </span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </>
+        )}
+      </section>
 
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4">

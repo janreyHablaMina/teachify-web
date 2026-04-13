@@ -132,6 +132,12 @@ export default function TeacherQuizDetailsPage() {
     setSelectedClassroomId(classrooms[0]?.id ?? null);
     setDeadlineInput("");
   };
+  useEffect(() => {
+    if (!isAssignModalOpen) return;
+    if (selectedClassroomId !== null) return;
+    if (classrooms.length === 0) return;
+    setSelectedClassroomId(classrooms[0].id);
+  }, [classrooms, isAssignModalOpen, selectedClassroomId]);
   const handleAssignQuiz = async () => {
     if (!quizDetail || !selectedClassroomId) {
       showToast("Please select a classroom first.", "error");
@@ -323,7 +329,10 @@ export default function TeacherQuizDetailsPage() {
             <select
               value={selectedClassroomId ?? ""}
               disabled={isClassroomsLoading || classrooms.length === 0}
-              onChange={(event) => setSelectedClassroomId(Number(event.target.value))}
+              onChange={(event) => {
+                const nextId = Number(event.target.value);
+                setSelectedClassroomId(Number.isFinite(nextId) ? nextId : null);
+              }}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-emerald-500"
             >
               {classrooms.length === 0 ? (

@@ -112,6 +112,13 @@ export default function TeacherQuizzesPage() {
   };
 
   useEffect(() => {
+    if (!quizToAssign) return;
+    if (selectedClassroomId !== null) return;
+    if (classrooms.length === 0) return;
+    setSelectedClassroomId(classrooms[0].id);
+  }, [classrooms, quizToAssign, selectedClassroomId]);
+
+  useEffect(() => {
     const assignQuizIdRaw = searchParams.get("assignQuizId");
     if (!assignQuizIdRaw) return;
     const assignQuizId = Number(assignQuizIdRaw);
@@ -309,7 +316,10 @@ export default function TeacherQuizzesPage() {
             <select
               value={selectedClassroomId ?? ""}
               disabled={isClassroomsLoading || classrooms.length === 0}
-              onChange={(e) => setSelectedClassroomId(Number(e.target.value))}
+              onChange={(e) => {
+                const nextId = Number(e.target.value);
+                setSelectedClassroomId(Number.isFinite(nextId) ? nextId : null);
+              }}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-[14px] font-semibold text-slate-700 outline-none focus:border-emerald-500"
             >
               {classrooms.length === 0 ? (

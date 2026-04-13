@@ -16,6 +16,34 @@ npm run dev
 
 App runs at `http://localhost:3000`.
 
+## Docker (Production Mode)
+1. Create environment file:
+```bash
+cp .env.example .env.local
+```
+PowerShell alternative:
+```powershell
+Copy-Item .env.example .env.local
+```
+2. Set real values in `.env.local` (especially `AI_API_KEY` and backend URLs).
+3. Build and start with Docker Compose:
+```bash
+docker compose up --build -d
+```
+4. Open:
+- `http://localhost:3000`
+
+Stop container:
+```bash
+docker compose down
+```
+
+## Docker (Direct Build/Run)
+```bash
+docker build -t teachify-web .
+docker run --rm -p 3000:3000 --env-file .env.local --name teachify-web teachify-web
+```
+
 ## Scripts
 - `npm run dev` - start local dev server
 - `npm run build` - production build

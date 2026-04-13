@@ -42,6 +42,18 @@ export type AssignmentDetail = {
   classroom?: { id: number; name?: string | null } | null;
 };
 
+export type SubmissionAnswerDetail = {
+  answer?: string | null;
+  is_correct?: boolean;
+  correct_answer?: string | null;
+  points?: number;
+  earned_points?: number;
+  grading_note?: string | null;
+};
+
 export type SubmissionResult = {
-  score?: number;
+  id?: number;
+  score?: number | null;
+  submitted_at?: string | null;
+  answers?: Record<string, SubmissionAnswerDetail> | null;
 };

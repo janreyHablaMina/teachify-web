@@ -180,7 +180,11 @@ export default function TeacherLessonsPage() {
       title: trimmedTitle,
       difficulty: questionDifficulty,
       questions: sourceQuestions.map((question) => ({
-        ...question,
+        type: question.type,
+        question: question.question,
+        choices: question.choices ?? undefined,
+        answer: question.answer,
+        explanation: question.explanation ?? undefined,
         points: Math.max(1, Number(question.points ?? 1) || 1),
       })),
     });

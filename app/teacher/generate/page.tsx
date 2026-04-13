@@ -442,7 +442,11 @@ export default function TeacherGeneratePage() {
       title: trimmedTitle,
       difficulty: questionDifficulty,
       questions: sourceQuestions.map((question) => ({
-        ...question,
+        type: question.type,
+        question: question.question,
+        choices: question.choices ?? undefined,
+        answer: question.answer,
+        explanation: question.explanation ?? undefined,
         points: Math.max(1, Number(question.points ?? 1) || 1),
       })),
     };
@@ -498,7 +502,14 @@ export default function TeacherGeneratePage() {
         ),
       }, abortController.signal);
       const cleanedQuestions = normalizeSummaryContent(generatedQuestions);
-      const parsedForSave = parseGeneratedQuestions(cleanedQuestions).questions;
+      const parsedForSave: GeneratedQuiz["questions"] = parseGeneratedQuestions(cleanedQuestions).questions.map((question) => ({
+        type: question.type,
+        question: question.question,
+        choices: question.choices ?? undefined,
+        answer: question.answer,
+        explanation: question.explanation ?? undefined,
+        points: Math.max(1, Number(question.points ?? 1) || 1),
+      }));
       setQuestionsResult(cleanedQuestions);
       setQuestionsResultTypeFilter("all");
       setQuestionsQuizTitle(finalQuizTitle);
@@ -659,6 +670,33 @@ export default function TeacherGeneratePage() {
       subtitle: `Generated ${new Date().toLocaleString()}`,
     });
   };
+  const handleAssignPreviewQuiz = useCallback(() => {
+    if (!quizToPreview) {
+      showToast("No quiz available to assign.", "error");
+      return;
+    }
+
+    if (quizToPreviewStoreId !== null) {
+      showToast(`Opening assign flow for "${quizToPreview.title || "quiz"}".`, "success");
+      setIsQuizModalOpen(false);
+      router.push(`/teacher/quizzes?assignQuizId=${quizToPreviewStoreId}`);
+      return;
+    }
+
+    const normalizedQuiz: GeneratedQuiz = {
+      ...quizToPreview,
+      questions: quizToPreview.questions.map((question) => ({
+        ...question,
+        points: Math.max(1, Number(question.points ?? 1) || 1),
+      })),
+    };
+    const storedQuiz = addGeneratedQuizToStore(normalizedQuiz);
+    addRecentGeneratedQuiz(storedQuiz.id, storedQuiz.created_at, normalizedQuiz);
+    setQuizToPreviewStoreId(storedQuiz.id);
+    showToast(`Opening assign flow for "${storedQuiz.title}".`, "success");
+    setIsQuizModalOpen(false);
+    router.push(`/teacher/quizzes?assignQuizId=${storedQuiz.id}`);
+  }, [addRecentGeneratedQuiz, quizToPreview, quizToPreviewStoreId, router, showToast]);
 
   const handleCopyToClipboard = async (text: string) => {
     try {
@@ -985,9 +1023,19 @@ export default function TeacherGeneratePage() {
         onClose={() => setIsQuizModalOpen(false)}
         title={quizToPreview?.title ?? "Generated Quiz"}
         footer={
-          <DocumentModalActions
-            onExportPdf={handleSaveQuizAsPdf}
-          />
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleAssignPreviewQuiz}
+              disabled={!quizToPreview}
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-900 bg-cyan-100 px-5 py-2.5 text-[13px] font-black uppercase tracking-wide text-slate-900 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Assign
+            </button>
+            <DocumentModalActions
+              onExportPdf={handleSaveQuizAsPdf}
+            />
+          </div>
         }
       >
         {quizToPreview ? (
