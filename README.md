@@ -30,6 +30,8 @@ Copy-Item .env.example .env.local
 ```bash
 docker compose up --build -d
 ```
+
+**Note:** The web app is configured to connect to the API at `http://host.docker.internal:8000` via `.env.local`. Ensure the API services are running first.
 4. Open:
 - `http://localhost:3000`
 
