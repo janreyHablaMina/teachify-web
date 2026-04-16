@@ -6,6 +6,11 @@ services:
     container_name: teachify-web
     ports:
       - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - LARAVEL_BACKEND_URL=http://host.docker.internal:8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
       - .env.local
     restart: unless-stopped
