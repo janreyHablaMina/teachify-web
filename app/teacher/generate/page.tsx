@@ -420,7 +420,7 @@ export default function TeacherGeneratePage() {
       subtitle: `Difficulty: ${questionDifficulty}`,
     });
   };
-  const saveGeneratedQuestionsQuiz = useCallback((
+  const saveGeneratedQuestionsQuiz = useCallback(async (
     options?: {
       showSuccessToast?: boolean;
       titleOverride?: string;
@@ -438,9 +438,10 @@ export default function TeacherGeneratePage() {
       return null;
     }
 
-    const quizToStore: GeneratedQuiz = {
+    const payload = {
       title: trimmedTitle,
-      difficulty: questionDifficulty,
+      topic: summaryTopic.trim() || undefined,
+      type: "generated",
       questions: sourceQuestions.map((question) => ({
         type: question.type,
         question: question.question,
@@ -450,14 +451,32 @@ export default function TeacherGeneratePage() {
         points: Math.max(1, Number(question.points ?? 1) || 1),
       })),
     };
-    const storedQuiz = addGeneratedQuizToStore(quizToStore);
-    addRecentGeneratedQuiz(storedQuiz.id, storedQuiz.created_at, quizToStore);
-    if (options?.showSuccessToast ?? true) {
-      showToast(`Saved "${trimmedTitle}" to My Quizzes.`, "success");
+
+    try {
+      const token = getStoredToken();
+      const { response, data } = await apiStoreQuiz(token ?? undefined, payload);
+      
+      if (!response.ok) {
+        showToast("Failed to save quiz to database.", "error");
+        return null;
+      }
+
+      const storedQuiz = data as Quiz;
+      
+      // Keep localStorage as a cache for recent items
+      addGeneratedQuizToStore(payload as any); 
+      addRecentGeneratedQuiz(storedQuiz.id, new Date().toISOString(), payload as any);
+
+      if (options?.showSuccessToast ?? true) {
+        showToast(`Saved "${trimmedTitle}" up to My Quizzes.`, "success");
+      }
+      setSavedQuestionsQuizId(storedQuiz.id);
+      return storedQuiz;
+    } catch {
+      showToast("An error occurred while saving the quiz.", "error");
+      return null;
     }
-    setSavedQuestionsQuizId(storedQuiz.id);
-    return storedQuiz;
-  }, [addRecentGeneratedQuiz, parsedQuestionsResult.questions, questionDifficulty, questionsQuizTitle, showToast]);
+  }, [questionsQuizTitle, parsedQuestionsResult.questions, summaryTopic, showToast, addRecentGeneratedQuiz]);
   const handleAssignGeneratedQuestions = useCallback(() => {
     if (savedQuestionsQuizId) {
       showToast(`Opening assign flow for "${questionsQuizTitle.trim() || "quiz"}".`, "success");

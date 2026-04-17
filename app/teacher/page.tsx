@@ -10,10 +10,7 @@ import { UnlockProPanel } from "@/components/teacher/dashboard/unlock-pro-panel"
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import type { ClassroomSummary, QuizSummary, TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useEffect, useMemo, useState } from "react";
-import { getStoredTeacherQuizzes, subscribeTeacherQuizzes } from "@/lib/teacher/quiz-store";
-import { subscribeTeacherClassrooms } from "@/lib/teacher/classroom-store";
-
-import { apiGetClassrooms } from "@/lib/api/client";
+import { apiGetClassrooms, apiGetQuizzes } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 
 const DEFAULT_PLAN_USER: TeacherPlanUser = {
@@ -27,32 +24,33 @@ const DEFAULT_PLAN_USER: TeacherPlanUser = {
 export default function TeacherDashboardPage() {
   const session = useTeacherSession();
 
-  const [quizzes, setQuizzes] = useState<QuizSummary[]>(() => getStoredTeacherQuizzes());
+  const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
   const [classrooms, setClassrooms] = useState<ClassroomSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubQuizzes = subscribeTeacherQuizzes(() => setQuizzes(getStoredTeacherQuizzes()));
-
-    // Classrooms
-    const fetchClassrooms = async () => {
+    const fetchData = async () => {
       try {
         const token = getStoredToken();
-        const { response, data } = await apiGetClassrooms<ClassroomSummary[]>(token ?? undefined);
-        if (response.ok) {
-          setClassrooms(data);
+        const [quizRes, classRes] = await Promise.all([
+          apiGetQuizzes<QuizSummary[]>(token ?? undefined),
+          apiGetClassrooms<ClassroomSummary[]>(token ?? undefined),
+        ]);
+
+        if (quizRes.response.ok) {
+          setQuizzes(quizRes.data);
         }
-      } catch {
-        // Fallback or silent error for dashboard metrics
+        if (classRes.response.ok) {
+          setClassrooms(classRes.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchClassrooms();
-    const unsubCls = subscribeTeacherClassrooms(() => fetchClassrooms());
-
-    return () => {
-      unsubQuizzes();
-      unsubCls();
-    };
+    fetchData();
   }, []);
 
   const planUser: TeacherPlanUser = useMemo(
@@ -130,7 +128,13 @@ export default function TeacherDashboardPage() {
 
       <section className="grid grid-cols-1 gap-4 min-[1160px]:grid-cols-2">
         <PlanFeaturesPanel planMeta={planMeta} planTier={planTier} />
-        <RecentQuizzesPanel quizzes={recentQuizzes} />
+        {isLoading ? (
+           <div className="rounded-[36px] border-2 border-[#0f172a]/10 bg-white p-8 text-center font-bold text-slate-400">
+             Loading recent quizzes...
+           </div>
+        ) : (
+          <RecentQuizzesPanel quizzes={recentQuizzes} />
+        )}
       </section>
 
       {(planTier === "trial" || planTier === "basic") ? <UnlockProPanel /> : null}

@@ -58,16 +58,29 @@ export default function TeacherQuizzesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
-  const [quizzes, setQuizzes] = useState<Quiz[]>(() => getStoredTeacherQuizzes());
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isClassroomsLoading, setIsClassroomsLoading] = useState(false);
 
+  const loadQuizzes = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const token = getStoredToken();
+      const { response, data } = await apiGetQuizzes<Quiz[]>(token ?? undefined);
+      if (response.ok) {
+        setQuizzes(data);
+      }
+    } catch {
+      showToast("Failed to load quizzes.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showToast]);
+
   useEffect(() => {
-    const unsubscribe = subscribeTeacherQuizzes(() => {
-      setQuizzes(getStoredTeacherQuizzes());
-    });
-    return unsubscribe;
-  }, []);
+    loadQuizzes();
+  }, [loadQuizzes]);
 
   useEffect(() => {
     let mounted = true;
@@ -97,12 +110,24 @@ export default function TeacherQuizzesPage() {
   const [deadlineInput, setDeadlineInput] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!quizToDelete) return;
     setIsDeleting(true);
-    deleteTeacherQuizFromStore(quizToDelete);
-    setIsDeleting(false);
-    setQuizToDelete(null);
+    try {
+      const token = getStoredToken();
+      const { response } = await apiDeleteQuiz(token ?? undefined, quizToDelete);
+      if (response.ok) {
+        setQuizzes((prev) => prev.filter((q) => q.id !== quizToDelete));
+        showToast("Quiz deleted successfully.", "success");
+      } else {
+        showToast("Failed to delete quiz.", "error");
+      }
+    } catch {
+      showToast("An error occurred while deleting the quiz.", "error");
+    } finally {
+      setIsDeleting(false);
+      setQuizToDelete(null);
+    }
   };
 
   const openAssignModal = (quiz: Quiz) => {

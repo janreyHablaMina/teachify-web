@@ -102,6 +102,29 @@ export async function apiGetSummaries<T = unknown>(token?: string): Promise<{ re
   return { response, data };
 }
 
+export async function apiGetQuizzes<T = unknown>(token?: string): Promise<{ response: Response; data: T }> {
+  const response = await fetch(`${API_BASE_URL}/api/quizzes`, {
+    method: "GET",
+    headers: buildHeaders(token),
+  });
+
+  const data = (await parseJson(response)) as T;
+  return { response, data };
+}
+
+export async function apiDeleteQuiz(
+  token: string | undefined,
+  quizId: number
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/quizzes/${quizId}`, {
+    method: "DELETE",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiStoreSummary(
   token: string | undefined,
   payload: { topic: string; content: unknown }
