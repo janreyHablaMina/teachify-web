@@ -9,9 +9,12 @@ services:
     environment:
       - NODE_ENV=development
       - LARAVEL_BACKEND_URL=http://host.docker.internal:8000
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
     volumes:
       - .:/app
       - /app/node_modules
+      - /app/.next
     command: npm run dev
     extra_hosts:
       - "host.docker.internal:host-gateway"

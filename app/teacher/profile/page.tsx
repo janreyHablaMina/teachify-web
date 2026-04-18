@@ -22,7 +22,6 @@ import {
   GraduationCap, 
   BookOpen, 
   Calendar,
-  Fingerprint,
   Bot,
   Bell,
   Database,
@@ -41,7 +40,6 @@ import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
 
 type TabID = "identity" | "ai" | "subscription" | "notifications" | "security" | "data" | "ui";
 
-const SUBJECT_OPTIONS = ["Math", "Science", "English", "History", "ICT", "Art", "Physical Education"];
 const TEACHING_LEVELS = ["Elementary", "High School", "College", "Post-Graduate"];
 
 export default function ProfilePage() {
@@ -71,7 +69,7 @@ export default function ProfilePage() {
         display_name: session.displayName ?? "",
         bio: session.bio ?? "",
         school: session.school ?? "",
-        subjects: session.subjects ?? [],
+        subjects: session.subjects ?? [], // Kept in state, but UI for editing is removed
         teaching_level: session.teachingLevel ?? "High School",
         ai_default_difficulty: session.aiDefaultDifficulty ?? "medium",
         ai_default_question_type: session.aiDefaultQuestionType ?? "mixed",
@@ -145,7 +143,6 @@ export default function ProfilePage() {
       const { response, data } = await apiUpdateAvatar(token ?? undefined, file);
       if (response.ok) {
         showToast("Avatar updated successfully.", "success");
-        // Optionally update local state if needed, but session refresh is better
       } else {
         showToast(getApiErrorMessage(response, data, "Failed to upload avatar."), "error");
       }
@@ -159,22 +156,22 @@ export default function ProfilePage() {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) {
-      showToast("Passwords do not match.", "error"); return;
+        showToast("Passwords do not match.", "error"); return;
     }
     setIsUpdatingPassword(true);
     try {
-      const token = getStoredToken();
-      const { response, data } = await apiUpdatePassword(token ?? undefined, {
-        current_password: passwords.current,
-        password: passwords.new,
-        password_confirmation: passwords.confirm,
-      });
-      if (response.ok) {
-        showToast("Security vault updated successfully.", "success");
-        setPasswords({ current: "", new: "", confirm: "" });
-      } else {
-        showToast(getApiErrorMessage(response, data, "Update failed."), "error");
-      }
+        const token = getStoredToken();
+        const { response, data } = await apiUpdatePassword(token ?? undefined, {
+            current_password: passwords.current,
+            password: passwords.new,
+            password_confirmation: passwords.confirm,
+        });
+        if (response.ok) {
+            showToast("Security credentials updated successfully.", "success");
+            setPasswords({ current: "", new: "", confirm: "" });
+        } else {
+            showToast(getApiErrorMessage(response, data, "Update failed."), "error");
+        }
     } catch { showToast("Error occurred.", "error"); } 
     finally { setIsUpdatingPassword(false); }
   };
@@ -254,7 +251,7 @@ export default function ProfilePage() {
            </div>
         </aside>
 
-        {/* Content Content Area */}
+        {/* Content Area */}
         <main className="flex-1 w-full space-y-8">
           {activeTab === "identity" && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -304,29 +301,6 @@ export default function ProfilePage() {
                           {TEACHING_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                      </div>
-                  </div>
-               </div>
-
-               {/* Specialty Selection */}
-               <div className="rounded-[36px] border-2 border-[#0f172a] bg-white p-8 shadow-[12px_12px_0_#0f172a]">
-                  <h3 className="text-2xl font-black mb-6 flex items-center gap-3"><GraduationCap className="text-fuchsia-500" /> Subject Specialties</h3>
-                  <div className="flex flex-wrap gap-3">
-                     {SUBJECT_OPTIONS.map(s => (
-                       <button key={s} 
-                         onClick={() => {
-                           const current = profile.subjects || [];
-                           const next = current.includes(s) ? current.filter((x: string) => x !== s) : [...current, s];
-                           handleInputChange("subjects", next);
-                         }}
-                         className={`px-5 py-3 rounded-xl border-2 font-black text-xs uppercase tracking-wider transition-all
-                           ${(profile.subjects || []).includes(s) 
-                             ? "border-slate-900 bg-[#fef08a] shadow-[4px_4px_0_#0f172a] -translate-y-1" 
-                             : "border-slate-200 text-slate-400 hover:border-slate-900/20"}
-                         `}
-                       >
-                         {s}
-                       </button>
-                     ))}
                   </div>
                </div>
             </div>
@@ -459,20 +433,20 @@ export default function ProfilePage() {
                    <h3 className="text-2xl font-black mb-8 flex items-center gap-3"><Lock className="text-rose-500" /> Security Shield</h3>
                    <form onSubmit={handleUpdatePassword} className="space-y-6">
                       <div className="grid gap-2">
-                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Current Key</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Current Vault Key</label>
                         <input className="w-full p-4 rounded-2xl border-2 border-slate-900 font-bold bg-slate-50 focus:bg-white outline-none" 
-                          type="password" value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} />
+                          type="password" placeholder="Enter your current password" value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          <div className="grid gap-2">
                            <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">New Vault Key</label>
                            <input className="w-full p-4 rounded-2xl border-2 border-slate-900 font-bold bg-slate-50 focus:bg-white outline-none" 
-                             type="password" value={passwords.new} onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} />
+                             type="password" placeholder="Min. 8 characters" value={passwords.new} onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} />
                          </div>
                          <div className="grid gap-2">
                            <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Confirm Key</label>
                            <input className="w-full p-4 rounded-2xl border-2 border-slate-900 font-bold bg-slate-50 focus:bg-white outline-none" 
-                             type="password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} />
+                             type="password" placeholder="Repeat new password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} />
                          </div>
                       </div>
                       <button type="submit" disabled={isUpdatingPassword}
@@ -508,7 +482,7 @@ export default function ProfilePage() {
                         </div>
                      </button>
                      <button className="flex items-center gap-4 p-6 rounded-[28px] border-2 border-slate-900 bg-white shadow-[4px_4px_0_#c7d2fe] transition-all hover:-translate-y-1">
-                        <div className="h-12 w-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100"><Shield size={22} /></div>
+                        <div className="h-12 w-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100"><Download size={22} /></div>
                         <div className="text-left">
                            <p className="m-0 text-sm font-black text-slate-900">Full System Backup</p>
                            <p className="m-0 text-[11px] font-bold text-slate-500">Download entire account data</p>
