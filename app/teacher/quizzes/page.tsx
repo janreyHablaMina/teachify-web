@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QuizCard } from "@/components/teacher/quizzes/quiz-card";
@@ -13,7 +13,7 @@ import {
   subscribeTeacherQuizzes,
 } from "@/lib/teacher/quiz-store";
 import type { Quiz } from "@/components/teacher/quizzes/types";
-import { apiCreateAssignment, apiGetClassrooms, getApiErrorMessage } from "@/lib/api/client";
+import { apiCreateAssignment, apiDeleteQuiz, apiGetClassrooms, apiGetQuizzes, getApiErrorMessage } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { useToast } from "@/components/ui/toast/toast-provider";
 

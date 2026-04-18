@@ -12,13 +12,16 @@ import { FileUploadWorkspace } from "@/components/teacher/generate/file-upload-w
 import { LoadingOverlay } from "@/components/teacher/generate/loading-overlay";
 import { QuestionGenerationProgress } from "@/components/teacher/generate/question-generation-progress";
 import type { GeneratePayload, GeneratedQuiz } from "@/components/teacher/generate/types";
+import type { Quiz } from "@/components/teacher/quizzes/types";
 import type { TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import {
   apiConsumeGenerationUsage,
   apiUpdateQuizQuestions,
   apiStoreSummary,
+  apiStoreQuiz,
   apiGetSummaries,
+  apiGetQuizzes,
   type QuestionDifficulty,
   type QuestionType,
 } from "@/lib/api/client";
@@ -477,14 +480,14 @@ export default function TeacherGeneratePage() {
       return null;
     }
   }, [questionsQuizTitle, parsedQuestionsResult.questions, summaryTopic, showToast, addRecentGeneratedQuiz]);
-  const handleAssignGeneratedQuestions = useCallback(() => {
+  const handleAssignGeneratedQuestions = useCallback(async () => {
     if (savedQuestionsQuizId) {
       showToast(`Opening assign flow for "${questionsQuizTitle.trim() || "quiz"}".`, "success");
       setIsQuestionsModalOpen(false);
       router.push(`/teacher/quizzes?assignQuizId=${savedQuestionsQuizId}`);
       return;
     }
-    const storedQuiz = saveGeneratedQuestionsQuiz({ showSuccessToast: false });
+    const storedQuiz = await saveGeneratedQuestionsQuiz({ showSuccessToast: false });
     if (!storedQuiz) return;
     showToast(`Opening assign flow for "${storedQuiz.title}".`, "success");
     setIsQuestionsModalOpen(false);

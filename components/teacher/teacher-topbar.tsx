@@ -140,6 +140,10 @@ export function TeacherTopbar({
                   <div className="flex flex-col gap-1">
                     <button 
                       type="button"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        router.push("/teacher/profile");
+                      }}
                       className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] font-extrabold text-[#0f172a] transition hover:bg-[#99f6e4] hover:translate-x-1"
                     >
                       My Profile

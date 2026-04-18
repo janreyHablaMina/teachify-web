@@ -125,6 +125,23 @@ export async function apiDeleteQuiz(
   return { response, data };
 }
 
+export async function apiStoreQuiz(
+  token: string | undefined,
+  payload: JsonObject
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/quizzes`, {
+    method: "POST",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiStoreSummary(
   token: string | undefined,
   payload: { topic: string; content: unknown }
@@ -135,6 +152,34 @@ export async function apiStoreSummary(
       ...buildHeaders(token),
       "Content-Type": "application/json",
     },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiUpdateProfile(
+  token: string | undefined,
+  payload: { fullname: string; email: string }
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/profile`, {
+    method: "PUT",
+    headers: buildHeaders(token),
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiUpdatePassword(
+  token: string | undefined,
+  payload: JsonObject
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/profile/password`, {
+    method: "PUT",
+    headers: buildHeaders(token),
     body: JSON.stringify(payload),
   });
 
