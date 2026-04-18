@@ -10,6 +10,38 @@ export type TeacherProfile = {
   quizGenerationLimit?: number;
   quizzesUsed?: number;
   maxQuestionsPerQuiz?: number;
+  id?: number;
+  createdAt?: string;
+
+  // Identity & Personalization
+  displayName?: string;
+  bio?: string;
+  school?: string;
+  subjects?: string[];
+  teachingLevel?: string;
+  profilePhotoPath?: string;
+
+  // AI Preferences
+  aiDefaultDifficulty?: "easy" | "medium" | "hard";
+  aiDefaultQuestionType?: string;
+  aiLanguage?: string;
+  aiTone?: string;
+  aiGenerateExplanations?: boolean;
+  aiIncludeRationale?: boolean;
+
+  // Notification Settings
+  notifyEmail?: boolean;
+  notifyQuizCompleted?: boolean;
+  notifyStudentSubmission?: boolean;
+  notifyWeeklySummary?: boolean;
+
+  // UI Preferences
+  uiTheme?: "light" | "dark";
+  uiAccentColor?: string;
+  uiDensity?: "comfortable" | "compact";
+
+  // Security
+  twoFactorEnabled?: boolean;
 };
 
 function toObject(value: unknown): JsonObject {
@@ -70,5 +102,37 @@ export function parseTeacherProfile(payload: unknown): TeacherProfile {
     quizGenerationLimit: readNumber(user.quiz_generation_limit ?? root.quiz_generation_limit),
     quizzesUsed: readNumber(user.quizzes_used ?? root.quizzes_used),
     maxQuestionsPerQuiz: readNumber(user.max_questions_per_quiz ?? root.max_questions_per_quiz),
+    id: readNumber(user.id ?? root.id),
+    createdAt: readString(user.created_at ?? root.created_at),
+
+    // Identity
+    displayName: readString(user.display_name),
+    bio: readString(user.bio),
+    school: readString(user.school),
+    subjects: Array.isArray(user.subjects) ? (user.subjects as string[]) : undefined,
+    teachingLevel: readString(user.teaching_level),
+    profilePhotoPath: readString(user.profile_photo_path),
+
+    // AI
+    aiDefaultDifficulty: (readString(user.ai_default_difficulty) as any) ?? "medium",
+    aiDefaultQuestionType: readString(user.ai_default_question_type) ?? "mixed",
+    aiLanguage: readString(user.ai_language) ?? "English",
+    aiTone: readString(user.ai_tone) ?? "Formal",
+    aiGenerateExplanations: !!(user.ai_generate_explanations ?? true),
+    aiIncludeRationale: !!(user.ai_include_rationale ?? true),
+
+    // Notifications
+    notifyEmail: !!(user.notify_email ?? true),
+    notifyQuizCompleted: !!(user.notify_quiz_completed ?? true),
+    notifyStudentSubmission: !!(user.notify_student_submission ?? true),
+    notifyWeeklySummary: !!(user.notify_weekly_summary ?? true),
+
+    // UI
+    uiTheme: (readString(user.ui_theme) as any) ?? "light",
+    uiAccentColor: readString(user.ui_accent_color) ?? "#0f172a",
+    uiDensity: (readString(user.ui_density) as any) ?? "comfortable",
+
+    // Security
+    twoFactorEnabled: !!(user.two_factor_enabled ?? false),
   };
 }

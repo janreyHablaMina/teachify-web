@@ -174,7 +174,7 @@ function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
             userEmail={session?.email ?? ""}
             userPlanLabel={session?.planLabel ?? "Free"}
           />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:px-7 lg:py-10">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:px-6 lg:py-10 w-full max-w-none">
             {children}
           </main>
         </div>

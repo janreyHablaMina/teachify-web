@@ -7,8 +7,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - LARAVEL_BACKEND_URL=http://host.docker.internal:8000
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file:

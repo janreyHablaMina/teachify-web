@@ -159,13 +159,30 @@ export async function apiStoreSummary(
   return { response, data };
 }
 
+export async function apiUpdateAvatar(token: string | undefined, file: File) {
+  const formData = new FormData();
+  formData.append("photo", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/profile/avatar`, {
+    method: "POST",
+    headers: buildHeaders(token),
+    body: formData,
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiUpdateProfile(
   token: string | undefined,
-  payload: { fullname: string; email: string }
+  payload: JsonObject
 ): Promise<{ response: Response; data: JsonObject }> {
   const response = await fetch(`${API_BASE_URL}/api/profile`, {
     method: "PUT",
-    headers: buildHeaders(token),
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
 
