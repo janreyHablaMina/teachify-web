@@ -5,7 +5,7 @@ import { useTeacherSession } from "@/components/teacher/teacher-session-context"
 import { getStoredToken } from "@/lib/auth/session";
 import { apiDeleteNotification, apiMarkAllNotificationsRead, apiMarkNotificationRead } from "@/lib/api/client";
 import { fetchTeacherNotifications } from "@/lib/teacher/notification-service";
-import type { TeacherNotification } from "./mock-data";
+import type { TeacherNotification } from "./notification-meta";
 
 type TeacherNotificationsContextValue = {
   notifications: TeacherNotification[];
@@ -45,7 +45,7 @@ export function TeacherNotificationsProvider({ children }: TeacherNotificationsP
 
     setIsLoading(true);
     try {
-      const data = await fetchTeacherNotifications({ token, session });
+      const data = await fetchTeacherNotifications({ token });
       setNotifications(data);
     } catch {
       setNotifications([]);
@@ -53,7 +53,7 @@ export function TeacherNotificationsProvider({ children }: TeacherNotificationsP
       setIsLoading(false);
       setLastSyncedAt(new Date().toISOString());
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     refreshNotifications();

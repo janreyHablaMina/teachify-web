@@ -8,7 +8,7 @@ import {
   NOTIFICATION_TYPE_LABELS,
   type NotificationEventType,
   type TeacherNotification,
-} from "@/components/teacher/notifications/mock-data";
+} from "@/components/teacher/notifications/notification-meta";
 
 type NotificationTab = "all" | "unread" | "system" | "classroom" | "ai_activity";
 

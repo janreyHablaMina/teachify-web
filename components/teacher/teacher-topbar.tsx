@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Bell, CheckCheck } from "lucide-react";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
 import { useTeacherNotifications } from "@/components/teacher/notifications/notifications-context";
-import { formatNotificationTime } from "@/components/teacher/notifications/mock-data";
+import { formatNotificationTime } from "@/components/teacher/notifications/notification-meta";
 import { apiLogout } from "@/lib/api/client";
 import { clearStoredToken, getStoredToken } from "@/lib/auth/session";
 
