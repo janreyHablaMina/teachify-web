@@ -50,6 +50,7 @@ export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSideb
                         lessons: { bg: "bg-indigo-500", indicator: "bg-indigo-500", hoverBg: "group-hover:bg-indigo-500" },
                         quizzes: { bg: "bg-amber-500", indicator: "bg-amber-500", hoverBg: "group-hover:bg-amber-500" },
                         classes: { bg: "bg-rose-500", indicator: "bg-rose-500", hoverBg: "group-hover:bg-rose-500" },
+                        notifications: { bg: "bg-orange-500", indicator: "bg-orange-500", hoverBg: "group-hover:bg-orange-500" },
                         default: { bg: "bg-slate-900", indicator: "bg-slate-900", hoverBg: "group-hover:bg-slate-900" }
                       };
 
@@ -58,7 +59,8 @@ export function TeacherSidebar({ groupedNav, planLabel, planTier }: TeacherSideb
                                       label.includes("generate") ? "generate" :
                                       label.includes("lessons") ? "lessons" :
                                       label.includes("quizzes") ? "quizzes" :
-                                      label.includes("classes") ? "classes" : "default";
+                                      label.includes("classes") ? "classes" :
+                                      label.includes("notification") ? "notifications" : "default";
                       const theme = themes[themeKey];
 
                       return (

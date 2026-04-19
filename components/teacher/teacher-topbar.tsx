@@ -3,7 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Gochi_Hand } from "next/font/google";
 import { useRouter } from "next/navigation";
+import { Bell, CheckCheck } from "lucide-react";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
+import {
+  formatNotificationTime,
+  getInitialTeacherNotifications,
+  type TeacherNotification,
+} from "@/components/teacher/notifications/mock-data";
 import { apiLogout } from "@/lib/api/client";
 import { clearStoredToken, getStoredToken } from "@/lib/auth/session";
 
@@ -40,24 +46,37 @@ export function TeacherTopbar({
   userPlanLabel,
 }: TeacherTopbarProps) {
   const router = useRouter();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState<TeacherNotification[]>(() => getInitialTeacherNotifications());
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
   const displayName = userName?.trim() ? userName.trim() : "Educator";
   const displayEmail = userEmail?.trim() ? userEmail.trim() : "";
   const displayPlan = userPlanLabel?.trim() ? userPlanLabel.trim() : "Free";
   const displayInitial = getInitial(displayName);
+  const unreadCount = notifications.filter((item) => !item.read).length;
+  const recentNotifications = notifications.slice(0, 6);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+      const target = event.target as Node;
+      if (notificationRef.current && !notificationRef.current.contains(target)) {
+        setIsNotificationOpen(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(target)) {
+        setIsProfileDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+  };
 
   const handleLogout = async () => {
     setIsSigningOut(true);
@@ -71,7 +90,7 @@ export function TeacherTopbar({
       clearStoredToken();
       setIsSigningOut(false);
       setIsLogoutModalOpen(false);
-      setIsDropdownOpen(false);
+      setIsProfileDropdownOpen(false);
       router.push("/login");
       router.refresh();
     }
@@ -116,10 +135,74 @@ export function TeacherTopbar({
               </div>
             </div>
 
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={notificationRef}>
               <button
                 type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                onClick={() => {
+                  setIsNotificationOpen((prev) => !prev);
+                  setIsProfileDropdownOpen(false);
+                }}
+                className="relative rounded-full border-2 border-[#0f172a] bg-white p-2 shadow-[4px_4px_0_#fef08a] transition hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0"
+                aria-label="Open notifications"
+              >
+                <Bell className="h-5 w-5 text-[#0f172a]" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex min-h-[20px] min-w-[20px] items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[10px] font-black text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                ) : null}
+              </button>
+
+              {isNotificationOpen && (
+                <div className="absolute right-0 top-full z-[1000] mt-4 w-[320px] overflow-hidden rounded-xl border-[3px] border-[#0f172a] bg-white p-2 shadow-[8px_8px_0_#0f172a] transition-all">
+                  <div className="mb-2 flex items-center justify-between border-b-[2px] border-[#0f172a] px-3 pb-3 pt-3">
+                    <div>
+                      <p className="m-0 text-[16px] font-black text-[#0f172a]">Notifications</p>
+                      <p className="m-0 text-[11px] font-bold text-slate-500">{unreadCount} unread updates</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={markAllAsRead}
+                      className="inline-flex items-center gap-1 rounded-lg border-[1.5px] border-[#0f172a] bg-[#fef08a] px-2 py-1 text-[10px] font-black uppercase tracking-[0.06em] text-[#0f172a] transition hover:-translate-y-0.5"
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      Mark all
+                    </button>
+                  </div>
+
+                  <div className="max-h-[320px] overflow-auto px-1 pb-1">
+                    {recentNotifications.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`mb-1 rounded-lg border px-3 py-2 ${item.read ? "border-slate-200 bg-slate-50" : "border-[#0f172a] bg-white"}`}
+                      >
+                        <p className="m-0 text-[13px] font-black text-[#0f172a]">- {item.message}</p>
+                        <p className="m-0 mt-1 text-[11px] font-bold text-slate-500">{formatNotificationTime(item.createdAt)}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsNotificationOpen(false);
+                      router.push("/teacher/notifications");
+                    }}
+                    className="mt-2 w-full rounded-lg border-2 border-[#0f172a] bg-[#99f6e4] px-3 py-2 text-[12px] font-black text-[#0f172a] shadow-[2px_2px_0_#0f172a] transition hover:-translate-y-0.5"
+                  >
+                    View All Notifications
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="relative" ref={profileDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProfileDropdownOpen((prev) => !prev);
+                  setIsNotificationOpen(false);
+                }}
                 className="rounded-full border-2 border-[#0f172a] bg-white p-1 shadow-[4px_4px_0_#fda4af] transition hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fda4af] text-base font-black text-[#0f172a]">
@@ -127,7 +210,7 @@ export function TeacherTopbar({
                 </span>
               </button>
 
-              {isDropdownOpen && (
+              {isProfileDropdownOpen && (
                 <div className="absolute right-0 top-full mt-4 w-[260px] overflow-hidden rounded-xl border-[3px] border-[#0f172a] bg-white p-2 shadow-[8px_8px_0_#0f172a] transition-all [transform:rotate(1deg)] z-[1000]">
                   <div className="mb-2 border-b-[2px] border-[#0f172a] pb-4 pt-4 px-3">
                     <p className="m-0 text-[18px] font-[950] tracking-tight text-[#0f172a]">{displayName}</p>
@@ -141,7 +224,7 @@ export function TeacherTopbar({
                     <button 
                       type="button"
                       onClick={() => {
-                        setIsDropdownOpen(false);
+                        setIsProfileDropdownOpen(false);
                         router.push("/teacher/profile");
                       }}
                       className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] font-extrabold text-[#0f172a] transition hover:bg-[#99f6e4] hover:translate-x-1"
@@ -157,7 +240,7 @@ export function TeacherTopbar({
                     <button 
                       className="mt-2 border-t-[2px] border-[#0f172a] pt-3 flex w-full items-center px-3 py-2.5 text-left text-[14px] font-black text-red-500 transition hover:bg-red-50"
                       onClick={() => {
-                        setIsDropdownOpen(false);
+                        setIsProfileDropdownOpen(false);
                         setIsLogoutModalOpen(true);
                       }}
                     >

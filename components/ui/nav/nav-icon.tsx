@@ -95,6 +95,13 @@ export function NavIcon({ icon }: { icon: NavIconType }) {
           <path d="M8 20h8M12 18v2" />
         </svg>
       );
+    case "notifications":
+      return (
+        <svg {...common}>
+          <path d="M15 17h5l-1.4-1.4a2 2 0 0 1-.6-1.4V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" />
+          <path d="M10 17a2 2 0 0 0 4 0" />
+        </svg>
+      );
     default:
       return (
         <svg {...common}>

@@ -6,5 +6,6 @@ export const teacherNavItems: NavItem[] = [
   { group: "Teaching", label: "My Lessons", icon: "lessons", href: "/teacher/lessons" },
   { group: "Teaching", label: "My Quizzes", icon: "quizzes", href: "/teacher/quizzes" },
   { group: "Classroom", label: "Classes", icon: "classes", href: "/teacher/classes" },
+  { group: "Settings", label: "Notifications", icon: "notifications", href: "/teacher/notifications" },
   { group: "Settings", label: "Profile", icon: "users", href: "/teacher/profile" },
 ];
