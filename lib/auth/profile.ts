@@ -106,12 +106,12 @@ export function parseTeacherProfile(payload: unknown): TeacherProfile {
     createdAt: readString(user.created_at ?? root.created_at),
 
     // Identity
-    displayName: readString(user.display_name),
+    displayName: readString(user.display_name, root.display_name),
     bio: readString(user.bio),
     school: readString(user.school),
     subjects: Array.isArray(user.subjects) ? (user.subjects as string[]) : undefined,
     teachingLevel: readString(user.teaching_level),
-    profilePhotoPath: readString(user.profile_photo_path),
+    profilePhotoPath: readString(user.profile_photo_path, root.profile_photo_path),
 
     // AI
     aiDefaultDifficulty: (readString(user.ai_default_difficulty) as any) ?? "medium",

@@ -12,6 +12,7 @@ import type { ClassroomSummary, QuizSummary, TeacherPlanUser } from "@/component
 import { useEffect, useMemo, useState } from "react";
 import { apiGetClassrooms, apiGetQuizzes } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
+import { getTeacherDisplayName } from "@/lib/teacher/display-name";
 
 const DEFAULT_PLAN_USER: TeacherPlanUser = {
   plan: "trial",
@@ -71,7 +72,7 @@ export default function TeacherDashboardPage() {
     [session]
   );
 
-  const userName = session?.name && session.name !== "Educator" ? session.name : "";
+  const userName = getTeacherDisplayName(session);
   const userEmail = session?.email ?? "";
 
   const planTier = normalizePlanTier(planUser.plan_tier ?? planUser.plan);

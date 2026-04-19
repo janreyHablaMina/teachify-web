@@ -12,6 +12,7 @@ import {
 } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { useToast } from "@/components/ui/toast/toast-provider";
+import { emitTeacherProfileUpdated } from "@/lib/teacher/profile-events";
 import { 
   User, 
   Shield, 
@@ -122,6 +123,11 @@ export default function ProfilePage() {
       const token = getStoredToken();
       const { response, data } = await apiUpdateProfile(token ?? undefined, profile as any);
       if (response.ok) {
+        emitTeacherProfileUpdated({
+          fullname: typeof profile.fullname === "string" ? profile.fullname : "",
+          displayName: typeof profile.display_name === "string" ? profile.display_name : "",
+          email: typeof profile.email === "string" ? profile.email : "",
+        });
         showToast("Control Panel preferences updated successfully.", "success");
       } else {
         showToast(getApiErrorMessage(response, data, "Failed to update profile."), "error");

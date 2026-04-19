@@ -12,6 +12,8 @@ import { ToastProvider, useToast } from "@/components/ui/toast/toast-provider";
 import { apiMe } from "@/lib/api/client";
 import { parseTeacherProfile, type TeacherProfile } from "@/lib/auth/profile";
 import { getRouteForRole, getStoredToken } from "@/lib/auth/session";
+import { getTeacherDisplayName } from "@/lib/teacher/display-name";
+import { TEACHER_PROFILE_UPDATED_EVENT, type TeacherProfileUpdatedDetail } from "@/lib/teacher/profile-events";
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -72,6 +74,32 @@ function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
       mounted = false;
     };
   }, [router]);
+
+  useEffect(() => {
+    function handleProfileUpdated(event: Event) {
+      const customEvent = event as CustomEvent<TeacherProfileUpdatedDetail>;
+      const detail = customEvent.detail ?? {};
+
+      setSession((previous) => {
+        if (!previous) return previous;
+        const hasFullname = Object.prototype.hasOwnProperty.call(detail, "fullname");
+        const hasDisplayName = Object.prototype.hasOwnProperty.call(detail, "displayName");
+        const hasEmail = Object.prototype.hasOwnProperty.call(detail, "email");
+
+        return {
+          ...previous,
+          name: hasFullname ? (detail.fullname?.trim() ? detail.fullname.trim() : previous.name) : previous.name,
+          displayName: hasDisplayName ? detail.displayName?.trim() : previous.displayName,
+          email: hasEmail ? (detail.email?.trim() ? detail.email.trim() : previous.email) : previous.email,
+        };
+      });
+    }
+
+    window.addEventListener(TEACHER_PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener);
+    return () => {
+      window.removeEventListener(TEACHER_PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     if (!authReady || !isAuthorized || !session) return;
@@ -172,7 +200,7 @@ function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
               day={day}
               headerDate={headerDate}
               headerTime={headerTime}
-              userName={session?.name ?? ""}
+              userName={getTeacherDisplayName(session)}
               userEmail={session?.email ?? ""}
               userPlanLabel={session?.planLabel ?? "Free"}
             />
