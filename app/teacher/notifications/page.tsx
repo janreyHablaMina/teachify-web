@@ -34,7 +34,8 @@ function statusTone(severity: TeacherNotification["severity"]): string {
 }
 
 export default function TeacherNotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead, deleteNotification } = useTeacherNotifications();
+  const { notifications, markAsRead, markAllAsRead, deleteNotification, isLoading, lastSyncedAt, refreshNotifications } =
+    useTeacherNotifications();
   const [activeTab, setActiveTab] = useState<NotificationTab>("all");
   const [typeFilter, setTypeFilter] = useState<NotificationEventType | "all">("all");
   const [page, setPage] = useState(1);
@@ -50,6 +51,16 @@ export default function TeacherNotificationsPage() {
       ai_activity: notifications.filter((item) => item.category === "ai_activity").length,
     };
   }, [notifications]);
+
+  const availableTabs = useMemo(() => {
+    const filtered = TABS.filter((tab) => {
+      if (tab.id === "all" || tab.id === "unread") return true;
+      return tabCounts[tab.id] > 0;
+    });
+    if (filtered.some((tab) => tab.id === activeTab)) return filtered;
+    const activeTabConfig = TABS.find((tab) => tab.id === activeTab);
+    return activeTabConfig ? [...filtered, activeTabConfig] : filtered;
+  }, [activeTab, tabCounts]);
 
   const typeOptions = useMemo(() => {
     const unique = Array.from(new Set(notifications.map((item) => item.eventType)));
@@ -91,7 +102,7 @@ export default function TeacherNotificationsPage() {
 
       <section className="rounded-[30px] border-2 border-[#0f172a] bg-white p-5 shadow-[8px_8px_0_#99f6e4]">
         <div className="mb-5 flex flex-wrap items-center gap-2">
-          {TABS.map((tab) => {
+          {availableTabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
@@ -132,7 +143,25 @@ export default function TeacherNotificationsPage() {
           >
             Mark all as read
           </button>
+          <button
+            type="button"
+            onClick={refreshNotifications}
+            className="rounded-lg border-2 border-[#0f172a] bg-white px-3 py-2 text-[12px] font-black uppercase tracking-[0.04em] text-[#0f172a] transition hover:bg-slate-50"
+          >
+            Refresh
+          </button>
+          {lastSyncedAt ? (
+            <span className="text-[11px] font-bold text-slate-400">
+              Last synced {formatNotificationTime(lastSyncedAt)}
+            </span>
+          ) : null}
         </div>
+
+        {isLoading ? (
+          <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] font-bold text-slate-500">
+            Syncing notifications from API...
+          </div>
+        ) : null}
 
         <div className="grid gap-3">
           {visibleNotifications.map((item) => (

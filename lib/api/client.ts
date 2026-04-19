@@ -310,6 +310,16 @@ export async function apiGetClassrooms<T = unknown>(token?: string): Promise<{ r
   return { response, data };
 }
 
+export async function apiGetNotifications<T = unknown>(token?: string): Promise<{ response: Response; data: T }> {
+  const response = await fetch(`${API_BASE_URL}/api/notifications`, {
+    method: "GET",
+    headers: buildHeaders(token),
+  });
+
+  const data = (await parseJson(response)) as T;
+  return { response, data };
+}
+
 export async function apiGetAssignments<T = unknown>(token?: string): Promise<{ response: Response; data: T }> {
   const response = await fetch(`${API_BASE_URL}/api/assignments`, {
     method: "GET",
