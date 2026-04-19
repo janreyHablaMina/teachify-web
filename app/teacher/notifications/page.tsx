@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTeacherNotifications } from "@/components/teacher/notifications/notifications-context";
 import {
   CATEGORY_LABELS,
   formatNotificationTime,
-  getInitialTeacherNotifications,
   NOTIFICATION_TYPE_LABELS,
   type NotificationEventType,
   type TeacherNotification,
@@ -34,7 +34,7 @@ function statusTone(severity: TeacherNotification["severity"]): string {
 }
 
 export default function TeacherNotificationsPage() {
-  const [notifications, setNotifications] = useState<TeacherNotification[]>(() => getInitialTeacherNotifications());
+  const { notifications, markAsRead, markAllAsRead, deleteNotification } = useTeacherNotifications();
   const [activeTab, setActiveTab] = useState<NotificationTab>("all");
   const [typeFilter, setTypeFilter] = useState<NotificationEventType | "all">("all");
   const [page, setPage] = useState(1);
@@ -71,18 +71,6 @@ export default function TeacherNotificationsPage() {
 
   const visibleNotifications = filteredNotifications.slice(0, page * pageSize);
   const hasMore = visibleNotifications.length < filteredNotifications.length;
-
-  const markRead = (id: string) => {
-    setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
-  };
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
-  };
-
-  const deleteNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((item) => item.id !== id));
-  };
 
   const onChangeTab = (tab: NotificationTab) => {
     setActiveTab(tab);
@@ -139,7 +127,7 @@ export default function TeacherNotificationsPage() {
 
           <button
             type="button"
-            onClick={markAllRead}
+            onClick={markAllAsRead}
             className="rounded-lg border-2 border-[#0f172a] bg-[#fef08a] px-3 py-2 text-[12px] font-black uppercase tracking-[0.04em] text-[#0f172a] shadow-[2px_2px_0_#0f172a] transition hover:-translate-y-0.5"
           >
             Mark all as read
@@ -169,7 +157,7 @@ export default function TeacherNotificationsPage() {
                   {!item.read ? (
                     <button
                       type="button"
-                      onClick={() => markRead(item.id)}
+                      onClick={() => markAsRead(item.id)}
                       className="rounded-lg border-2 border-[#0f172a] bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.05em] text-[#0f172a] transition hover:bg-[#dcfce7]"
                     >
                       Mark as read

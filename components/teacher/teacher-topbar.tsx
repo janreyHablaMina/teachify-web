@@ -5,11 +5,8 @@ import { Gochi_Hand } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { Bell, CheckCheck } from "lucide-react";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
-import {
-  formatNotificationTime,
-  getInitialTeacherNotifications,
-  type TeacherNotification,
-} from "@/components/teacher/notifications/mock-data";
+import { useTeacherNotifications } from "@/components/teacher/notifications/notifications-context";
+import { formatNotificationTime } from "@/components/teacher/notifications/mock-data";
 import { apiLogout } from "@/lib/api/client";
 import { clearStoredToken, getStoredToken } from "@/lib/auth/session";
 
@@ -46,7 +43,7 @@ export function TeacherTopbar({
   userPlanLabel,
 }: TeacherTopbarProps) {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<TeacherNotification[]>(() => getInitialTeacherNotifications());
+  const { unreadCount, recentNotifications, markAllAsRead } = useTeacherNotifications();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -57,8 +54,6 @@ export function TeacherTopbar({
   const displayEmail = userEmail?.trim() ? userEmail.trim() : "";
   const displayPlan = userPlanLabel?.trim() ? userPlanLabel.trim() : "Free";
   const displayInitial = getInitial(displayName);
-  const unreadCount = notifications.filter((item) => !item.read).length;
-  const recentNotifications = notifications.slice(0, 6);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -73,10 +68,6 @@ export function TeacherTopbar({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
-  };
 
   const handleLogout = async () => {
     setIsSigningOut(true);

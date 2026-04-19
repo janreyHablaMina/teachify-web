@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { TeacherSidebar } from "@/components/teacher/teacher-sidebar";
+import { TeacherNotificationsProvider } from "@/components/teacher/notifications/notifications-context";
 import { TeacherSessionProvider } from "@/components/teacher/teacher-session-context";
 import { TeacherTopbar } from "@/components/teacher/teacher-topbar";
 import { teacherNavItems } from "@/components/teacher/data";
@@ -158,27 +159,29 @@ function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
 
   return (
     <TeacherSessionProvider value={session}>
-      <div className="flex h-screen overflow-hidden bg-[#f8fafc]">
-        <TeacherSidebar
-          groupedNav={groupedNav}
-          planLabel={session?.planLabel ?? "Free"}
-          planTier={session?.planTier ?? "trial"}
-        />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <TeacherTopbar
-            monthLabel={monthLabel}
-            day={day}
-            headerDate={headerDate}
-            headerTime={headerTime}
-            userName={session?.name ?? ""}
-            userEmail={session?.email ?? ""}
-            userPlanLabel={session?.planLabel ?? "Free"}
+      <TeacherNotificationsProvider>
+        <div className="flex h-screen overflow-hidden bg-[#f8fafc]">
+          <TeacherSidebar
+            groupedNav={groupedNav}
+            planLabel={session?.planLabel ?? "Free"}
+            planTier={session?.planTier ?? "trial"}
           />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:px-6 lg:py-10 w-full max-w-none">
-            {children}
-          </main>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <TeacherTopbar
+              monthLabel={monthLabel}
+              day={day}
+              headerDate={headerDate}
+              headerTime={headerTime}
+              userName={session?.name ?? ""}
+              userEmail={session?.email ?? ""}
+              userPlanLabel={session?.planLabel ?? "Free"}
+            />
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:px-6 lg:py-10 w-full max-w-none">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
+      </TeacherNotificationsProvider>
     </TeacherSessionProvider>
   );
 }
