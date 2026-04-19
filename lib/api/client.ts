@@ -271,6 +271,7 @@ export async function apiGenerateSummary(payload: {
 }
 
 export async function apiGenerateQuizFromFile(payload: {
+  token?: string;
   title: string;
   file: File;
   types: string[];
@@ -282,16 +283,14 @@ export async function apiGenerateQuizFromFile(payload: {
   const formData = new FormData();
   formData.append("title", payload.title);
   formData.append("file", payload.file);
-  formData.append("types", payload.types.join(","));
-  formData.append("difficulty", payload.difficulty);
-  formData.append("questionCount", String(payload.questionCount));
-  if (typeof payload.enumerationCount === "number") {
-    formData.append("enumerationCount", String(payload.enumerationCount));
+  formData.append("count", String(payload.questionCount));
+  for (const type of payload.types) {
+    formData.append("types[]", type);
   }
 
-  const response = await fetch("/api/teacher/quiz-generate", {
+  const response = await fetch(`${API_BASE_URL}/api/quizzes/generate-from-upload`, {
     method: "POST",
-    headers: buildHeaders(),
+    headers: buildHeaders(payload.token),
     body: formData,
     signal: payload.signal,
   });

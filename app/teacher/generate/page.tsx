@@ -345,7 +345,7 @@ export default function TeacherGeneratePage() {
       setQuizToPreviewStoreId(storedQuiz.id);
       addRecentGeneratedQuiz(storedQuiz.id, storedQuiz.created_at, quiz);
       showToast(`Assessment created successfully! ${quiz.questions.length} questions generated.`, "success");
-      await consumeGenerationOnServer();
+      setLiveUsed((prev) => (limit > 0 ? Math.min(limit, prev + 1) : prev + 1));
       setIsGenerationComplete(true);
     } catch (error) {
       const isAbortError =
@@ -368,7 +368,7 @@ export default function TeacherGeneratePage() {
         activeGenerationAbortControllerRef.current = null;
       }
     }
-  }, [addRecentGeneratedQuiz, consumeGenerationOnServer, hasNoGenerationsLeft, maxQuestions, openUpgradeModal, showToast]);
+  }, [addRecentGeneratedQuiz, hasNoGenerationsLeft, limit, maxQuestions, openUpgradeModal, showToast]);
 
   const handleGenerateSummary = useCallback(async () => {
     const trimmedTopic = summaryTopic.trim();
