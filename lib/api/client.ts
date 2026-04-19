@@ -320,6 +320,44 @@ export async function apiGetNotifications<T = unknown>(token?: string): Promise<
   return { response, data };
 }
 
+export async function apiMarkNotificationRead(
+  token: string | undefined,
+  notificationId: string | number
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
+    method: "PATCH",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiMarkAllNotificationsRead(
+  token: string | undefined
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
+    method: "PATCH",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
+export async function apiDeleteNotification(
+  token: string | undefined,
+  notificationId: string | number
+): Promise<{ response: Response; data: JsonObject }> {
+  const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}`, {
+    method: "DELETE",
+    headers: buildHeaders(token),
+  });
+
+  const data = await parseJson(response);
+  return { response, data };
+}
+
 export async function apiGetAssignments<T = unknown>(token?: string): Promise<{ response: Response; data: T }> {
   const response = await fetch(`${API_BASE_URL}/api/assignments`, {
     method: "GET",

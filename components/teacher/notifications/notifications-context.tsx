@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
 import { getStoredToken } from "@/lib/auth/session";
+import { apiDeleteNotification, apiMarkAllNotificationsRead, apiMarkNotificationRead } from "@/lib/api/client";
 import { fetchTeacherNotifications } from "@/lib/teacher/notification-service";
 import type { TeacherNotification } from "./mock-data";
 
@@ -71,12 +72,27 @@ export function TeacherNotificationsProvider({ children }: TeacherNotificationsP
         setNotifications((prev) =>
           prev.map((item) => (item.id === id ? { ...item, read: true } : item)),
         );
+        const token = getStoredToken();
+        if (!token) return;
+        apiMarkNotificationRead(token, id).catch(() => {
+          // Keep optimistic update; server will be corrected on next refresh.
+        });
       },
       markAllAsRead: () => {
         setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+        const token = getStoredToken();
+        if (!token) return;
+        apiMarkAllNotificationsRead(token).catch(() => {
+          // Keep optimistic update; server will be corrected on next refresh.
+        });
       },
       deleteNotification: (id: string) => {
         setNotifications((prev) => prev.filter((item) => item.id !== id));
+        const token = getStoredToken();
+        if (!token) return;
+        apiDeleteNotification(token, id).catch(() => {
+          // Keep optimistic update; server will be corrected on next refresh.
+        });
       },
     }),
     [notifications, unreadCount, recentNotifications, isLoading, lastSyncedAt, refreshNotifications],

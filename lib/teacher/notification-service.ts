@@ -138,8 +138,18 @@ function makeNotification(input: {
 async function tryFetchCanonicalNotifications(token: string): Promise<TeacherNotification[]> {
   try {
     const { response, data } = await apiGetNotifications<unknown>(token);
-    if (!response.ok || !Array.isArray(data)) return [];
-    const normalized = data.map(normalizeApiNotification).filter((item): item is TeacherNotification => item !== null);
+    if (!response.ok) return [];
+
+    const rawItems = Array.isArray(data)
+      ? data
+      : (data && typeof data === "object" && Array.isArray((data as { data?: unknown[] }).data))
+        ? ((data as { data: unknown[] }).data)
+        : [];
+    if (rawItems.length === 0) return [];
+
+    const normalized = rawItems
+      .map(normalizeApiNotification)
+      .filter((item): item is TeacherNotification => item !== null);
     return sortByCreatedAtDesc(normalized);
   } catch {
     return [];
