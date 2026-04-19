@@ -20,6 +20,7 @@ export type TeacherProfile = {
   subjects?: string[];
   teachingLevel?: string;
   profilePhotoPath?: string;
+  profilePhotoUrl?: string;
 
   // AI Preferences
   aiDefaultDifficulty?: "easy" | "medium" | "hard";
@@ -112,6 +113,7 @@ export function parseTeacherProfile(payload: unknown): TeacherProfile {
     subjects: Array.isArray(user.subjects) ? (user.subjects as string[]) : undefined,
     teachingLevel: readString(user.teaching_level),
     profilePhotoPath: readString(user.profile_photo_path, root.profile_photo_path),
+    profilePhotoUrl: readString(user.profile_photo_url, root.profile_photo_url),
 
     // AI
     aiDefaultDifficulty: (readString(user.ai_default_difficulty) as any) ?? "medium",

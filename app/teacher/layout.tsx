@@ -14,6 +14,7 @@ import { parseTeacherProfile, type TeacherProfile } from "@/lib/auth/profile";
 import { getRouteForRole, getStoredToken } from "@/lib/auth/session";
 import { getTeacherDisplayName } from "@/lib/teacher/display-name";
 import { TEACHER_PROFILE_UPDATED_EVENT, type TeacherProfileUpdatedDetail } from "@/lib/teacher/profile-events";
+import { resolveTeacherAvatarUrl } from "@/lib/teacher/avatar";
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -85,12 +86,16 @@ function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
         const hasFullname = Object.prototype.hasOwnProperty.call(detail, "fullname");
         const hasDisplayName = Object.prototype.hasOwnProperty.call(detail, "displayName");
         const hasEmail = Object.prototype.hasOwnProperty.call(detail, "email");
+        const hasProfilePhotoPath = Object.prototype.hasOwnProperty.call(detail, "profilePhotoPath");
+        const hasProfilePhotoUrl = Object.prototype.hasOwnProperty.call(detail, "profilePhotoUrl");
 
         return {
           ...previous,
           name: hasFullname ? (detail.fullname?.trim() ? detail.fullname.trim() : previous.name) : previous.name,
           displayName: hasDisplayName ? detail.displayName?.trim() : previous.displayName,
           email: hasEmail ? (detail.email?.trim() ? detail.email.trim() : previous.email) : previous.email,
+          profilePhotoPath: hasProfilePhotoPath ? detail.profilePhotoPath?.trim() : previous.profilePhotoPath,
+          profilePhotoUrl: hasProfilePhotoUrl ? detail.profilePhotoUrl?.trim() : previous.profilePhotoUrl,
         };
       });
     }
@@ -203,6 +208,7 @@ function TeacherLayoutShell({ children }: { children: React.ReactNode }) {
               userName={getTeacherDisplayName(session)}
               userEmail={session?.email ?? ""}
               userPlanLabel={session?.planLabel ?? "Free"}
+              userAvatarUrl={resolveTeacherAvatarUrl(session)}
             />
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:px-6 lg:py-10 w-full max-w-none">
               {children}

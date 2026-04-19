@@ -13,6 +13,7 @@ import {
 import { getStoredToken } from "@/lib/auth/session";
 import { useToast } from "@/components/ui/toast/toast-provider";
 import { emitTeacherProfileUpdated } from "@/lib/teacher/profile-events";
+import { resolveTeacherAvatarUrl } from "@/lib/teacher/avatar";
 import { 
   User, 
   Shield, 
@@ -52,6 +53,7 @@ export default function ProfilePage() {
   // State for all 20+ fields
   const [profile, setProfile] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [avatarImageFailed, setAvatarImageFailed] = useState(false);
   
   // Password State
   const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
@@ -148,6 +150,24 @@ export default function ProfilePage() {
       const token = getStoredToken();
       const { response, data } = await apiUpdateAvatar(token ?? undefined, file);
       if (response.ok) {
+        const payload = data as Record<string, unknown>;
+        const payloadUser = (payload.user ?? {}) as Record<string, unknown>;
+
+        const readString = (...values: unknown[]) => {
+          for (const value of values) {
+            if (typeof value === "string" && value.trim()) return value.trim();
+          }
+          return undefined;
+        };
+
+        const uploadedAvatarPath = readString(payload.profile_photo_path, payloadUser.profile_photo_path);
+        const uploadedAvatarUrl = readString(payload.profile_photo_url, payloadUser.profile_photo_url);
+
+        emitTeacherProfileUpdated({
+          profilePhotoPath: uploadedAvatarPath,
+          profilePhotoUrl: uploadedAvatarUrl,
+        });
+        setAvatarImageFailed(false);
         showToast("Avatar updated successfully.", "success");
       } else {
         showToast(getApiErrorMessage(response, data, "Failed to upload avatar."), "error");
@@ -193,6 +213,11 @@ export default function ProfilePage() {
     if (!session?.createdAt) return "---";
     return new Date(session.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" });
   }, [session?.createdAt]);
+  const avatarUrl = useMemo(() => resolveTeacherAvatarUrl(session), [session]);
+
+  useEffect(() => {
+    setAvatarImageFailed(false);
+  }, [avatarUrl]);
 
   const navItem = (id: TabID, icon: any, label: string, color: string) => (
     <button
@@ -221,8 +246,8 @@ export default function ProfilePage() {
         </div>
         <div className="flex items-center gap-4 bg-white border-2 border-slate-900 p-4 rounded-[24px] shadow-[4px_4px_0_#99f6e4]">
            <div className="h-12 w-12 rounded-xl bg-teal-100 flex items-center justify-center font-black text-teal-700 text-xl border border-teal-200 overflow-hidden">
-             {session?.profilePhotoPath ? (
-               <img src={`http://localhost:8000/storage/${session.profilePhotoPath}`} alt="Avatar" className="w-full h-full object-cover" />
+             {avatarUrl && !avatarImageFailed ? (
+               <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarImageFailed(true)} />
              ) : (
                profile.fullname?.charAt(0) || "T"
              )}
@@ -267,8 +292,8 @@ export default function ProfilePage() {
                     <h3 className="text-2xl font-black flex items-center gap-3"><User className="text-teal-500" /> Professional Identity</h3>
                     <div className="relative group">
                        <div className="h-20 w-20 rounded-2xl bg-slate-50 border-2 border-slate-900 flex items-center justify-center font-black text-2xl text-slate-400 overflow-hidden shadow-[4px_4px_0_#0f172a]">
-                          {session?.profilePhotoPath ? (
-                            <img src={`http://localhost:8000/storage/${session.profilePhotoPath}`} alt="Avatar" className="w-full h-full object-cover" />
+                          {avatarUrl && !avatarImageFailed ? (
+                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarImageFailed(true)} />
                           ) : (
                             profile.fullname?.charAt(0) || "T"
                           )}

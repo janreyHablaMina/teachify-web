@@ -18,6 +18,7 @@ type TeacherTopbarProps = {
   userName?: string;
   userEmail?: string;
   userPlanLabel?: string;
+  userAvatarUrl?: string;
 };
 
 const gochiHand = Gochi_Hand({
@@ -41,6 +42,7 @@ export function TeacherTopbar({
   userName,
   userEmail,
   userPlanLabel,
+  userAvatarUrl,
 }: TeacherTopbarProps) {
   const router = useRouter();
   const { unreadCount, recentNotifications, markAllAsRead } = useTeacherNotifications();
@@ -48,12 +50,17 @@ export function TeacherTopbar({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [avatarImageFailed, setAvatarImageFailed] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const displayName = userName?.trim() ? userName.trim() : "Educator";
   const displayEmail = userEmail?.trim() ? userEmail.trim() : "";
   const displayPlan = userPlanLabel?.trim() ? userPlanLabel.trim() : "Free";
   const displayInitial = getInitial(displayName);
+
+  useEffect(() => {
+    setAvatarImageFailed(false);
+  }, [userAvatarUrl]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -196,9 +203,18 @@ export function TeacherTopbar({
                 }}
                 className="rounded-full border-2 border-[#0f172a] bg-white p-1 shadow-[4px_4px_0_#fda4af] transition hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fda4af] text-base font-black text-[#0f172a]">
-                  {displayInitial}
-                </span>
+                {userAvatarUrl && !avatarImageFailed ? (
+                  <img
+                    src={userAvatarUrl}
+                    alt={`${displayName} avatar`}
+                    className="h-9 w-9 rounded-full border border-[#0f172a] object-cover"
+                    onError={() => setAvatarImageFailed(true)}
+                  />
+                ) : (
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fda4af] text-base font-black text-[#0f172a]">
+                    {displayInitial}
+                  </span>
+                )}
               </button>
 
               {isProfileDropdownOpen && (

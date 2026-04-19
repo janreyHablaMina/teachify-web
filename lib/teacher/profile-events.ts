@@ -4,6 +4,8 @@ export type TeacherProfileUpdatedDetail = {
   fullname?: string;
   displayName?: string;
   email?: string;
+  profilePhotoPath?: string;
+  profilePhotoUrl?: string;
 };
 
 export function emitTeacherProfileUpdated(detail: TeacherProfileUpdatedDetail) {
@@ -15,4 +17,3 @@ export function emitTeacherProfileUpdated(detail: TeacherProfileUpdatedDetail) {
     })
   );
 }
-
