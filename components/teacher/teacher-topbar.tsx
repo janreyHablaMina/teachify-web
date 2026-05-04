@@ -152,44 +152,59 @@ export function TeacherTopbar({
               </button>
 
               {isNotificationOpen && (
-                <div className="absolute right-0 top-full z-[1000] mt-4 w-[320px] overflow-hidden rounded-xl border-[3px] border-[#0f172a] bg-white p-2 shadow-[8px_8px_0_#0f172a] transition-all">
-                  <div className="mb-2 flex items-center justify-between border-b-[2px] border-[#0f172a] px-3 pb-3 pt-3">
+                <div className="absolute right-0 top-full z-[1000] mt-4 w-[360px] overflow-hidden rounded-[24px] border-[3px] border-[#0f172a] bg-white p-2 shadow-[8px_8px_0_#0f172a] transition-all">
+                  <div className="flex items-center justify-between border-b-[3px] border-[#0f172a] bg-indigo-50 px-4 pb-4 pt-4 rounded-t-[18px]">
                     <div>
-                      <p className="m-0 text-[16px] font-black text-[#0f172a]">Notifications</p>
-                      <p className="m-0 text-[11px] font-bold text-slate-500">{unreadCount} unread updates</p>
+                      <p className="m-0 text-[18px] font-black tracking-tight text-[#0f172a]">Updates</p>
+                      <p className="m-0 text-[11px] font-bold text-indigo-600">{unreadCount} unread notifications</p>
                     </div>
                     <button
                       type="button"
                       onClick={markAllAsRead}
-                      className="inline-flex items-center gap-1 rounded-lg border-[1.5px] border-[#0f172a] bg-[#fef08a] px-2 py-1 text-[10px] font-black uppercase tracking-[0.06em] text-[#0f172a] transition hover:-translate-y-0.5"
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-[#0f172a] bg-[#fef08a] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.06em] text-[#0f172a] transition hover:-translate-y-0.5 shadow-[2px_2px_0_#0f172a]"
                     >
                       <CheckCheck className="h-3.5 w-3.5" />
                       Mark all
                     </button>
                   </div>
 
-                  <div className="max-h-[320px] overflow-auto px-1 pb-1">
-                    {recentNotifications.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`mb-1 rounded-lg border px-3 py-2 ${item.read ? "border-slate-200 bg-slate-50" : "border-[#0f172a] bg-white"}`}
-                      >
-                        <p className="m-0 text-[13px] font-black text-[#0f172a]">- {item.message}</p>
-                        <p className="m-0 mt-1 text-[11px] font-bold text-slate-500">{formatNotificationTime(item.createdAt)}</p>
+                  <div className="max-h-[360px] overflow-auto px-2 py-3 flex flex-col gap-2">
+                    {recentNotifications.length > 0 ? (
+                      recentNotifications.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`group relative rounded-xl border-2 p-3 transition-all hover:translate-x-1 ${item.read ? "border-slate-100 bg-slate-50 opacity-70" : "border-[#0f172a] bg-white shadow-[2px_2px_0_#0f172a]"}`}
+                        >
+                          {!item.read && <div className="absolute top-3 right-3 h-2 w-2 rounded-full bg-red-500" />}
+                          <p className={`m-0 text-[13px] leading-snug ${item.read ? "font-bold text-slate-500" : "font-black text-[#0f172a]"}`}>{item.message}</p>
+                          <div className="mt-2 flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                             <Clock className="h-3 w-3" />
+                             {formatNotificationTime(item.createdAt)}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-10 text-center">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50">
+                           <Bell className="h-6 w-6 text-slate-300" />
+                        </div>
+                        <p className="m-0 text-[13px] font-black text-slate-400">No new updates right now.</p>
                       </div>
-                    ))}
+                    )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsNotificationOpen(false);
-                      router.push("/teacher/notifications");
-                    }}
-                    className="mt-2 w-full rounded-lg border-2 border-[#0f172a] bg-[#99f6e4] px-3 py-2 text-[12px] font-black text-[#0f172a] shadow-[2px_2px_0_#0f172a] transition hover:-translate-y-0.5"
-                  >
-                    View All Notifications
-                  </button>
+                  <div className="border-t-[3px] border-[#0f172a] p-2 bg-slate-50 rounded-b-[18px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNotificationOpen(false);
+                        router.push("/teacher/notifications");
+                      }}
+                      className="w-full rounded-xl border-2 border-[#0f172a] bg-[#99f6e4] px-3 py-3 text-[12px] font-black uppercase tracking-widest text-[#0f172a] shadow-[4px_4px_0_#0f172a] transition hover:-translate-y-1 hover:shadow-[6px_6px_0_#0f172a] active:translate-y-0 active:shadow-[2px_2px_0_#0f172a]"
+                    >
+                      Browse All Notifications
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

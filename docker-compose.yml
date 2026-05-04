@@ -3,19 +3,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
     container_name: teachify-web
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
       - LARAVEL_BACKEND_URL=http://host.docker.internal:8000
-      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING=1000
       - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=0
+      - NEXT_TELEMETRY_DISABLED=1
     volumes:
       - .:/app
       - /app/node_modules
       - /app/.next
-    command: npm run dev
+    command: npm run dev -- --webpack
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file:

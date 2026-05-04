@@ -25,6 +25,12 @@ export type QuizSummary = {
   created_at: string;
 };
 
+export type LessonSummary = {
+  id: number;
+  topic: string;
+  created_at: string;
+};
+
 export type ClassroomSummary = {
   is_active?: boolean;
 };

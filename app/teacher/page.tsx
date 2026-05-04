@@ -1,16 +1,19 @@
 "use client";
 
 import { DashboardHeader } from "@/components/teacher/dashboard/dashboard-header";
-import { MetricsGrid } from "@/components/teacher/dashboard/metrics-grid";
 import { normalizePlanTier, PLAN_CATALOG } from "@/components/teacher/dashboard/plan";
 import { PlanBanner } from "@/components/teacher/dashboard/plan-banner";
+import { QuickActionsPanel } from "@/components/teacher/dashboard/quick-actions-panel";
+import { RecentActivityFeed } from "@/components/teacher/dashboard/recent-activity-feed";
+import { AiSuggestionCard } from "@/components/teacher/dashboard/ai-suggestion-card";
+import { RecentLessonsPanel } from "@/components/teacher/dashboard/recent-lessons-panel";
 import { PlanFeaturesPanel } from "@/components/teacher/dashboard/plan-features-panel";
 import { RecentQuizzesPanel } from "@/components/teacher/dashboard/recent-quizzes-panel";
 import { UnlockProPanel } from "@/components/teacher/dashboard/unlock-pro-panel";
 import { useTeacherSession } from "@/components/teacher/teacher-session-context";
-import type { ClassroomSummary, QuizSummary, TeacherPlanUser } from "@/components/teacher/dashboard/types";
+import type { ClassroomSummary, QuizSummary, LessonSummary, TeacherPlanUser } from "@/components/teacher/dashboard/types";
 import { useEffect, useMemo, useState } from "react";
-import { apiGetClassrooms, apiGetQuizzes } from "@/lib/api/client";
+import { apiGetClassrooms, apiGetQuizzes, apiGetSummaries } from "@/lib/api/client";
 import { getStoredToken } from "@/lib/auth/session";
 import { getTeacherDisplayName } from "@/lib/teacher/display-name";
 
@@ -26,6 +29,7 @@ export default function TeacherDashboardPage() {
   const session = useTeacherSession();
 
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
+  const [lessons, setLessons] = useState<LessonSummary[]>([]);
   const [classrooms, setClassrooms] = useState<ClassroomSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,13 +37,17 @@ export default function TeacherDashboardPage() {
     const fetchData = async () => {
       try {
         const token = getStoredToken();
-        const [quizRes, classRes] = await Promise.all([
+        const [quizRes, lessonRes, classRes] = await Promise.all([
           apiGetQuizzes<QuizSummary[]>(token ?? undefined),
+          apiGetSummaries<LessonSummary[]>(token ?? undefined),
           apiGetClassrooms<ClassroomSummary[]>(token ?? undefined),
         ]);
 
         if (quizRes.response.ok) {
           setQuizzes(quizRes.data);
+        }
+        if (lessonRes.response.ok) {
+          setLessons(lessonRes.data);
         }
         if (classRes.response.ok) {
           setClassrooms(classRes.data);
@@ -98,12 +106,13 @@ export default function TeacherDashboardPage() {
   }, [limit, used]);
 
   const recentQuizzes = quizzes.slice(0, 5);
+  const recentLessons = lessons.slice(0, 5);
   const totalClasses = classrooms.length;
   const activeClasses = classrooms.filter((c) => c.is_active).length;
   const planTierLabel = planTier === "trial" ? "FREE" : planTier.toUpperCase();
 
   return (
-    <section className="flex min-h-full w-full flex-col gap-[22px]">
+    <section className="flex min-h-full w-full flex-col gap-8 pb-10">
       <DashboardHeader planTier={planTier} planMeta={planMeta} userName={userName} userEmail={userEmail} />
 
       {(planTier === "trial" || planTier === "basic") && (
@@ -116,29 +125,33 @@ export default function TeacherDashboardPage() {
         />
       )}
 
-      <MetricsGrid
-        activeClasses={activeClasses}
-        totalClasses={totalClasses}
-        used={used}
-        progressPercent={progressPercent}
-        planTierLabel={planTierLabel}
-        planTier={planTier}
-        limit={limit}
-        maxQuestions={maxQuestions}
-      />
+      <QuickActionsPanel planTier={planTier} />
 
-      <section className="grid grid-cols-1 gap-4 min-[1160px]:grid-cols-2">
-        <PlanFeaturesPanel planMeta={planMeta} planTier={planTier} />
+      <section className="grid grid-cols-1 gap-6 min-[1200px]:grid-cols-2">
         {isLoading ? (
-           <div className="rounded-[36px] border-2 border-[#0f172a]/10 bg-white p-8 text-center font-bold text-slate-400">
-             Loading recent quizzes...
-           </div>
+          <div className="h-[300px] animate-pulse rounded-[32px] bg-slate-100" />
         ) : (
           <RecentQuizzesPanel quizzes={recentQuizzes} />
         )}
+        
+        {isLoading ? (
+          <div className="h-[300px] animate-pulse rounded-[32px] bg-slate-100" />
+        ) : (
+          <RecentLessonsPanel lessons={recentLessons} />
+        )}
       </section>
 
-      {(planTier === "trial" || planTier === "basic") ? <UnlockProPanel /> : null}
+      <section className="grid grid-cols-1 gap-6 min-[1100px]:grid-cols-3">
+        <div className="min-[1100px]:col-span-2">
+           <RecentActivityFeed remaining={remaining} used={used} limit={limit} />
+        </div>
+        <AiSuggestionCard />
+      </section>
+
+      <section className="grid grid-cols-1 gap-6 min-[1160px]:grid-cols-2">
+        <PlanFeaturesPanel planMeta={planMeta} planTier={planTier} />
+        {(planTier === "trial" || planTier === "basic") ? <UnlockProPanel /> : null}
+      </section>
     </section>
   );
 }

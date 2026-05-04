@@ -7,6 +7,15 @@ FROM base AS deps
 COPY package*.json ./
 RUN npm ci
 
+FROM node:20-alpine AS development
+WORKDIR /app
+ENV NODE_ENV=development
+COPY package*.json ./
+RUN npm install
+COPY . .
+# Keep the container running for dev
+CMD ["npm", "run", "dev"]
+
 FROM deps AS builder
 COPY . .
 RUN npm run build
