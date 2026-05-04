@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Gochi_Hand } from "next/font/google";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, Clock } from "lucide-react";
 import { ConfirmationModal } from "@/components/admin/ui/confirmation-modal";
 import { useTeacherNotifications } from "@/components/teacher/notifications/notifications-context";
 import { formatNotificationTime } from "@/components/teacher/notifications/notification-meta";
@@ -101,7 +101,7 @@ export function TeacherTopbar({
           <div className="flex items-center gap-5">
             <div className="h-12 w-[3.5px] rounded-full bg-[#0f172a] [transform:rotate(-1.5deg)]" />
             <div>
-              <p className="m-0 text-[11px] font-normal uppercase tracking-[0.1em] text-slate-600">Educator Account <span className="ml-[6px] inline-block rounded-[3px] border border-[#0f172a] bg-[#fef08a] px-[6px] py-[1px] text-[8px] font-black text-[#0f172a] shadow-[1.5px_1.5px_0_#fda4af]">{displayPlan.toUpperCase()}</span></p>
+              <p className="m-0 text-[11px] font-normal uppercase tracking-[0.1em] text-slate-600">Educator Account <span className="ml-[6px] inline-flex items-center gap-1 rounded-[3px] border border-[#0f172a] bg-[#fef08a] px-[6px] py-[1px] text-[8px] font-black text-[#0f172a] shadow-[1.5px_1.5px_0_#fda4af]">{displayPlan.toUpperCase()}</span></p>
               <h3 className="m-0 text-2xl font-black uppercase leading-none tracking-[-0.05em] text-[#0f172a]">{displayName}</h3>
               <small className={`${gochiHand.className} mt-2 inline-block rounded bg-[#fef08a] px-2 py-0.5 text-sm font-normal text-slate-600 [transform:rotate(1deg)]`}>
                 Managing your students, classes, and quizzes.
@@ -289,3 +289,4 @@ export function TeacherTopbar({
     </>
   );
 }
+

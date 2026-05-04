@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, UploadCloud, BookOpen, Users, Lock } from "lucide-react";
+import { Plus, UploadCloud, BookOpen, Users, Lock, Crown } from "lucide-react";
 import { DASHBOARD_BTN_BASE } from "./plan";
 import type { PlanTier } from "./types";
 
@@ -36,14 +36,17 @@ export function QuickActionsPanel({ planTier }: QuickActionsPanelProps) {
           href={isFree ? "/teacher/upgrade" : "/teacher/generate?source=upload"} 
           className={`group relative flex flex-col gap-3 rounded-[20px] border-[1.5px] border-blue-900 ${isFree ? "bg-slate-100 opacity-80" : "bg-blue-100"} p-5 shadow-[2px_2px_0_#1e3a8a] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${isFree ? "hover:bg-slate-200" : "hover:bg-blue-200"}`}
         >
+          {isFree ? (
+            <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-blue-900 bg-[#fef08a] px-2 py-0.5 text-[9px] font-black text-blue-900 shadow-[1px_1px_0_#1e3a8a]">
+              <Crown className="h-3 w-3" />
+              PRO
+            </span>
+          ) : null}
           <div className={`flex h-12 w-12 items-center justify-center rounded-xl border-[1.5px] border-blue-900 ${isFree ? "bg-slate-300" : "bg-blue-300"} shadow-[1px_1px_0_#1e3a8a]`}>
             {isFree ? <Lock className="h-5 w-5 text-slate-700" /> : <UploadCloud className="h-6 w-6 text-blue-900" />}
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <p className="m-0 text-[14px] font-black text-slate-900">Import Doc</p>
-              {isFree && <span className="rounded bg-slate-200 px-1 py-0.5 text-[8px] font-black text-slate-700">PRO</span>}
-            </div>
+            <p className="m-0 text-[14px] font-black text-slate-900">Import Doc</p>
             <p className="m-0 text-[11px] font-bold text-slate-600">Convert PDF to Questions</p>
           </div>
         </Link>
@@ -67,14 +70,17 @@ export function QuickActionsPanel({ planTier }: QuickActionsPanelProps) {
           href={isFree ? "/teacher/upgrade" : "/teacher/classes"} 
           className={`group relative flex flex-col gap-3 rounded-[20px] border-[1.5px] border-purple-900 ${isFree ? "bg-slate-100 opacity-80" : "bg-purple-100"} p-5 shadow-[2px_2px_0_#581c87] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${isFree ? "hover:bg-slate-200" : "hover:bg-purple-200"}`}
         >
+          {isFree ? (
+            <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-purple-900 bg-[#fef08a] px-2 py-0.5 text-[9px] font-black text-purple-900 shadow-[1px_1px_0_#581c87]">
+              <Crown className="h-3 w-3" />
+              PRO
+            </span>
+          ) : null}
           <div className={`flex h-12 w-12 items-center justify-center rounded-xl border-[1.5px] border-purple-900 ${isFree ? "bg-slate-300" : "bg-purple-300"} shadow-[1px_1px_0_#581c87]`}>
             {isFree ? <Lock className="h-5 w-5 text-slate-700" /> : <Users className="h-6 w-6 text-purple-900" />}
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <p className="m-0 text-[14px] font-black text-slate-900">Create Class</p>
-              {isFree && <span className="rounded bg-slate-200 px-1 py-0.5 text-[8px] font-black text-slate-700">PRO</span>}
-            </div>
+            <p className="m-0 text-[14px] font-black text-slate-900">Create Class</p>
             <p className="m-0 text-[11px] font-bold text-slate-600">Manage students & tracks</p>
           </div>
         </Link>

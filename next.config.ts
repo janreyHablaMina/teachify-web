@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {},
   async rewrites() {
     const backendUrl = (process.env.LARAVEL_BACKEND_URL || "http://host.docker.internal:8000").replace(/\/$/, "");
     return [
